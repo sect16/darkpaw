@@ -6,6 +6,10 @@
 # Author      : William
 # Date        : 2018/08/22
 
+import os
+if not os.geteuid() == 0:
+    print('Cannot continue without root')
+    quit()
 import socket
 import time
 import threading
@@ -13,22 +17,18 @@ import move
 import Adafruit_PCA9685
 from rpi_ws281x import *
 import argparse
-import os
+
 import FPV
 import psutil
 import switch
-import LED
+#import LED
+import config
+
 
 '''
 Initiation number of steps, don't have to change it.
 '''
 step_set = 1
-
-'''
-The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
-DO NOT increase or it may cause mechanical collisions.
-'''
-speed_set = 150
 
 '''
 Initiation commands
@@ -38,13 +38,15 @@ turn_command = 'no'
 
 pwm = Adafruit_PCA9685.PCA9685()
 pwm.set_pwm_freq(50)
-LED = LED.LED()
+#LED = LED.LED()
 
 SmoothMode = 0
 steadyMode = 0
 
+
 def breath_led():
-    LED.breath(255)
+    print('Dummy')
+    #LED.breath(255)
 
 
 def ap_thread():
@@ -104,7 +106,7 @@ def move_thread():
         if not steadyMode:
             if direction_command == 'forward' and turn_command == 'no':
                 stand_stu = 0
-                move.dove_move_tripod(step_set, 150, 'forward')
+                move.dove_move_tripod(step_set, config.speed_set, 'forward')
                 step_set += 1
                 if step_set == 9:
                     step_set = 1
@@ -112,7 +114,7 @@ def move_thread():
 
             elif direction_command == 'backward' and turn_command == 'no':
                 stand_stu = 0
-                move.dove_move_tripod(step_set, 150, 'backward')
+                move.dove_move_tripod(step_set, config.speed_set, 'backward')
                 step_set += 1
                 if step_set == 9:
                     step_set = 1
@@ -123,7 +125,7 @@ def move_thread():
 
             if turn_command != 'no':
                 stand_stu = 0
-                move.dove_move_diagonal(step_set, 150, turn_command)
+                move.dove_move_diagonal(step_set, config.speed_set, turn_command)
                 step_set += 1
                 if step_set == 9:
                     step_set = 1
@@ -133,7 +135,7 @@ def move_thread():
 
             if turn_command == 'no' and direction_command == 'stand':
                 if stand_stu == 0:
-                    move.robot_stand(150)
+                    move.robot_stand(config.speed_set)
                     step_set = 1
                     stand_stu = 1
                 else:
@@ -143,7 +145,7 @@ def move_thread():
             pass
         else:
             pass
-            move.robot_X(150, 100)
+            move.robot_X(config.speed_set, 100)
             move.steady()
             #print('steady')
             #time.sleep(0.2)
@@ -212,56 +214,56 @@ def run():
             turn_command = 'no'
 
         elif 'headup' == data:
-            move.ctrl_pitch_roll(150, -100, 0)
+            move.ctrl_pitch_roll(config.speed_set, -100, 0)
         elif 'headdown' == data:
-            move.ctrl_pitch_roll(150, 100, 0)
+            move.ctrl_pitch_roll(config.speed_set, 100, 0)
         elif 'headhome' == data:
-            move.ctrl_pitch_roll(150, 0, 0)
+            move.ctrl_pitch_roll(config.speed_set, 0, 0)
 
         elif 'low' == data:
-            move.robot_stand(-150)
+            move.robot_stand(-175)
         elif 'hight' == data:
-            move.robot_stand(150)
+            move.robot_stand(175)
         elif 'wsR' in data:
             try:
                 set_R=data.split()
                 ws_R = int(set_R[1])
-                LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                #LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
                 pass
         elif 'wsG' in data:
             try:
                 set_G=data.split()
                 ws_G = int(set_G[1])
-                LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                #LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
                 pass
         elif 'wsB' in data:
             try:
                 set_B=data.split()
                 ws_B = int(set_B[1])
-                LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                #LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
                 pass
 
         elif 'FindColor' in data:
-            LED.breath_status_set(1)
+            #LED.breath_status_set(1)
             fpv.FindColor(1)
             tcpCliSock.send(('FindColor').encode())
 
         elif 'WatchDog' in data:
-            LED.breath_status_set(1)
+            #LED.breath_status_set(1)
             fpv.WatchDog(1)
             tcpCliSock.send(('WatchDog').encode())
 
         elif 'steady' in data:
-            LED.breath_status_set(1)
-            LED.breath_color_set('blue')
+            #LED.breath_status_set(1)
+            #LED.breath_color_set('blue')
             steadyMode = 1
             tcpCliSock.send(('steady').encode())
 
         elif 'funEnd' in data:
-            LED.breath_status_set(0)
+            #LED.breath_status_set(0)
             fpv.FindColor(0)
             fpv.WatchDog(0)
             steadyMode = 0
@@ -309,8 +311,8 @@ def run():
 def destory():
     move.clean_all()
 
-
 if __name__ == '__main__':
+
     switch.switchSetup()
     switch.set_all_switch_off()
     move.init_servos()
@@ -320,6 +322,7 @@ if __name__ == '__main__':
     BUFSIZ = 1024                             #Define buffer size
     ADDR = (HOST, PORT)
 
+    """    
     try:
         led_threading=threading.Thread(target=breath_led)         #Define a thread for LED breathing
         led_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
@@ -328,8 +331,9 @@ if __name__ == '__main__':
     except:
         print('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
         pass
+    """
 
-    while  1:
+    while 1:
         try:
             s =socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
             s.connect(("1.1.1.1",80))
@@ -340,7 +344,7 @@ if __name__ == '__main__':
             ap_threading=threading.Thread(target=ap_thread)   #Define a thread for data receiving
             ap_threading.setDaemon(True)                          #'True' means it is a front thread,it would close when the mainloop() closes
             ap_threading.start()                                  #Thread starts
-
+            """
             LED.colorWipe(Color(0,16,50))
             time.sleep(1)
             LED.colorWipe(Color(0,16,100))
@@ -352,7 +356,7 @@ if __name__ == '__main__':
             LED.colorWipe(Color(0,16,255))
             time.sleep(1)
             LED.colorWipe(Color(35,255,35))
-
+            """
         try:
             tcpSerSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             tcpSerSock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
@@ -361,7 +365,7 @@ if __name__ == '__main__':
             print('waiting for connection...')
             tcpCliSock, addr = tcpSerSock.accept()
             print('...connected from :', addr)
-            move.robot_stand(150)
+            move.robot_stand(config.speed_set)
 
             fps_threading=threading.Thread(target=FPV_thread)         #Define a thread for FPV and OpenCV
             fps_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
@@ -369,21 +373,22 @@ if __name__ == '__main__':
 
             break
         except:
-            LED.colorWipe(Color(0,0,0))
+            #LED.colorWipe(Color(0,0,0))
             pass
-
+    """
     try:
         LED.breath_status_set(0)
         LED.colorWipe(Color(64,128,255))
     except:
         pass
-
+    """
     try:
         run()
     except:
-        LED.colorWipe(Color(0,0,0))
+        #LED.colorWipe(Color(0,0,0))
         destory()
         move.clean_all()
         switch.switch(1,0)
         switch.switch(2,0)
         switch.switch(3,0)
+

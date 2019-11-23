@@ -18,7 +18,7 @@ import imutils
 from collections import deque
 import psutil
 import os
-import LED
+#import LED
 import datetime
 from rpi_ws281x import *
 import move
@@ -29,7 +29,7 @@ X_lock = 0
 tor    = 17
 FindColorMode = 0
 WatchDogMode  = 0
-LED = LED.LED()
+#LED = LED.LED()
 
 class FPV: 
     def __init__(self):
@@ -136,12 +136,12 @@ class FPV:
                     else:
                         X_lock = 1
 
-                    if X_lock == 1 and Y_lock == 1:
-                        LED.breath_color_set('red')
+                    #if X_lock == 1 and Y_lock == 1:
+                        #LED.breath_color_set('red')
 
                 else:
                     cv2.putText(frame_image,'Target Detecting',(40,60), font, 0.5,(255,255,255),1,cv2.LINE_AA)
-                    LED.breath_color_set('yellow')
+                    #LED.breath_color_set('yellow')
 
                 for i in range(1, len(pts)):
                     if pts[i - 1] is None or pts[i] is None:
@@ -190,11 +190,11 @@ class FPV:
                     motionCounter += 1
                     #print(motionCounter)
                     #print(text)
-                    LED.breath_color_set('red')
+                    #LED.breath_color_set('red')
                     lastMovtionCaptured = timestamp
 
-                if (timestamp - lastMovtionCaptured).seconds >= 0.5:
-                    LED.breath_color_set('blue')
+                #if (timestamp - lastMovtionCaptured).seconds >= 0.5:
+                    #LED.breath_color_set('blue')
 
 
             encoded, buffer = cv2.imencode('.jpg', frame_image)
