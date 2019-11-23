@@ -40,7 +40,8 @@ class LED:
         # Create NeoPixel object with appropriate configuration.
         self.strip = Adafruit_NeoPixel(self.LED_COUNT, self.LED_PIN, self.LED_FREQ_HZ, self.LED_DMA, self.LED_INVERT, self.LED_BRIGHTNESS, self.LED_CHANNEL)
         # Intialize the library (must be called once before other functions).
-        self.strip.begin()
+        # CHIN 23.11.2019 Causes audio issues
+        #self.strip.begin()
 
     # Define functions which animate LEDs in various ways.
     def colorWipe(self, color, wait_ms=0):
