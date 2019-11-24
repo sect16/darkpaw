@@ -15,7 +15,7 @@ import time
 import threading
 import move
 import Adafruit_PCA9685
-from rpi_ws281x import *
+#from rpi_ws281x import *
 import argparse
 
 import FPV
@@ -106,7 +106,7 @@ def move_thread():
         if not steadyMode:
             if direction_command == 'forward' and turn_command == 'no':
                 stand_stu = 0
-                move.dove_move_tripod(step_set, config.speed_set, 'forward')
+                move.dove_move_tripod(step_set, config.lower_leg_m, 'forward')
                 step_set += 1
                 if step_set == 9:
                     step_set = 1
@@ -135,7 +135,7 @@ def move_thread():
 
             if turn_command == 'no' and direction_command == 'stand':
                 if stand_stu == 0:
-                    move.robot_stand(config.speed_set)
+                    move.robot_stand(config.lower_leg_m)
                     step_set = 1
                     stand_stu = 1
                 else:
@@ -145,10 +145,10 @@ def move_thread():
             pass
         else:
             pass
-            move.robot_X(config.speed_set, 100)
+            move.robot_X(config.torso_w, 100)
             move.steady()
-            #print('steady')
-            #time.sleep(0.2)
+            print('steady')
+            time.sleep(0.2)
 
 
 def info_send_client():
@@ -214,16 +214,16 @@ def run():
             turn_command = 'no'
 
         elif 'headup' == data:
-            move.ctrl_pitch_roll(config.speed_set, -100, 0)
+            move.ctrl_pitch_roll(config.lower_leg_w, -100, 0)
         elif 'headdown' == data:
-            move.ctrl_pitch_roll(config.speed_set, 100, 0)
+            move.ctrl_pitch_roll(config.lower_leg_w, 100, 0)
         elif 'headhome' == data:
-            move.ctrl_pitch_roll(config.speed_set, 0, 0)
+            move.ctrl_pitch_roll(config.lower_leg_w, 0, 0)
 
         elif 'low' == data:
-            move.robot_stand(-175)
+            move.robot_stand(0)
         elif 'hight' == data:
-            move.robot_stand(175)
+            move.robot_stand(100)
         elif 'wsR' in data:
             try:
                 set_R=data.split()
@@ -365,7 +365,7 @@ if __name__ == '__main__':
             print('waiting for connection...')
             tcpCliSock, addr = tcpSerSock.accept()
             print('...connected from :', addr)
-            move.robot_stand(config.speed_set)
+            move.robot_stand(100)
 
             fps_threading=threading.Thread(target=FPV_thread)         #Define a thread for FPV and OpenCV
             fps_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
