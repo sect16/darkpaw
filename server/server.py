@@ -9,6 +9,7 @@ if not os.geteuid() == 0:
     print('Cannot continue without root')
     quit()
 import socket
+import sys
 import time
 import threading
 import move
@@ -21,7 +22,7 @@ import switch
 #import LED
 import config
 import logging
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 '''
 Initiation number of steps, don't have to change it.
 '''
@@ -32,11 +33,17 @@ Initiation commands
 wiggle = 100
 direction_command = 'no'
 turn_command = 'no'
-pwm = Adafruit_PCA9685.PCA9685()
-pwm.set_pwm_freq(50)
+#pwm = Adafruit_PCA9685.PCA9685()
+#pwm.set_pwm_freq(50)
 #LED = LED.LED()
 SmoothMode = 0
 steadyMode = 0
+addr = ''
+tcpCliSock = ''
+HOST = ''
+PORT = 10223                              #Define port serial 
+BUFSIZ = 1024                             #Define buffer size
+ADDR = (HOST, PORT)
 
 def breath_led():
     print('Dummy')
@@ -191,11 +198,11 @@ def run():
         elif 'TS' in data:
             turn_command = 'no'
         elif 'headup' == data:
-            move.ctrl_pitch_roll(config.lower_leg_w, -100, 0)
+            move.ctrl_pitch_roll(-100, 0)
         elif 'headdown' == data:
-            move.ctrl_pitch_roll(config.lower_leg_w, 100, 0)
+            move.ctrl_pitch_roll(100, 0)
         elif 'headhome' == data:
-            move.ctrl_pitch_roll(config.lower_leg_w, 0, 0)
+            move.ctrl_pitch_roll(0, 0)
         elif 'low' == data:
             move.robot_stand(0)
         elif 'hight' == data:
@@ -270,9 +277,9 @@ def run():
             pass
         #print(data)
 
-def destory():
-    move.clean_all()
-if __name__ == '__main__':
+   
+#if __name__ == '__main__':
+def main():
     switch.switchSetup()
     switch.set_all_switch_off()
     move.init_servos()
@@ -318,6 +325,8 @@ if __name__ == '__main__':
             LED.colorWipe(Color(35,255,35))
             """
         try:
+            global tcpCliSock
+            global addr
             tcpSerSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             tcpSerSock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
             tcpSerSock.bind(ADDR)
@@ -345,8 +354,13 @@ if __name__ == '__main__':
         run()
     except:
         #LED.colorWipe(Color(0,0,0))
-        destory()
-        move.clean_all()
+        move.release()
         switch.switch(1,0)
         switch.switch(2,0)
         switch.switch(3,0)
+        time.sleep(5)
+        tcpSerSock.close()
+        tcpCliSock.close()
+        main()
+        
+main() 
