@@ -1,10 +1,9 @@
 #! /usr/bin/python
 # File name   : move.py
 # Description : Controlling all servos
-# Website    : www.adeept.com
-# E-mail      : support@adeept.com
-# Author      : William
-# Date      : 2019/04/08
+# E-mail      : sect16@gmail.com
+# Author      : Chin Pin Hon
+# Date        : 29/11/2019
 import time
 import Adafruit_PCA9685
 
@@ -13,9 +12,9 @@ import PID
 
 import config
 
-pwm = Adafruit_PCA9685.PCA9685()
-pwm.set_pwm_freq(50)
-
+pca = Adafruit_PCA9685.PCA9685()
+pca.set_pwm_freq(50)
+'''
 # Configure min and max servo pulse lengths
 i=0
 for i in range(0,12):
@@ -25,22 +24,31 @@ for i in range(0,12):
         exec('pwm%d_min=config.torso_l'%i)
 
     if i == 6 or i == 9:
-        exec('pwm%d=config.torso_m_r'%i)
-        exec('pwm%d_max=config.torso_h_r'%i)
-        exec('pwm%d_min=config.torso_l_r'%i)
+        exec('pwm%d=config.torso_m2'%i)
+        exec('pwm%d_max=config.torso_h2'%i)
+        exec('pwm%d_min=config.torso_l2'%i)
 
-    if i == 1 or i == 4 or i == 7 or i == 10:
+    if i == 1 or i == 10:
         exec('pwm%d=config.lower_leg_m'%i)
         exec('pwm%d_max=config.lower_leg_h'%i)
         exec('pwm%d_min=config.lower_leg_l'%i)
 
-        
-    if i == 2 or i == 5 or i == 8 or i == 11:
+    if i == 4 or i == 7:
+        exec('pwm%d=config.lower_leg_m2'%i)
+        exec('pwm%d_max=config.lower_leg_h2'%i)
+        exec('pwm%d_min=config.lower_leg_l2'%i)
+
+
+    if i == 2 or i == 11:
         exec('pwm%d=config.upper_leg_m'%i)
         exec('pwm%d_max=config.upper_leg_h'%i)
         exec('pwm%d_min=config.upper_leg_l'%i)
 
-
+    if i == 5 or i == 8:
+        exec('pwm%d=config.upper_leg_m2'%i)
+        exec('pwm%d_max=config.upper_leg_h2'%i)
+        exec('pwm%d_min=config.upper_leg_l2'%i)
+'''        
 '''
 Leg_I   --- forward --- Leg_III
                |
@@ -95,236 +103,39 @@ if the robot roll over when turning, decrease this value below.
 '''
 turn_steady = 4/5  # 2/3 4/5 5/6 ...
 
+def set_pwm(servo, pos):
+    pca.set_pwm(servo, 0, pos)
+    config.servo[servo] = pos
+    if config.servo_init.count(0) == 12:
+        if config.servo.count(0) == 0:
+            config.servo_init = config.servo.copy()
+
+def leg_I(x,y,z):
+    set_pwm(0, int(config.upper_leg_m + (config.upper_leg_w*y/100)))
+    set_pwm(1, int(config.lower_leg_m + (config.lower_leg_w*z/100)))
+    set_pwm(2, int(config.torso_m + (config.torso_w*-x/100)))
+
+def leg_II(x,y,z):
+    set_pwm(3, int(config.upper_leg_m + (config.upper_leg_w*y/100)))
+    set_pwm(4, int(config.lower_leg_m2 + (config.lower_leg_w*-z/100)))
+    set_pwm(5, int(config.torso_m2 + (config.torso_w*x/100)))
+
+def leg_III(x,y,z):
+    set_pwm(6, int(config.upper_leg_m2 + (config.upper_leg_w*y/100)))
+    set_pwm(7, int(config.lower_leg_m2 + (config.lower_leg_w*-z/100)))
+    set_pwm(8, int(config.torso_m2 + (config.torso_w*x/100)))
+    
+def leg_IV(x,y,z):
+    set_pwm(9, int(config.upper_leg_m2 + (config.upper_leg_w*-y/100)))
+    set_pwm(10, int(config.upper_leg_m + (config.upper_leg_w*z/100)))
+    set_pwm(11, int(config.torso_m + (config.torso_w*-x/100)))
 
 def mpu6050Test():
     while 1:
         accelerometer_data = sensor.get_accel_data()
         print('X=%f,Y=%f,Z=%f'%(accelerometer_data['x'],accelerometer_data['y'],accelerometer_data['x']))
         time.sleep(0.3)
-
-
-def leg_move_diagonal(name, pos, wiggle):
-    if name == 'I':
-        if pos == 1:
-            '''
-               <1>
-             2--3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(0, 0, pwm0) #<back&forth>
-                pwm.set_pwm(1, 0, pwm1-lower_leg_m) #<up>&down
-                pwm.set_pwm(2, 0, pwm2-max_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(0, 0, pwm0) #<back&forth>
-                pwm.set_pwm(1, 0, pwm1+lower_leg_m) #<up>&down
-                pwm.set_pwm(2, 0, pwm2+max_wiggle) #<out>&in        
-        elif pos == 2:
-            '''
-                1
-            <2>-3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(0, 0, pwm0+config.torso_m) #back&<forth>
-                pwm.set_pwm(1, 0, pwm1+lower_leg_m) #up&<down>
-                pwm.set_pwm(2, 0, pwm2-reach_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(0, 0, pwm0-config.torso_m) #back&<forth>
-                pwm.set_pwm(1, 0, pwm1-lower_leg_m) #up&<down>
-                pwm.set_pwm(2, 0, pwm2+reach_wiggle) #<out>&in
-        elif pos == 3:
-            '''
-                1
-             2-<3>-4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(0, 0, pwm0) #<back&forth>
-                pwm.set_pwm(1, 0, pwm1+int(lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(2, 0, pwm2-int(reach_wiggle/2)) #<out&in>
-            else:
-                pwm.set_pwm(0, 0, pwm0) #<back&forth>
-                pwm.set_pwm(1, 0, pwm1-int(lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(2, 0, pwm2+int(reach_wiggle/2)) #<out&in>
-        elif pos == 4:
-            '''
-                1
-             2--3-<4>
-            '''
-            if Set_Direction:
-                pwm.set_pwm(0, 0, pwm0-config.torso_m) #<back>&forth
-                pwm.set_pwm(1, 0, pwm1+int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(2, 0, pwm2) #out&<in>
-            else:
-                pwm.set_pwm(0, 0, pwm0+config.torso_m) #<back&forth>
-                pwm.set_pwm(1, 0, pwm1-int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(2, 0, pwm2) #out&<in>
-
-    elif name == 'II':
-        if pos == 1:
-            '''
-               <1>
-             2--3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(3, 0, pwm3) #<back&forth>
-                pwm.set_pwm(4, 0, pwm4+config.lower_leg_m) #<up>&down
-                pwm.set_pwm(5, 0, pwm5+max_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(3, 0, pwm3) #<back&forth>
-                pwm.set_pwm(4, 0, pwm4+config.lower_leg_m) #<up>&down
-                pwm.set_pwm(5, 0, pwm5-max_wiggle) #<out>&in        
-        elif pos == 2:
-            '''
-                1
-            <2>-3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(3, 0, pwm3-config.torso_m) #back&<forth>
-                pwm.set_pwm(4, 0, pwm4-int(config.lower_leg_m/4)) #<up&down>
-                pwm.set_pwm(5, 0, pwm5) #out&<in>
-            else:
-                pwm.set_pwm(3, 0, pwm3+config.torso_m) #back&<forth>
-                pwm.set_pwm(4, 0, pwm4+int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(5, 0, pwm5) #<out>&in
-        elif pos == 3:
-            '''
-                1
-             2-<3>-4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(3, 0, pwm3) #<back&forth>
-                pwm.set_pwm(4, 0, pwm4-int(config.lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(5, 0, pwm5+int(reach_wiggle/2)) #<out&in>
-            else:
-                pwm.set_pwm(3, 0, pwm3) #<back&forth>
-                pwm.set_pwm(4, 0, pwm4+int(config.lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(5, 0, pwm5-int(reach_wiggle/2)) #<out&in>
-        elif pos == 4:
-            '''
-                1
-             2--3-<4>
-            '''
-            if Set_Direction:
-                pwm.set_pwm(3, 0, pwm3+config.torso_m) #<back>&forth
-                pwm.set_pwm(4, 0, pwm4-lower_leg_m) #up&<down>
-                pwm.set_pwm(5, 0, pwm5+reach_wiggle) #out&<in>
-            else:
-                pwm.set_pwm(3, 0, pwm3-config.torso_m) #<back&forth>
-                pwm.set_pwm(4, 0, pwm4+lower_leg_m) #up&<down>
-                pwm.set_pwm(5, 0, pwm5-reach_wiggle) #out&<in>
-
-    elif name == 'III':
-        if pos == 1:
-            '''
-               <1>
-             2--3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(6, 0, pwm6) #<back&forth>
-                pwm.set_pwm(7, 0, pwm7+lower_leg_m) #<up>&down
-                pwm.set_pwm(8, 0, pwm8+max_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(6, 0, pwm6) #<back&forth>
-                pwm.set_pwm(7, 0, pwm7-lower_leg_m) #<up>&down
-                pwm.set_pwm(8, 0, pwm8-reach_wiggle) #<out>&in      
-        elif pos == 2:
-            '''
-                1
-            <2>-3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(6, 0, pwm6-config.torso_m) #back&<forth>
-                pwm.set_pwm(7, 0, pwm7-lower_leg_m) #up&<down>
-                pwm.set_pwm(8, 0, pwm8+reach_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(6, 0, pwm6+config.torso_m) #back&<forth>
-                pwm.set_pwm(7, 0, pwm7+config.lower_leg_m) #up&<down>
-                pwm.set_pwm(8, 0, pwm8-reach_wiggle) #<out>&in
-        elif pos == 3:
-            '''
-                1
-             2-<3>-4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(6, 0, pwm6) #<back&forth>
-                pwm.set_pwm(7, 0, pwm7-int(config.lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(8, 0, pwm8+int(reach_wiggle/2)) #<out&in>
-            else:
-                pwm.set_pwm(6, 0, pwm6) #<back&forth>
-                pwm.set_pwm(7, 0, pwm7+int(config.lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(8, 0, pwm8-int(reach_wiggle/2)) #<out&in>
-        elif pos == 4:
-            '''
-                1
-             2--3-<4>
-            '''
-            if Set_Direction:
-                pwm.set_pwm(6, 0, pwm6+config.torso_m) #<back>&forth
-                pwm.set_pwm(7, 0, pwm7-int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(8, 0, pwm8) #out&<in>
-            else:
-                pwm.set_pwm(6, 0, pwm6-config.torso_m) #<back&forth>
-                pwm.set_pwm(7, 0, pwm7+int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(8, 0, pwm8) #out&<in>
-
-    elif name == 'IV':
-        if pos == 1:
-            '''
-               <1>
-             2--3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(9, 0, pwm9) #<back&forth>
-                pwm.set_pwm(10, 0, pwm10-config.lower_leg_m) #<up>&down
-                pwm.set_pwm(11, 0, pwm11-max_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(9, 0, pwm9) #<back&forth>
-                pwm.set_pwm(10, 0, pwm10+config.lower_leg_m) #<up>&down
-                pwm.set_pwm(11, 0, pwm11+max_wiggle) #<out>&in      
-        elif pos == 2:
-            '''
-                1
-            <2>-3--4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(9, 0, pwm9+wiggle) #back&<forth>
-                pwm.set_pwm(10, 0, pwm10+int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(11, 0, pwm11) #<out>&in
-            else:
-                pwm.set_pwm(9, 0, pwm9-wiggle) #back&<forth>
-                pwm.set_pwm(10, 0, pwm10-int(config.lower_leg_m/4)) #up&<down>
-                pwm.set_pwm(11, 0, pwm11) #<out>&in
-        elif pos == 3:
-            '''
-                1
-             2-<3>-4
-            '''
-            if Set_Direction:
-                pwm.set_pwm(9, 0, pwm9) #<back&forth>
-                pwm.set_pwm(10, 0, pwm10+int(config.lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(11, 0, pwm11-int(reach_wiggle/2)) #<out&in>
-            else:
-                pwm.set_pwm(9, 0, pwm9) #<back&forth>
-                pwm.set_pwm(10, 0, pwm10-int(config.lower_leg_m/2)) #<up&down>
-                pwm.set_pwm(11, 0, pwm11+int(reach_wiggle/2)) #<out&in>
-        elif pos == 4:
-            '''
-                1
-             2--3-<4>
-            '''
-            if Set_Direction:
-                pwm.set_pwm(9, 0, pwm9-wiggle) #<back>&forth
-                pwm.set_pwm(10, 0, pwm10+config.lower_leg_m) #up&<down>
-                pwm.set_pwm(11, 0, pwm11-reach_wiggle) #<out>&in
-            else:
-                pwm.set_pwm(9, 0, pwm9+wiggle) #<back&forth>
-                pwm.set_pwm(10, 0, pwm10-config.lower_leg_m) #up&<down>
-                pwm.set_pwm(11, 0, pwm11+reach_wiggle) #<out>&in
-
-    else:
-        print("the names of the legs is 'I II III IV")
-        pass
-
-
+'''
 def move_diagonal(step):
     if step == 1:
         leg_move_diagonal('I', 1, config.speed_set)
@@ -351,9 +162,10 @@ def move_diagonal(step):
         leg_move_diagonal('II', 2, config.speed_set)
         leg_move_diagonal('III', 2, config.speed_set)
 
-
-def leg_tripod(name, pos, spot, wiggle):
-    increase = spot/pixel 
+def leg_tripod(name, pos, spot, speed): #Step, Leg pos, iterator, wiggle
+    increase = spot/pixel
+    wiggle = speed/100
+    balance = 50
     if wiggle > 0:
         direction = 1
     else:
@@ -362,632 +174,70 @@ def leg_tripod(name, pos, spot, wiggle):
 
     if name == 'I':
         if pos == 1:
-            '''
-                     <1>
-            -2--3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(0, 0, int(pwm0-config.torso_m+increase*config.torso_m))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m/4-(increase*config.lower_leg_m*5/4)))
-
-                pwm.set_pwm(2, 0, int(pwm2-increase*max_wiggle))
+                set_pwm(0, 0, int(config.servo_init[0]-(config.torso_w-balance*wiggle)*increase))
             else:
-                pwm.set_pwm(0, 0, int(pwm0+wiggle-increase*config.torso_m))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m-2*increase*config.lower_leg_m))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle-increase*(max_wiggle-reach_wiggle)))
+                set_pwm(0, 0, int(config.servo_init[0]+(config.torso_w-balance*wiggle)*increase))
                 pass
-
         elif pos == 2:
-            '''
-                      1
-            <2>-3--4--5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0+increase*config.torso_m))
-
-                pwm.set_pwm(1, 0, int(pwm1-config.lower_leg_m+increase*config.lower_leg_m*2))
-
-                pwm.set_pwm(2, 0, int(pwm2-max_wiggle+increase*(max_wiggle-reach_wiggle)))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0-increase*config.torso_m))
-
-                pwm.set_pwm(1, 0, int(pwm1-config.lower_leg_m+5*increase*config.lower_leg_m/4))
-
-                pwm.set_pwm(2, 0, int(pwm2-max_wiggle+increase*max_wiggle))
                 pass
-
-        elif pos == 3:
-            '''
-                      1
-            -2-<3>-4--5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0+config.torso_m-increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0-config.torso_m+increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m/4+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(2, 0, int(pwm2-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 4:
-            '''
-                      1
-            -2--3-<4>-5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0+2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+5*config.lower_leg_m/6-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(2, 0, int(pwm2-5*reach_wiggle/6+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0-2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m/3+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle/6-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 5:
-            '''
-                      1
-            -2--3--4-<5>-6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0+config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+4*config.lower_leg_m/6-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(2, 0, int(pwm2-2*reach_wiggle/3+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0-config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+5*config.lower_leg_m/12+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle/3-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 6:
-            '''
-                      1
-            -2--3--4--5-<6>-7--8-
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0-increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m/2-config.lower_leg_m/12))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle/2+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0+increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+config.lower_leg_m/2+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle/2-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 7:
-            '''
-                      1
-            -2--3--4--5--6-<7>-8-
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0-config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+5*config.lower_leg_m/12-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(2, 0, int(pwm2-2*reach_wiggle/6+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0+config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+2*config.lower_leg_m/3+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(2, 0, int(pwm2-2*reach_wiggle/3-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 8:
-            '''
-                      1
-            -2--3--4--5--6--7-<8>
-            '''
-            if direction:
-                pwm.set_pwm(0, 0, int(pwm0-2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+4*config.lower_leg_m/12-config.lower_leg_m/12))
-
-                pwm.set_pwm(2, 0, int(pwm2-reach_wiggle/6+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(0, 0, int(pwm0+2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(1, 0, int(pwm1+5*config.lower_leg_m/6+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(2, 0, int(pwm2-5*reach_wiggle/6-increase*reach_wiggle/6))
-                pass
-
-        else:
-            pass
-
+ 
     elif name == 'II':
+        
         if pos == 1:
-            '''
-                     <1>
-            -2--3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(3, 0, int(pwm3+config.torso_m-increase*config.torso_m))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m+increase*config.lower_leg_m*2))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle+increase*(max_wiggle-reach_wiggle)))
+                set_pwm(3, 0, int(config.servo_init[3]+(config.torso_w-balance*wiggle)*increase))
             else:
-                pwm.set_pwm(3, 0, int(pwm3-config.torso_m+increase*config.torso_m))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m/4+5*increase*config.lower_leg_m/4))
-
-                pwm.set_pwm(5, 0, int(pwm5+increase*max_wiggle))
+                set_pwm(3, 0, int(config.servo_init[3]-(config.torso_w-balance*wiggle)*increase))
                 pass
-
         elif pos == 2:
-            '''
-                      1
-            <2>-3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(3, 0, int(pwm3-increase*config.torso_m))
-
-                pwm.set_pwm(4, 0, int(pwm4+config.lower_leg_m-5*increase*config.lower_leg_m/4))
-
-                pwm.set_pwm(5, 0, int(pwm5+max_wiggle-increase*max_wiggle))
+                set_pwm(4, 0, int(config.servo[4]+(config.torso_w*wiggle)*increase))
+                set_pwm(3, 0, int(config.servo[3]-(config.torso_w*wiggle)*increase))
             else:
-                pwm.set_pwm(3, 0, int(pwm3+increase*config.torso_m))
-
-                pwm.set_pwm(4, 0, int(pwm4+config.lower_leg_m-2*increase*config.lower_leg_m))
-
-                pwm.set_pwm(5, 0, int(pwm5+max_wiggle-increase*(max_wiggle-reach_wiggle)))
-                pass
-
-        elif pos == 3:
-            '''
-                      1
-            -2-<3>-4--5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(3, 0, int(pwm3-config.torso_m+increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m/4-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(5, 0, int(pwm5+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(3, 0, int(pwm3+config.torso_m-increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 4:
-            '''
-                      1
-            -2--3-<4>-5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(3, 0, int(pwm3-2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-4*config.lower_leg_m/12-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle/6+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(3, 0, int(pwm3+2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-5*config.lower_leg_m/6+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(5, 0, int(pwm5+5*reach_wiggle/6-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 5:
-            '''
-                      1
-            -2--3--4-<5>-6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(3, 0, int(pwm3-config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-5*config.lower_leg_m/12-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle/3+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(3, 0, int(pwm3+config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-2*config.lower_leg_m/3+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(5, 0, int(pwm5+2*reach_wiggle/3-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 6:
-            '''
-                      1
-            -2--3--4--5-<6>-7--8-
-            '''
-            if direction:
-                pwm.set_pwm(3, 0, int(pwm3+increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m/2-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle/2+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(3, 0, int(pwm3-increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m/2+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle/2-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 7:
-            '''
-                      1
-            -2--3--4--5--6-<7>-8-
-            '''
-            if direction:
-                pwm.set_pwm(3, 0, int(pwm3+config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-4*config.lower_leg_m/6-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(5, 0, int(pwm5+2*reach_wiggle/3+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(3, 0, int(pwm3-config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-5*config.lower_leg_m/12+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle/3-increase*reach_wiggle/6))
-                pass
-
-        elif pos == 8:
-            '''
-                      1
-            -2--3--4--5--6--7-<8>
-            '''
-            if direction:
-                pwm.set_pwm(3, 0, int(pwm3+2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-5*config.lower_leg_m/6-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(5, 0, int(pwm5+5*reach_wiggle/6+increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(3, 0, int(pwm3-2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(4, 0, int(pwm4-config.lower_leg_m/3+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(5, 0, int(pwm5+reach_wiggle/6-increase*reach_wiggle/6))
+                set_pwm(4, 0, int(config.servo[4]-(config.torso_w*wiggle)*increase))
+                set_pwm(3, 0, int(config.servo[3]+(config.torso_w*wiggle)*increase))
                 pass
 
     elif name == 'III':
         if pos == 1:
-            '''
-                     <1>
-            -2--3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(6, 0, int(pwm6+config.torso_m-increase*config.torso_m))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m/4+5*increase*config.lower_leg_m/4))
-
-                pwm.set_pwm(8, 0, int(pwm8+increase*max_wiggle))
+                set_pwm(6, 0, int(config.servo_init[6]+(config.torso_w-balance*wiggle)*increase))
             else:
-                pwm.set_pwm(6, 0, int(pwm6-config.torso_m+increase*config.torso_m))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m+2*increase*config.lower_leg_m))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle+increase*(max_wiggle-reach_wiggle)))
+                set_pwm(6, 0, int(config.servo_init[6]-(config.torso_w-balance*wiggle)*increase))
                 pass
-
         elif pos == 2:
-            '''
-                      1
-            <2>-3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(6, 0, int(pwm6-increase*config.torso_m))
-
-                pwm.set_pwm(7, 0, int(pwm7+config.lower_leg_m-2*increase*config.lower_leg_m))
-
-                pwm.set_pwm(8, 0, int(pwm8+max_wiggle-increase*(max_wiggle-reach_wiggle)))
+                set_pwm(6, 0, int(config.servo_init[6]-(config.torso_w-balance*wiggle)*increase))
             else:
-                pwm.set_pwm(6, 0, int(pwm6+increase*config.torso_m))
-
-                pwm.set_pwm(7, 0, int(pwm7+config.lower_leg_m-5*increase*config.lower_leg_m/4))
-
-                pwm.set_pwm(8, 0, int(pwm8+max_wiggle-increase*max_wiggle))
+                set_pwm(6, 0, int(config.servo_init[6]+(config.torso_w-balance*wiggle)*increase))
                 pass
-
-        elif pos == 3:
-            '''
-                      1
-            -2-<3>-4--5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(6, 0, int(pwm6-config.torso_m+increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(6, 0, int(pwm6+config.torso_m-increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m/4-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(8, 0, int(pwm8+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 4:
-            '''
-                      1
-            -2--3-<4>-5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(6, 0, int(pwm6-2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-5*config.lower_leg_m/6+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(8, 0, int(pwm8+5*reach_wiggle/6-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(6, 0, int(pwm6+2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m/4-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle/6+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 5:
-            '''
-                      1
-            -2--3--4-<5>-6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(6, 0, int(pwm6-config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-2*config.lower_leg_m/3+increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(8, 0, int(pwm8+2*reach_wiggle/3-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(6, 0, int(pwm6+config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-5*config.lower_leg_m/12-increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle/3+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 6:
-            '''
-                      1
-            -2--3--4--5-<6>-7--8-
-            '''
-            if direction:
-                pwm.set_pwm(6, 0, int(pwm6+increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m/2+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle/2-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(6, 0, int(pwm6-increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-config.lower_leg_m/2-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle/2+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 7:
-            '''
-                      1
-            -2--3--4--5--6-<7>-8-
-            '''
-            if direction:
-                pwm.set_pwm(6, 0, int(pwm6+config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-5*config.lower_leg_m/12+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle/3-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(6, 0, int(pwm6-config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-2*config.lower_leg_m/3-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(8, 0, int(pwm8+2*reach_wiggle/3+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 8:
-            '''
-                      1
-            -2--3--4--5--6--7-<8>
-            '''
-            if direction:
-                pwm.set_pwm(6, 0, int(pwm6+2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-4*config.lower_leg_m/12+increase*config.lower_leg_m/12))
-
-                pwm.set_pwm(8, 0, int(pwm8+reach_wiggle/6-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(6, 0, int(pwm6-2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(7, 0, int(pwm7-5*config.lower_leg_m/6-increase*config.lower_leg_m/6))
-
-                pwm.set_pwm(8, 0, int(pwm8+5*reach_wiggle/6+increase*reach_wiggle/6))
-                pass
-
+                
     elif name == 'IV':
         if pos == 1:
-            '''
-                     <1>
-            -2--3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(9, 0, int(pwm9-config.torso_m+increase*config.torso_m))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle-2*increase*wiggle))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle-increase*(max_wiggle-reach_wiggle)))
+                set_pwm(9, 0, int(config.servo_init[9]-(config.torso_w-balance*wiggle)*increase))
             else:
-                pwm.set_pwm(9, 0, int(pwm9+config.torso_m-increase*config.torso_m))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle/4-5*increase*wiggle/4))
-
-                pwm.set_pwm(11, 0, int(pwm11-increase*max_wiggle))
+                set_pwm(9, 0, int(config.servo_init[9]+(config.torso_w-balance*wiggle)*increase))
                 pass
-
         elif pos == 2:
-            '''
-                      1
-            <2>-3--4--5--6--7--8-
-            '''
             if direction:
-                pwm.set_pwm(9, 0, int(pwm9+increase*config.torso_m))
-
-                pwm.set_pwm(10, 0, int(pwm10-wiggle+5*increase*wiggle/4))
-
-                pwm.set_pwm(11, 0, int(pwm11-max_wiggle+increase*max_wiggle))
+                set_pwm(9, 0, int(config.servo_init[9]-(config.torso_w-balance*wiggle)*increase))
             else:
-                pwm.set_pwm(9, 0, int(pwm9-increase*config.torso_m))
-
-                pwm.set_pwm(10, 0, int(pwm10-wiggle+2*wiggle*increase))
-
-                pwm.set_pwm(11, 0, int(pwm11-max_wiggle+increase*(max_wiggle-reach_wiggle)))
+                set_pwm(9, 0, int(config.servo_init[9]+(config.torso_w-balance*wiggle)*increase))
                 pass
-
-        elif pos == 3:
-            '''
-                      1
-            -2-<3>-4--5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(9, 0, int(pwm9+config.torso_m-increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle/4+increase*wiggle/12))
-
-                pwm.set_pwm(11, 0, int(pwm11-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(9, 0, int(pwm9-config.torso_m+increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle-increase*wiggle/6))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 4:
-            '''
-                      1
-            -2--3-<4>-5--6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(9, 0, int(pwm9+2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle/3+increase*wiggle/12))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle/6-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(9, 0, int(pwm9-2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+5*wiggle/6-increase*wiggle/6))
-
-                pwm.set_pwm(11, 0, int(pwm11-5*reach_wiggle/6+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 5:
-            '''
-                      1
-            -2--3--4-<5>-6--7--8-
-            '''
-            if direction:
-                pwm.set_pwm(9, 0, int(pwm9+config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+5*wiggle/12+increase*wiggle/12))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle/3-increase*reach_wiggle/6))
-            else:
-                pwm.set_pwm(9, 0, int(pwm9-config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+2*wiggle/3-increase*wiggle/6))
-
-                pwm.set_pwm(11, 0, int(pwm11-2*reach_wiggle/3+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 6:
-            '''
-                      1
-            -2--3--4--5-<6>-7--8-
-            '''
-            if direction:
-                pwm.set_pwm(9, 0, int(pwm9-increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle/2+increase*wiggle/6))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle/2-increase*wiggle/6))
-            else:
-                pwm.set_pwm(9, 0, int(pwm9+increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle/2-increase*wiggle/12))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle/2+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 7:
-            '''
-                      1
-            -2--3--4--5--6-<7>-8-
-            '''
-            if direction:
-                pwm.set_pwm(9, 0, int(pwm9-config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+4*wiggle/6+increase*wiggle/6))
-
-                pwm.set_pwm(11, 0, int(pwm11-2*reach_wiggle/3-increase*wiggle/6))
-            else:
-                pwm.set_pwm(9, 0, int(pwm9+config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+5*wiggle/12-increase*wiggle/12))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle/3+increase*reach_wiggle/6))
-                pass
-
-        elif pos == 8:
-            '''
-                      1
-            -2--3--4--5--6--7-<8>
-            '''
-            if direction:
-                pwm.set_pwm(9, 0, int(pwm9-2*config.torso_m/3-increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+5*wiggle/6+increase*wiggle/6))
-
-                pwm.set_pwm(11, 0, int(pwm11-5*reach_wiggle/6-increase*wiggle/6))
-            else:
-                pwm.set_pwm(9, 0, int(pwm9+2*config.torso_m/3+increase*config.torso_m/3))
-
-                pwm.set_pwm(10, 0, int(pwm10+wiggle/3-increase*wiggle/12))
-
-                pwm.set_pwm(11, 0, int(pwm11-reach_wiggle/6+increase*reach_wiggle/6))
-                pass
-
 
 def dove_move_tripod(step, speed, command):
     step_I  = step
-    step_II = step+2
-    step_III= step+4
-    step_IV = step+6
+    step_II = step
+    step_III= step
+    step_IV = step
     if step_II > 8:
         step_II = step_II - 8
     if step_III> 8:
         step_III= step_III- 8
     if step_IV > 8:
         step_IV = step_IV - 8
-
     if command == 'forward':
         for i in range(1,(pixel+1)):
             leg_tripod('I', step_I, i, speed)
@@ -1064,50 +314,33 @@ def dove_move_diagonal(step, speed, command):
 
             leg_tripod('III', step_III, i, -speed)
             leg_tripod('IV', step_IV, i, -speed)
+'''
 
-
-def robot_X(wiggle, amp):
+def robot_X(amp):
     '''
     when amp is 0, robot <body>
     when amp is 100, robot >body<
     '''
-    pwm.set_pwm(0, 0, int(pwm0-wiggle+2*wiggle*amp/100))
-
-    pwm.set_pwm(3, 0, int(pwm3-wiggle+2*wiggle*amp/100))
-
-    pwm.set_pwm(6, 0, int(pwm6+wiggle-2*wiggle*amp/100))
-
-    pwm.set_pwm(9, 0, int(pwm9+wiggle-2*wiggle*amp/100))
-
-
-def robot_height(height):
-    '''
-    when amp is 100, robot <heighest>.
-    when amp is 0, robot <lowest>.
-    '''
-    #value1 = int(pwm1+config.lower_leg_m-2*config.lower_leg_m*amp/100)
-    pwm.set_pwm(1, 0, int(config.lower_leg_l + (config.lower_leg_w*2/100*height)))
-    #value2 = int(pwm4-config.lower_leg_m+2*config.lower_leg_m*amp/100)
-    pwm.set_pwm(4, 0, int(config.lower_leg_h - (config.lower_leg_w*2/100*height)))
-    #value3 = int(pwm7-config.lower_leg_m+2*config.lower_leg_m*amp/100)
-    pwm.set_pwm(7, 0, int(config.lower_leg_h - (config.lower_leg_w*2/100*height)))
-    #value4 = int(pwm10+config.lower_leg_m-2*config.lower_leg_m*amp/100)
-    pwm.set_pwm(10, 0, int(config.lower_leg_l + (config.lower_leg_w*2/100*height)))
-    #print('robot_height return values: ', value1, value2, value3, value4)
+    wiggle = config.torso_w
+    set_pwm(0, int(config.torso_m-wiggle+2*wiggle*amp/100))
+    set_pwm(3, int(config.torso_m-wiggle+2*wiggle*amp/100))
+    set_pwm(6, int(config.torso_m2+wiggle-2*wiggle*amp/100))
+    set_pwm(9, int(config.torso_m2+wiggle-2*wiggle*amp/100))
 
 def look_home():
-    robot_stand(int(config.lower_leg_l+config.lower_leg_m))
-
+    robot_stand(50)
 
 def robot_stand(height):
-    robot_X(config.torso_w, 50)
-    robot_height(height)
-
-    pwm.set_pwm(2, 0, pwm2)
-    pwm.set_pwm(5, 0, pwm5)
-    pwm.set_pwm(8, 0, pwm8)
-    pwm.set_pwm(11, 0, pwm11)
-
+    '''
+    highest point 100
+    mid point 50
+    lowest point 0
+    range(100,0)
+    '''
+    set_pwm(1, int(config.lower_leg_l + (config.lower_leg_w*2/100*height)))
+    set_pwm(4, int(config.lower_leg_h - (config.lower_leg_w*2/100*height)))
+    set_pwm(7, int(config.lower_leg_h - (config.lower_leg_w*2/100*height)))
+    set_pwm(10, int(config.lower_leg_l + (config.lower_leg_w*2/100*height)))
 
 def ctrl_range(raw, max_genout, min_genout):
     if raw > max_genout:
@@ -1117,37 +350,31 @@ def ctrl_range(raw, max_genout, min_genout):
     else:
         raw_output = raw
     return int(raw_output)
-
-
-def ctrl_pitch_roll(wiggle, pitch, roll):
+    
+def ctrl_pitch_roll(pitch, roll): #Percentage wiggle
+    wiggle=config.lower_leg_w
     '''
     look up <- pitch -> look down.
     lean right <- roll -> lean left.
     default values are 0.
     range(-100, 100)
     '''
-    pwm.set_pwm(1, 0, ctrl_range((pwm1-wiggle*pitch/100-wiggle*roll/100), pwm1_max, pwm1_min))
-
-    pwm.set_pwm(4, 0, ctrl_range((pwm4-wiggle*pitch/100+wiggle*roll/100), pwm4_max, pwm4_min))
-
-    pwm.set_pwm(7, 0, ctrl_range((pwm7+wiggle*pitch/100-wiggle*roll/100), pwm7_max, pwm7_min))
-
-    pwm.set_pwm(10, 0, ctrl_range((pwm10+wiggle*pitch/100+wiggle*roll/100), pwm10_max, pwm10_min))
+    set_pwm(1, ctrl_range((config.lower_leg_m-wiggle*pitch/100-wiggle*roll/100), config.lower_leg_h, config.lower_leg_l))
+    set_pwm(4, ctrl_range((config.lower_leg_m2-wiggle*pitch/100+wiggle*roll/100), config.lower_leg_h2, config.lower_leg_l2))
+    set_pwm(7, ctrl_range((config.lower_leg_m2+wiggle*pitch/100-wiggle*roll/100), config.lower_leg_h2, config.lower_leg_l2))
+    set_pwm(10, ctrl_range((config.lower_leg_m+wiggle*pitch/100+wiggle*roll/100), config.lower_leg_h, config.lower_leg_l))
 
 
-def ctrl_yaw(wiggle, yaw):
+def ctrl_yaw(wiggle, yaw): #Percentage wiggle
     '''
     look left <- yaw -> look right
     default value is 0
     '''
-    pwm.set_pwm(2, 0, int(config.upper_leg_l + (config.upper_leg_w*2/100*yaw)))
-
-    pwm.set_pwm(5, 0, int(config.upper_leg_h2 - (config.upper_leg_w*2/100*yaw)))
-
-    pwm.set_pwm(8, 0, int(config.upper_leg_h2 - (config.upper_leg_w*2/100*yaw)))
-
-    pwm.set_pwm(11, 0, int(config.upper_leg_l + (config.upper_leg_w*2/100*yaw)))
-
+    robot_X(50)
+    set_pwm(0, int(config.torso_m + wiggle*yaw/100))
+    set_pwm(3, int(config.torso_m - wiggle*yaw/100))
+    set_pwm(6, int(config.torso_m2 + wiggle*yaw/100))
+    set_pwm(9, int(config.torso_m2 - wiggle*yaw/100))
 
 def steady():
     global X_fix_output, Y_fix_output
@@ -1156,92 +383,43 @@ def steady():
     X = kalman_filter_X.kalman(X)
     Y = accelerometer_data['y']
     Y = kalman_filter_Y.kalman(Y)
-
     X_fix_output -= X_pid.GenOut(X - X_steady)
     Y_fix_output += Y_pid.GenOut(Y - Y_steady)
     X_fix_output = ctrl_range(X_fix_output, 100, -100)
     Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
-    #ctrl_pitch_roll(150, -X_fix_output, 0)
-    print('Accelerometer [X,Y] = ',X,',',Y)
-    ctrl_pitch_roll(config.upper_leg_m, -X_fix_output, Y_fix_output)
+    print('Accelerometer [X,Y] = ',-X_fix_output,',',Y_fix_output)
+    ctrl_pitch_roll(-X_fix_output, Y_fix_output)
 
-
-def relesae():
-    pwm.set_all_pwm(0,0)
-
-
-def clean_all():
-    pwm.set_all_pwm(0, 0)
-
+def release():
+    pca.set_all_pwm(0,0)
 
 def init_servos():
-    pwm.set_all_pwm(0, 300)
     for i in range(0,12):
-        if i == 0 or i == 3:
-            pwm.set_pwm(i, 0, config.torso_m)
-
-        if i == 6 or i == 9:
-            pwm.set_pwm(i, 0, config.torso_m_r)
-
-        if i == 1 or i == 4 or i == 7 or i == 10:
-            pwm.set_pwm(i, 0, config.lower_leg_m)
-
-        if i == 2 or i == 5 or i == 8 or i == 11:
-            pwm.set_pwm(i, 0, config.upper_leg_m)
-
+        if i == 1 or i == 10:
+            set_pwm(i, config.lower_leg_m)
+        if i == 4 or i == 7:
+            set_pwm(i, config.lower_leg_m2)
+        if i == 2 or i == 11:
+            set_pwm(i, config.upper_leg_h)
+        if i == 5 or i == 8:
+            set_pwm(i, config.upper_leg_l2)
+    robot_X(50)
+    
 step_input = 1
 move_stu = 1
 if __name__ == '__main__':  
+    init_servos()
+    time.sleep(1)
     try:
-        '''
-        while 1:
-            #dove_move_tripod(step_input, 150, 'forward')
-            dove_move_diagonal(step_input, 150, 'left')
-            step_input += 1
-            if step_input == 9:
-                step_input = 1
-        '''
-        '''
-        robot_X(150, 100)
-        while 1:
-            for i in range (-100, 100):
-                ctrl_pitch_roll(150, 0, i)
-            for i in range (100, -100, -1):
-                ctrl_pitch_roll(150, 0, i)
-            for i in range (-100, 100):
-                ctrl_pitch_roll(150, i, 0)
-            for i in range (100, -100, -1):
-                ctrl_pitch_roll(150, i, 0)
-        '''
-        '''
-        while 1:
-            for i in range (-100, 100):
-                ctrl_pitch_roll(150, i, 0)
-            for i in range (100, -100, -1):
-                ctrl_pitch_roll(150, i, 0)
-        '''
-
-        #robot_X(150, 100)
-        #robot_height(150, 0)
-        '''
-        while 1:
-            robot_height(150, 0)
-            time.sleep(2)
-            ctrl_pitch_roll(150, 0, 100)
-            time.sleep(2)
-            ctrl_pitch_roll(150, 0, -100)
-            time.sleep(2)
-        '''
-        
         while 1:
             steady()
-            #time.sleep(0.1)
-            #pass
+            time.sleep(0.1)
+            break
+            pass
         
         #mpu6050Test()
     except KeyboardInterrupt:
-        #pwm.set_all_pwm(0, 300)
         time.sleep(1)
-        clean_all()
+        release()
     
 
