@@ -21,7 +21,7 @@ c_r_stu = 0
 c_ls_stu= 0
 c_rs_stu= 0
 funcMode= 0
-tcpClicSock = ''
+tcpCliSock = ''
 root = ''
 stat = 0
 
@@ -57,14 +57,14 @@ def num_import(initial):			#Call this function to import data from '.txt' file
 def call_forward(event):		 #When this function is called,client commands the car to move forward
 	global c_f_stu
 	if c_f_stu == 0:
-		tcpClicSock.send(('forward').encode())
+		tcpCliSock.send(('forward').encode())
 		c_f_stu=1
 
 
 def call_back(event):			#When this function is called,client commands the car to move backward
 	global c_b_stu 
 	if c_b_stu == 0:
-		tcpClicSock.send(('backward').encode())
+		tcpCliSock.send(('backward').encode())
 		c_b_stu=1
 
 
@@ -72,7 +72,7 @@ def call_FB_stop(event):			#When this function is called,client commands the car
 	global c_f_stu,c_b_stu,c_l_stu,c_r_stu,c_ls_stu,c_rs_stu
 	c_f_stu=0
 	c_b_stu=0
-	tcpClicSock.send(('DS').encode())
+	tcpCliSock.send(('DS').encode())
 
 
 def call_Turn_stop(event):			#When this function is called,client commands the car to stop moving
@@ -81,104 +81,104 @@ def call_Turn_stop(event):			#When this function is called,client commands the c
 	c_r_stu=0
 	c_ls_stu=0
 	c_rs_stu=0
-	tcpClicSock.send(('TS').encode())
+	tcpCliSock.send(('TS').encode())
 
 
 def call_Left(event):			#When this function is called,client commands the car to turn left
 	global c_l_stu
 	if c_l_stu == 0:
-		tcpClicSock.send(('left').encode())
+		tcpCliSock.send(('left').encode())
 		c_l_stu=1
 
 
 def call_Right(event):		   #When this function is called,client commands the car to turn right
 	global c_r_stu
 	if c_r_stu == 0:
-		tcpClicSock.send(('right').encode())
+		tcpCliSock.send(('right').encode())
 		c_r_stu=1
 
 
 def call_LeftSide(event):
 	global c_ls_stu
 	if c_ls_stu == 0:
-		tcpClicSock.send(('leftside').encode())
+		tcpCliSock.send(('leftside').encode())
 		c_ls_stu=1
 
 
 def call_RightSide(event):
 	global c_rs_stu
 	if c_rs_stu == 0:
-		tcpClicSock.send(('rightside').encode())
+		tcpCliSock.send(('rightside').encode())
 		c_rs_stu=1
 
 
 def call_headup(event):
-	tcpClicSock.send(('headup').encode())
+	tcpCliSock.send(('headup').encode())
 
 
 def call_headdown(event):
-	tcpClicSock.send(('headdown').encode())
+	tcpCliSock.send(('headdown').encode())
 
 
 def call_headleft(event):
-	tcpClicSock.send(('low').encode())
+	tcpCliSock.send(('low').encode())
 
 
 def call_headright(event):
-	tcpClicSock.send(('hight').encode())
+	tcpCliSock.send(('hight').encode())
 
 
 def call_headhome(event):
-	tcpClicSock.send(('headhome').encode())
+	tcpCliSock.send(('headhome').encode())
 
 
 def call_steady(event):
 	if funcMode == 0:
-		tcpClicSock.send(('steady').encode())
+		tcpCliSock.send(('steady').encode())
 	else:
-		tcpClicSock.send(('funEnd').encode())
+		tcpCliSock.send(('funEnd').encode())
 
 
 def call_FindColor(event):
 	if funcMode == 0:
-		tcpClicSock.send(('FindColor').encode())
+		tcpCliSock.send(('FindColor').encode())
 	else:
-		tcpClicSock.send(('funEnd').encode())
+		tcpCliSock.send(('funEnd').encode())
 
 
 def call_WatchDog(event):
 	if funcMode == 0:
-		tcpClicSock.send(('WatchDog').encode())
+		tcpCliSock.send(('WatchDog').encode())
 	else:
-		tcpClicSock.send(('funEnd').encode())
+		tcpCliSock.send(('funEnd').encode())
 
 
 def call_Smooth(event):
 	if SmoothMode == 0:
-		tcpClicSock.send(('Smooth_on').encode())
+		tcpCliSock.send(('Smooth_on').encode())
 	else:
-		tcpClicSock.send(('Smooth_off').encode())
+		tcpCliSock.send(('Smooth_off').encode())
 
 
 def call_Switch_1(event):
 	if Switch_1 == 0:
-		tcpClicSock.send(('Switch_1_on').encode())
+		tcpCliSock.send(('Switch_1_on').encode())
 	else:
-		tcpClicSock.send(('Switch_1_off').encode())
+		tcpCliSock.send(('Switch_1_off').encode())
 
 
 def call_Switch_2(event):
 	if Switch_2 == 0:
-		tcpClicSock.send(('Switch_2_on').encode())
+		tcpCliSock.send(('Switch_2_on').encode())
 	else:
-		tcpClicSock.send(('Switch_2_off').encode())
+		tcpCliSock.send(('Switch_2_off').encode())
 
 
 def call_Switch_3(event):
 	if Switch_3 == 0:
-		tcpClicSock.send(('Switch_3_on').encode())
+		tcpCliSock.send(('Switch_3_on').encode())
 	else:
-		tcpClicSock.send(('Switch_3_off').encode())
+		tcpCliSock.send(('Switch_3_off').encode())
 
 
 def all_btn_red():
@@ -202,7 +202,7 @@ def all_btn_normal():
 def connection_thread():
 	global funcMode, Switch_3, Switch_2, Switch_1, SmoothMode
 	while 1:
-		car_info = (tcpClicSock.recv(BUFSIZ)).decode()
+		car_info = (tcpCliSock.recv(BUFSIZ)).decode()
 		if not car_info:
 			continue
 
@@ -286,7 +286,7 @@ def Info_receive():
 
 
 def socket_connect():	 #Call this function to connect with the server
-	global ADDR,tcpClicSock,BUFSIZ,ip_stu,ipaddr
+	global ADDR,tcpCliSock,BUFSIZ,ip_stu,ipaddr
 	ip_adr=E1.get()	   #Get the IP address from Entry
 
 	if ip_adr == '':	  #If no input IP address in Entry,import a default IP
@@ -360,21 +360,21 @@ def connect_click():	   #Call this function to connect with the server
 
 def set_R(event):
 	time.sleep(0.03)
-	tcpClicSock.send(('wsR %s'%var_R.get()).encode())
+	tcpCliSock.send(('wsR %s' % var_R.get()).encode())
 
 
 def set_G(event):
 	time.sleep(0.03)
-	tcpClicSock.send(('wsG %s'%var_G.get()).encode())
+	tcpCliSock.send(('wsG %s' % var_G.get()).encode())
 
 
 def set_B(event):
 	time.sleep(0.03)
-	tcpClicSock.send(('wsB %s'%var_B.get()).encode())
+	tcpCliSock.send(('wsB %s' % var_B.get()).encode())
 
 
 def loop():					  #GUI
-	global tcpClicSock,root,E1,connect,l_ip_4,l_ip_5,color_btn,color_text,Btn14,CPU_TEP_lab,CPU_USE_lab,RAM_lab,canvas_ultra,color_text,var_R,var_B,var_G,Btn_Steady,Btn_FindColor,Btn_WatchDog,Btn_Fun4,Btn_Fun5,Btn_Fun6,Btn_Switch_1,Btn_Switch_2,Btn_Switch_3,Btn_Smooth   #The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
+	global tcpCliSock,root,E1,connect,l_ip_4,l_ip_5,color_btn,color_text,Btn14,CPU_TEP_lab,CPU_USE_lab,RAM_lab,canvas_ultra,color_text,var_R,var_B,var_G,Btn_Steady,Btn_FindColor,Btn_WatchDog,Btn_Fun4,Btn_Fun5,Btn_Fun6,Btn_Switch_1,Btn_Switch_2,Btn_Switch_3,Btn_Smooth   #The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
 	while True:
 		color_bg='#000000'		#Set background color
 		color_text='#E1F5FE'	  #Set text color
@@ -582,7 +582,7 @@ if __name__ == '__main__':
 	try:
 		loop()				   # Load GUI
 	except:
-		tcpClicSock.close()		  # Close socket or it may not connect with the server again
+		tcpCliSock.close()		  # Close socket or it may not connect with the server again
 		footage_socket.close()
 		cv2.destroyAllWindows()
 		pass
