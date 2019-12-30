@@ -203,12 +203,18 @@ def call_headdown(event):
 
 
 def call_headleft(event):
-    tcpCliSock.send(('low').encode())
+    tcpCliSock.send(('headleft').encode())
 
 
 def call_headright(event):
-    tcpCliSock.send(('hight').encode())
+    tcpCliSock.send(('headright').encode())
 
+def call_headlow(event):
+    tcpCliSock.send(('low').encode())
+
+
+def call_headhigh(event):
+    tcpCliSock.send(('high').encode())
 
 def call_headhome(event):
     tcpCliSock.send(('headhome').encode())
@@ -564,26 +570,34 @@ def loop():  # GUI
         root.bind('<KeyRelease-d>', call_Turn_stop)
         root.bind('<KeyRelease-s>', call_FB_stop)
 
-        Btn_up = tk.Button(root, width=8, text='Up', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_down = tk.Button(root, width=8, text='Down', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_left = tk.Button(root, width=8, text='Low', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_right = tk.Button(root, width=8, text='High', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_home = tk.Button(root, width=8, text='Home', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_up.place(x=400, y=195)
-        Btn_down.place(x=400, y=265)
-        Btn_left.place(x=330, y=230)
-        Btn_right.place(x=470, y=230)
-        Btn_home.place(x=400, y=230)
+        btn_up = tk.Button(root, width=8, text='Up', fg=color_text, bg=color_btn, relief='ridge')
+        btn_down = tk.Button(root, width=8, text='Down', fg=color_text, bg=color_btn, relief='ridge')
+        btn_low = tk.Button(root, width=8, text='Low', fg=color_text, bg=color_btn, relief='ridge')
+        btn_high = tk.Button(root, width=8, text='High', fg=color_text, bg=color_btn, relief='ridge')
+        btn_home = tk.Button(root, width=8, text='Home', fg=color_text, bg=color_btn, relief='ridge')
+        btn_left = tk.Button(root, width=8, text='Left', fg=color_text, bg=color_btn, relief='ridge')
+        btn_right = tk.Button(root, width=8, text='Right', fg=color_text, bg=color_btn, relief='ridge')
+        btn_up.place(x=400, y=195)
+        btn_down.place(x=400, y=265)
+        btn_low.place(x=330, y=230)
+        btn_high.place(x=470, y=230)
+        btn_home.place(x=400, y=230)
+        btn_left.place(x=330, y=195)
+        btn_right.place(x=470, y=195)
         root.bind('<KeyPress-i>', call_headup)
         root.bind('<KeyPress-k>', call_headdown)
-        root.bind('<KeyPress-j>', call_headleft)
-        root.bind('<KeyPress-l>', call_headright)
+        root.bind('<KeyPress-j>', call_headlow)
+        root.bind('<KeyPress-l>', call_headhigh)
         root.bind('<KeyPress-h>', call_headhome)
-        Btn_up.bind('<ButtonPress-1>', call_headup)
-        Btn_down.bind('<ButtonPress-1>', call_headdown)
-        Btn_left.bind('<ButtonPress-1>', call_headleft)
-        Btn_right.bind('<ButtonPress-1>', call_headright)
-        Btn_home.bind('<ButtonPress-1>', call_headhome)
+        root.bind('<KeyPress-u>', call_headleft)
+        root.bind('<KeyPress-o>', call_headright)
+        btn_up.bind('<ButtonPress-1>', call_headup)
+        btn_down.bind('<ButtonPress-1>', call_headdown)
+        btn_low.bind('<ButtonPress-1>', call_headlow)
+        btn_high.bind('<ButtonPress-1>', call_headhigh)
+        btn_home.bind('<ButtonPress-1>', call_headhome)
+        btn_left.bind('<ButtonPress-1>', call_headleft)
+        btn_right.bind('<ButtonPress-1>', call_headright)
 
         Btn14 = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect,
                           relief='ridge')
