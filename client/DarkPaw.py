@@ -15,7 +15,6 @@ import time
 import threading
 import tkinter as tk
 import traceback
-# import logging
 
 import coloredlogs, logging
 
@@ -30,7 +29,9 @@ coloredlogs.install(level='DEBUG',
                     fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s) %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 # %clr(%d{${LOG_DATEFORMAT_PATTERN:HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(${PID: }){magenta} %clr(---){faint} %clr([%16.16t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
-logger.debug('Starting python...')
+logger.info('Starting python...')
+
+# Flags
 connect_status = 1  # Shows connection status
 move_forward_status = 0
 move_back_status = 0
@@ -39,29 +40,31 @@ move_right_status = 0
 yaw_left_status = 0
 yaw_right_status = 0
 funcMode = 0
-tcp_client_socket = socket()
-root = tk.Tk()  # Define a window named root
 stat = 0
-
 switch_3 = 0
 switch_2 = 0
 switch_1 = 0
-
 switch_fpv = 0
-fpv_event = threading.Event()
-gen_event = threading.Event()
+smooth_mode = 0
+
+# Variables
 frame_num = 0
 fps = 0
-footage_socket = None
-font = None
-smooth_mode = 0
 cpu_temp = 0
 cpu_use = 0
 ram_use = 0
-
 addr = 0
-buffer_size = 1024
-server_port = 10223  # Define port serial
+
+tcp_client_socket = None
+fpv_event = threading.Event()
+gen_event = threading.Event()
+footage_socket = None
+font = None
+root = tk.Tk()  # Define a window named root
+
+# Configuration
+BUFFER_SIZE = 1024
+SERVER_PORT = 10223  # Define port serial
 
 
 def video_thread(arg, event):
@@ -316,73 +319,81 @@ def call_fpv(event):
 
 
 def all_btn_red():
-    Btn_Steady.config(bg='#FF6D00', fg='#000000')
-    Btn_FindColor.config(bg='#FF6D00', fg='#000000')
-    Btn_WatchDog.config(bg='#FF6D00', fg='#000000')
-    # Btn_Fun4.config(bg='#FF6D00', fg='#000000')
-    # Btn_Fun5.config(bg='#FF6D00', fg='#000000')
-    # Btn_Fun6.config(bg='#FF6D00', fg='#000000')
+    btn_Steady.config(bg='#FF6D00', fg='#000000')
+    btn_FindColor.config(bg='#FF6D00', fg='#000000')
+    btn_WatchDog.config(bg='#FF6D00', fg='#000000')
+    # btn_Fun4.config(bg='#FF6D00', fg='#000000')
+    # btn_Fun5.config(bg='#FF6D00', fg='#000000')
+    # btn_Fun6.config(bg='#FF6D00', fg='#000000')
 
 
 def all_btn_normal():
-    Btn_Steady.config(bg=color_btn, fg=color_text)
-    Btn_FindColor.config(bg=color_btn, fg=color_text)
-    Btn_WatchDog.config(bg=color_btn, fg=color_text)
-    # Btn_Fun4.config(bg=color_btn, fg=color_text)
-    # Btn_Fun5.config(bg=color_btn, fg=color_text)
-    # Btn_Fun6.config(bg=color_btn, fg=color_text)
+    global switch_1, switch_2, switch_3, smooth_mode, funcMode
+    btn_Steady.config(bg=color_btn, fg=color_text)
+    btn_FindColor.config(bg=color_btn, fg=color_text)
+    btn_WatchDog.config(bg=color_btn, fg=color_text)
+    # btn_Fun4.config(bg=color_btn, fg=color_text)
+    # btn_Fun5.config(bg=color_btn, fg=color_text)
+    # btn_Fun6.config(bg=color_btn, fg=color_text)
+    switch_3 = 0
+    switch_2 = 0
+    switch_1 = 0
+    smooth_mode = 0
+    funcMode = 0
 
 
-def connection_thread(arg, event):
+def status_receive_thread(arg, event):
     logger.debug('Thread started')
     global funcMode, switch_3, switch_2, switch_1, smooth_mode
     while not event.is_set():
-        if event.is_set:
-            robot_info = ''
-        else:
-            robot_info = (tcp_client_socket.recv(buffer_size)).decode()
-        if not robot_info:
-            continue
-        elif 'FindColor' in robot_info:
-            funcMode = 1
-            all_btn_red()
-            Btn_FindColor.config(bg='#00E676')
-        elif 'steady' in robot_info:
-            funcMode = 1
-            all_btn_red()
-            Btn_Steady.config(bg='#00E676')
-        elif 'WatchDog' in robot_info:
-            funcMode = 1
-            all_btn_red()
-            Btn_WatchDog.config(bg='#00E676')
-        elif 'Switch_3_on' in robot_info:
-            switch_3 = 1
-            Btn_Switch_3.config(bg='#4CAF50')
-        elif 'Switch_2_on' in robot_info:
-            switch_2 = 1
-            Btn_Switch_2.config(bg='#4CAF50')
-        elif 'Switch_1_on' in robot_info:
-            switch_1 = 1
-            Btn_Switch_1.config(bg='#4CAF50')
-        elif 'Switch_3_off' in robot_info:
-            switch_3 = 0
-            Btn_Switch_3.config(bg=color_btn)
-        elif 'Switch_2_off' in robot_info:
-            switch_2 = 0
-            Btn_Switch_2.config(bg=color_btn)
-        elif 'Switch_1_off' in robot_info:
-            switch_1 = 0
-            Btn_Switch_1.config(bg=color_btn)
-        elif 'FunEnd' in robot_info:
-            funcMode = 0
-            all_btn_normal()
-        logger.debug(robot_info)
+        try:
+            status_data = (tcp_client_socket.recv(BUFFER_SIZE)).decode()
+            logger.info('Received status info: %s' % (status_data,))
+            if not status_data:
+                continue
+            elif 'FindColor' in status_data:
+                funcMode = 1
+                all_btn_red()
+                btn_FindColor.config(bg='#00E676')
+            elif 'steady' in status_data:
+                funcMode = 1
+                all_btn_red()
+                btn_Steady.config(bg='#00E676')
+            elif 'WatchDog' in status_data:
+                funcMode = 1
+                all_btn_red()
+                btn_WatchDog.config(bg='#00E676')
+            elif 'Switch_3_on' in status_data:
+                switch_3 = 1
+                btn_Switch_3.config(bg='#4CAF50')
+            elif 'Switch_2_on' in status_data:
+                switch_2 = 1
+                btn_Switch_2.config(bg='#4CAF50')
+            elif 'Switch_1_on' in status_data:
+                switch_1 = 1
+                btn_Switch_1.config(bg='#4CAF50')
+            elif 'Switch_3_off' in status_data:
+                switch_3 = 0
+                btn_Switch_3.config(bg=color_btn)
+            elif 'Switch_2_off' in status_data:
+                switch_2 = 0
+                btn_Switch_2.config(bg=color_btn)
+            elif 'Switch_1_off' in status_data:
+                switch_1 = 0
+                btn_Switch_1.config(bg=color_btn)
+            elif 'FunEnd' in status_data:
+                funcMode = 0
+                all_btn_normal()
+            time.sleep(0.5)
+        except:
+            gen_event.set()
+            logger.error('Thread exception: %s', traceback.format_exc())
     logger.debug('Thread stopped')
 
 
 def info_receive_thread(arg, event):
     logger.debug('Thread started')
-    global cpu_temp, cpu_use, ram_use
+    global cpu_temp, cpu_use, ram_use, gen_event
     host = ''
     info_port = 2256  # Define port serial
     addr = (host, info_port)
@@ -394,7 +405,7 @@ def info_receive_thread(arg, event):
     logger.info('Info connected')
     while not event.is_set():
         try:
-            info_data = str(info_sock.recv(buffer_size).decode())
+            info_data = str(info_sock.recv(BUFFER_SIZE).decode())
             info_get = info_data.split()
             cpu_temp, cpu_use, ram_use = info_get
             logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s' % (cpu_temp, cpu_use, ram_use))
@@ -402,19 +413,19 @@ def info_receive_thread(arg, event):
             label_cpu_use.config(text='CPU Usage: %s' % cpu_use)
             label_ram.config(text='RAM Usage: %s' % ram_use)
         except:
+            gen_event.set()
             logger.error('Thread exception: %s', traceback.format_exc())
-            break
     label_cpu_temp.config(text='CPU Temp:')
     label_cpu_use.config(text='CPU Usage: ')
     label_ram.config(text='RAM Usage: ')
     logger.error('Connection error, disconnecting')
-    connect()
+    disconnect()
     logger.debug('Thread stopped')
 
 
 def socket_connect_thread(arg, event):  # Call this function to connect with the server
     logger.debug('Thread started')
-    global addr, tcp_client_socket, buffer_size, connect_status, server_port
+    global addr, tcp_client_socket, BUFFER_SIZE, connect_status, SERVER_PORT
     ip_address = E1.get()  # Get the IP address from Entry
 
     if ip_address == '':  # If no input IP address in Entry,import a default IP
@@ -425,13 +436,13 @@ def socket_connect_thread(arg, event):  # Call this function to connect with the
         pass
 
     server_ip = ip_address
-    addr = (server_ip, server_port)
+    addr = (server_ip, SERVER_PORT)
     tcp_client_socket = socket(AF_INET, SOCK_STREAM)  # Set connection value for socket
     try:
         for i in range(1, 6):  # Try 5 times if disconnected
             # try:
             if connect_status == 1:
-                logger.info("Connecting to server @ %s:%d..." % (server_ip, server_port))
+                logger.info("Connecting to server @ %s:%d..." % (server_ip, SERVER_PORT))
                 tcp_client_socket.connect(addr)  # Connection with the server
 
                 logger.info("Connected successfully")
@@ -442,17 +453,17 @@ def socket_connect_thread(arg, event):  # Call this function to connect with the
 
                 replace_num('IP:', ip_address)
                 E1.config(state='disabled')  # Disable the Entry
-                # Btn14.config(state='disabled')  # Disable the Entry
-                Btn14.config(text='Disconnect')
+                # btn14.config(state='disabled')  # Disable the Entry
+                btn14.config(text='Disconnect')
 
                 connect_status = 0  # '0' means connected
 
-                connection_threading = threading.Thread(target=connection_thread, args=(0, gen_event),
-                                                        daemon=True)  # Define a thread for FPV and OpenCV
-                connection_threading.start()  # Thread starts
+                status_threading = threading.Thread(target=status_receive_thread, args=(0, gen_event),
+                                                    daemon=True)  # Define a thread for status data
+                status_threading.start()  # Thread starts
 
                 info_threading = threading.Thread(target=info_receive_thread, args=(0, gen_event),
-                                                  daemon=True)  # Define a thread for FPV and OpenCV
+                                                  daemon=True)  # Define a thread for info data
                 info_threading.start()  # Thread starts
                 break
             else:
@@ -476,20 +487,26 @@ def socket_connect_thread(arg, event):  # Call this function to connect with the
 def connect():  # Call this function to connect with the server
     global gen_event, connect_status
     if connect_status == 1:
+        logger.info('Connecting to server')
         gen_event.clear()
         sc = threading.Thread(target=socket_connect_thread, args=(0, gen_event),
                               daemon=True)  # Define a thread for connection
         sc.start()  # Thread starts
     elif connect_status == 0:
-        logger.info('Disconnecting from server')
-        global fpv_event
-        fpv_event.set()
-        gen_event.set()
-        time.sleep(1)
-        tcp_client_socket.close()  # Close socket or it may not connect with the server again
-        Btn14.config(text='Connect', fg=color_text, bg=color_btn)
-        label_ip_1.config(text='Disconnected', fg=color_text, bg='#F44336')
-        connect_status = 1
+        disconnect()
+
+
+def disconnect():
+    logger.info('Disconnecting from server')
+    global fpv_event, gen_event, connect_status
+    fpv_event.set()
+    gen_event.set()
+    time.sleep(1)
+    tcp_client_socket.close()  # Close socket or it may not connect with the server again
+    btn14.config(text='Connect', fg=color_text, bg=color_btn)
+    label_ip_1.config(text='Disconnected', fg=color_text, bg='#F44336')
+    connect_status = 1
+    all_btn_normal()
 
 
 def set_red(event):
@@ -508,7 +525,7 @@ def set_blue(event):
 
 
 def loop():  # GUI
-    global tcp_client_socket, root, E1, connect, label_ip_1, label_ip_2, color_btn, color_text, Btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, Btn_Steady, Btn_FindColor, Btn_WatchDog, Btn_Fun4, Btn_Fun5, Btn_Quit, Btn_Switch_1, Btn_Switch_2, Btn_Switch_3, Btn_FPV  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
+    global tcp_client_socket, root, E1, connect, label_ip_1, label_ip_2, color_btn, color_text, btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_Fun4, btn_Fun5, btn_Quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
     while True:
         color_bg = '#000000'  # Set background color
         color_text = '#E1F5FE'  # Set text color
@@ -555,17 +572,17 @@ def loop():  # GUI
         label_open_cv = tk.Label(root, width=28, text='OpenCV Status', fg=color_text, bg=color_btn)
         label_open_cv.place(x=180, y=110)  # Define a Label and put it in position
 
-        Btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=color_text, bg=color_btn, relief='ridge')
 
-        Btn_Switch_1.place(x=30, y=265)
-        Btn_Switch_2.place(x=100, y=265)
-        Btn_Switch_3.place(x=170, y=265)
+        btn_Switch_1.place(x=30, y=265)
+        btn_Switch_2.place(x=100, y=265)
+        btn_Switch_3.place(x=170, y=265)
 
-        Btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
-        Btn_Switch_2.bind('<ButtonPress-1>', call_switch_2)
-        Btn_Switch_3.bind('<ButtonPress-1>', call_switch_3)
+        btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
+        btn_Switch_2.bind('<ButtonPress-1>', call_switch_2)
+        btn_Switch_3.bind('<ButtonPress-1>', call_switch_3)
 
         btn0 = tk.Button(root, width=8, text='Forward', fg=color_text, bg=color_btn, relief='ridge')
         btn1 = tk.Button(root, width=8, text='Backward', fg=color_text, bg=color_btn, relief='ridge')
@@ -583,10 +600,10 @@ def loop():  # GUI
         btn_right_side.bind('<ButtonRelease-1>', call_turn_stop)
 
         # Enable FPV
-        Btn_FPV = tk.Button(root, width=8, text='Video', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_FPV.place(x=315, y=60)  # Define a Button and put it in position
-        # Btn_FPV.bind('<ButtonPress-1>', call_FPV)
-        Btn_FPV.bind('<ButtonRelease-1>', call_fpv)
+        btn_FPV = tk.Button(root, width=8, text='Video', fg=color_text, bg=color_btn, relief='ridge')
+        btn_FPV.place(x=315, y=60)  # Define a Button and put it in position
+        # btn_FPV.bind('<ButtonPress-1>', call_FPV)
+        btn_FPV.bind('<ButtonRelease-1>', call_fpv)
 
         btn0.place(x=100, y=195)
         btn1.place(x=100, y=230)
@@ -647,9 +664,9 @@ def loop():  # GUI
         btn_left.bind('<ButtonPress-1>', call_head_left)
         btn_right.bind('<ButtonPress-1>', call_head_right)
 
-        Btn14 = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect,
+        btn14 = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect,
                           relief='ridge')
-        Btn14.place(x=315, y=15)  # Define a Button and put it in position
+        btn14.place(x=315, y=15)  # Define a Button and put it in position
         root.bind('<Return>', connect)
 
         var_R = tk.StringVar()
@@ -682,35 +699,35 @@ def loop():  # GUI
         canvas_cover = tk.Canvas(root, bg=color_bg, height=30, width=510, highlightthickness=0)
         canvas_cover.place(x=30, y=420)
 
-        Btn_Steady = tk.Button(root, width=10, text='Steady', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_Steady.place(x=30, y=445)
+        btn_Steady = tk.Button(root, width=10, text='Steady', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Steady.place(x=30, y=445)
         root.bind('<KeyPress-z>', call_steady)
-        Btn_Steady.bind('<ButtonPress-1>', call_steady)
+        btn_Steady.bind('<ButtonPress-1>', call_steady)
 
-        Btn_FindColor = tk.Button(root, width=10, text='FindColor', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_FindColor.place(x=115, y=445)
+        btn_FindColor = tk.Button(root, width=10, text='FindColor', fg=color_text, bg=color_btn, relief='ridge')
+        btn_FindColor.place(x=115, y=445)
         root.bind('<KeyPress-z>', call_find_color)
-        Btn_FindColor.bind('<ButtonPress-1>', call_find_color)
+        btn_FindColor.bind('<ButtonPress-1>', call_find_color)
 
-        Btn_WatchDog = tk.Button(root, width=10, text='WatchDog', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_WatchDog.place(x=200, y=445)
+        btn_WatchDog = tk.Button(root, width=10, text='WatchDog', fg=color_text, bg=color_btn, relief='ridge')
+        btn_WatchDog.place(x=200, y=445)
         root.bind('<KeyPress-z>', call_watch_dog)
-        Btn_WatchDog.bind('<ButtonPress-1>', call_watch_dog)
+        btn_WatchDog.bind('<ButtonPress-1>', call_watch_dog)
         '''
-        Btn_Fun4 = tk.Button(root, width=10, text='Function 4', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_Fun4.place(x=285, y=445)
+        btn_Fun4 = tk.Button(root, width=10, text='Function 4', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Fun4.place(x=285, y=445)
         root.bind('<KeyPress-z>', call_WatchDog)
-        Btn_Fun4.bind('<ButtonPress-1>', call_WatchDog)
+        btn_Fun4.bind('<ButtonPress-1>', call_WatchDog)
 
-        Btn_Fun5 = tk.Button(root, width=10, text='Function 5', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_Fun5.place(x=370, y=445)
+        btn_Fun5 = tk.Button(root, width=10, text='Function 5', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Fun5.place(x=370, y=445)
         root.bind('<KeyPress-z>', call_WatchDog)
-        Btn_Fun5.bind('<ButtonPress-1>', call_WatchDog)
+        btn_Fun5.bind('<ButtonPress-1>', call_WatchDog)
         '''
-        Btn_Quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
-        Btn_Quit.place(x=455, y=445)
+        btn_Quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
+        btn_Quit.place(x=455, y=445)
         # root.bind('<KeyPress-z>', call_WatchDog)
-        Btn_Quit.bind('<ButtonPress-1>', quit)
+        btn_Quit.bind('<ButtonPress-1>', quit)
 
         global stat
         if stat == 0:  # Ensure the mainloop runs only once

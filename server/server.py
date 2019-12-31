@@ -12,11 +12,12 @@ import sys
 import time
 import threading
 import move
-# import Adafruit_PCA9685
 import argparse  # from rpi_ws281x import *
 import psutil
 import switch
+import traceback
 # import LED
+
 import config
 import coloredlogs, logging
 
@@ -28,8 +29,8 @@ logger = logging.getLogger(__name__)
 # libraries that you use will all show up on the terminal.
 # coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s) %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
+# logger.basicConfig(level=logger.DEBUG, format='%(asctime)s) %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 # %clr(%d{${LOG_DATEFORMAT_PATTERN:HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(${PID: }){magenta} %clr(---){faint} %clr([%16.16t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
 logger.debug('Starting python...')
 '''
@@ -46,9 +47,9 @@ turn_command = 'no'
 # LED = LED.LED()
 SmoothMode = 0
 steadyMode = 0
-addr = ''
-tcpCliSock = ''
-HOST = ''
+addr = None
+tcpCliSock = None
+HOST = None
 PORT = 10223  # Define port serial
 BUFFER = 1024  # Define buffer size
 ADDR = (HOST, PORT)
@@ -56,7 +57,7 @@ wiggle = 100
 kill_event = threading.Event()
 
 def breath_led():
-    print('Dummy')
+    logger.debug('Dummy')
     # LED.breath(255)
 
 
@@ -110,6 +111,7 @@ def info_get():
 
 
 def move_thread(i, event):
+    logger.debug('Thread started')
     global step_set
     stand_stu = 1
     while not event.is_set():
@@ -152,30 +154,35 @@ def move_thread(i, event):
             pass
             move.robot_X(50)
             move.steady()
-            print('steady')
+            logger.debug('steady')
             time.sleep(0.2)
+    logger.debug('Thread stopped')
 
 
 def info_send_client_thread(arg, event):
+    logger.debug('Thread started')
     SERVER_IP = addr[0]
     SERVER_PORT = 2256  # Define port serial
     SERVER_ADDR = (SERVER_IP, SERVER_PORT)
     Info_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     Info_Socket.connect(SERVER_ADDR)
-    print(SERVER_ADDR)
+    logger.debug('Server address %s', SERVER_ADDR)
     while not event.is_set():
         try:
             Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()).encode())
             time.sleep(1)
         except:
+            logger.error('Exception: %s', traceback.format_exc())
             pass
+    logger.debug('Thread stopped')
 
 
 def FPV_thread(arg, event):
+    logger.debug('Thread started')
     global fpv
-    while not event.is_set():
-        fpv = FPV.FPV()
-        fpv.capture_thread(addr[0])
+    fpv = FPV.FPV()
+    fpv.fpv_capture_thread(addr[0], event)
+    logger.debug('Thread stopped')
 
 
 def run():
@@ -239,6 +246,7 @@ def run():
                 ws_R = int(set_R[1])
                 # LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
+                logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'wsG' in data:
             try:
@@ -246,6 +254,7 @@ def run():
                 ws_G = int(set_G[1])
                 # LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
+                logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'wsB' in data:
             try:
@@ -253,6 +262,7 @@ def run():
                 ws_B = int(set_B[1])
                 # LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
+                logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'FindColor' in data:
             # LED.breath_status_set(1)
@@ -301,7 +311,7 @@ def run():
             tcpCliSock.send(('Switch_3_off').encode())
         else:
             pass
-        logging.debug('Received data on tcp socket: %s', data)
+        logger.debug('Received data on tcp socket: %s', data)
 
 
 # if __name__ == '__main__':
@@ -322,7 +332,7 @@ def main():
         led_threading.start()                                     #Thread starts
         LED.breath_color_set('blue')
     except:
-        print('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
+        logger.debug('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
         pass
     """
     while 1:
@@ -331,9 +341,9 @@ def main():
             s.connect(("1.1.1.1", 80))
             ipaddr_check = s.getsockname()[0]
             s.close()
-            print(ipaddr_check)
+            logger.debug('Server listening on: %s:%s', ipaddr_check, PORT)
         except:
-            logging.warning('No network connection, starting local AP.')
+            logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
             # Define a thread for data receiving
             ap_threading = threading.Thread(target=ap_thread)
             # 'True' means it is a front thread,it would close when the mainloop() closes
@@ -361,16 +371,16 @@ def main():
             tcp_ser_sock.bind(ADDR)
             # Start server,waiting for client
             tcp_ser_sock.listen(5)
-            print('waiting for connection...')
+            logger.debug('Waiting for connection...')
             tcpCliSock, addr = tcp_ser_sock.accept()
-            print('...connected from :', addr)
+            logger.debug('Connected from %s', addr)
             move.robot_stand(100)
             fps_threading = threading.Thread(target=FPV_thread, args=(0, kill_event), daemon=True)  # Define a thread for FPV and OpenCV
             fps_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
             fps_threading.start()  # Thread starts
             break
         except:
-            logging.error('Exception while waiting for connection')
+            logger.error('Exception while waiting for connection: %s', traceback.format_exc())
             kill_event.set()
             # LED.colorWipe(Color(0,0,0))
             pass
@@ -384,7 +394,7 @@ def main():
     try:
         run()
     except:
-        logging.error('Run exception, terminate and restart main().')
+        logger.error('Run exception, terminate and restart main(). %s', traceback.format_exc())
         kill_event.set()
         # LED.colorWipe(Color(0,0,0))
         move.release()
