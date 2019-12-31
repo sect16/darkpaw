@@ -267,48 +267,49 @@ def run():
         elif 'FindColor' in data:
             # LED.breath_status_set(1)
             fpv.FindColor(1)
-            tcpCliSock.send(('FindColor').encode())
+            tcpCliSock.send('FindColor'.encode())
         elif 'WatchDog' in data:
             # LED.breath_status_set(1)
             fpv.WatchDog(1)
-            tcpCliSock.send(('WatchDog').encode())
+            tcpCliSock.send('WatchDog'.encode())
         elif 'steady' in data:
             # LED.breath_status_set(1)
             # LED.breath_color_set('blue')
             steadyMode = 1
-            tcpCliSock.send(('steady').encode())
-        elif 'funEnd' in data:
+            tcpCliSock.send('steady'.encode())
+        elif 'func_end' in data:
             # LED.breath_status_set(0)
             fpv.FindColor(0)
             fpv.WatchDog(0)
             steadyMode = 0
-            tcpCliSock.send(('FunEnd').encode())
+            move.init_servos()
+            tcpCliSock.send('func_end'.encode())
 
         elif 'Smooth_on' in data:
             SmoothMode = 1
-            tcpCliSock.send(('Smooth_on').encode())
+            tcpCliSock.send('Smooth_on'.encode())
         elif 'Smooth_off' in data:
             SmoothMode = 0
-            tcpCliSock.send(('Smooth_off').encode())
+            tcpCliSock.send('Smooth_off'.encode())
 
         elif 'Switch_1_on' in data:
             switch.switch(1, 1)
-            tcpCliSock.send(('Switch_1_on').encode())
+            tcpCliSock.send('Switch_1_on'.encode())
         elif 'Switch_1_off' in data:
             switch.switch(1, 0)
-            tcpCliSock.send(('Switch_1_off').encode())
+            tcpCliSock.send('Switch_1_off'.encode())
         elif 'Switch_2_on' in data:
             switch.switch(2, 1)
-            tcpCliSock.send(('Switch_2_on').encode())
+            tcpCliSock.send('Switch_2_on'.encode())
         elif 'Switch_2_off' in data:
             switch.switch(2, 0)
-            tcpCliSock.send(('Switch_2_off').encode())
+            tcpCliSock.send('Switch_2_off'.encode())
         elif 'Switch_3_on' in data:
             switch.switch(3, 1)
-            tcpCliSock.send(('Switch_3_on').encode())
+            tcpCliSock.send('Switch_3_on'.encode())
         elif 'Switch_3_off' in data:
             switch.switch(3, 0)
-            tcpCliSock.send(('Switch_3_off').encode())
+            tcpCliSock.send('Switch_3_off'.encode())
         else:
             pass
         logger.debug('Received data on tcp socket: %s', data)

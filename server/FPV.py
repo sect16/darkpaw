@@ -19,7 +19,11 @@ import datetime
 import move
 import config
 import coloredlogs, logging
-
+import PID
+pid = PID.PID()
+pid.SetKp(0.5)
+pid.SetKd(0)
+pid.SetKi(0)
 # Create a logger object.
 logger = logging.getLogger(__name__)
 
@@ -31,11 +35,9 @@ coloredlogs.install(level='DEBUG',
                     fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
 Y_lock = 0
 X_lock = 0
-tor = 17
+tor = 50
 FindColorMode = 0
 WatchDogMode = 0
-
-
 # LED = LED.LED()
 
 class FPV:
@@ -85,7 +87,7 @@ class FPV:
 
         for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
 
-            if not event.is_set:
+            if event.is_set():
                 camera.close()
                 break
 
@@ -116,32 +118,45 @@ class FPV:
                     if radius > 10:
                         cv2.rectangle(frame_image, (int(x - radius), int(y + radius)),
                                       (int(x + radius), int(y - radius)), (255, 255, 255), 1)
-
+                    logger.debug('Target position X: %d Y: %d', X, Y)
                     if Y < (240 - tor):
-                        error = (240 - Y) / 5
-                        outv = int(error)
+                        error = (240 - Y) / 1.2
+                        outv = int(round((pid.GenOut(error)), 0))
+                        #outv = int(error)
+                        if outv > 100:
+                            outv = 100
                         # move.look_up(outv)
-                        move.ctrl_pitch_roll(-100, 0)
+                        move.ctrl_pitch_roll(-outv, 0)
                         Y_lock = 0
                     elif Y > (240 + tor):
-                        error = (Y - 240) / 5
-                        outv = int(error)
+                        error = (Y - 240) / 1.2
+                        outv = int(round((pid.GenOut(error)), 0))
+                        #outv = int(error)
+                        if outv > 100:
+                            outv = 100
                         # move.look_down(outv)
-                        move.ctrl_pitch_roll(0, 0)
+                        move.ctrl_pitch_roll(outv, 0)
                         Y_lock = 0
                     else:
                         Y_lock = 1
 
                     if X < (320 - tor):
-                        error_X = (320 - X) / 5
-                        outv_X = int(error_X)
+                        error_X = (320 - X) / 1.6
+                        outv_X = int(round((pid.GenOut(error_X)), 0))
+                        #outv_X = int(error_X)
+                        if outv_X > 100:
+                            outv_X = 100
                         # move.look_left(outv_X)
+                        move.ctrl_yaw(config.torso_w, outv_X)
                         X_lock = 0
                     elif X > (320 + tor):
-                        error_X = (X - 320) / 5
-                        outv_X = int(error_X)
+                        error_X = (X - 320) / 1.6
+                        outv_X = int(round((pid.GenOut(error_X)), 0))
+                        # outv_X = int(error_X)
+                        if outv_X > 100:
+                            outv_X = 100
                         # move.look_right(outv_X)
-                        X_lock = 0
+                        move.ctrl_yaw(config.torso_w, -outv_X)
                         X_lock = 0
                     else:
                         X_lock = 1
