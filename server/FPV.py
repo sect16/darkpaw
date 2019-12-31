@@ -18,7 +18,17 @@ import datetime
 # from rpi_ws281x import *
 import move
 import config
+import coloredlogs, logging
 
+# Create a logger object.
+logger = logging.getLogger(__name__)
+
+# By default the install() function installs a handler on the root logger,
+# this means that log messages from your code and log messages from the
+# libraries that you use will all show up on the terminal.
+# coloredlogs.install(level='DEBUG')
+coloredlogs.install(level='DEBUG',
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
 Y_lock = 0
 X_lock = 0
 tor = 17
@@ -38,7 +48,7 @@ class FPV:
     def SetIP(self, invar):
         self.IP = invar
 
-    def FindColor(invar):
+    def FindColor(self, invar):
         global FindColorMode
         FindColorMode = invar
         if not FindColorMode:
@@ -48,7 +58,7 @@ class FPV:
         global WatchDogMode
         WatchDogMode = invar
 
-    def capture_thread(self, IPinver):
+    def fpv_capture_thread(self, IPinver, event):
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,
                         help="max buffer size")
@@ -62,16 +72,23 @@ class FPV:
         camera.framerate = 20
         rawCapture = PiRGBArray(camera, size=(640, 480))
 
+        PORT = 5555
+        #IPinver = IPinver + ':' + PORT
         context = zmq.Context()
         footage_socket = context.socket(zmq.PUB)
-        print(IPinver)
-        footage_socket.connect('tcp://%s:5555' % IPinver)
+        logger.debug('Capture connection (%s:%s)', IPinver, PORT)
+        footage_socket.connect('tcp://%s:%d' % (IPinver, PORT))
 
         avg = None
         motionCounter = 0
         lastMovtionCaptured = datetime.datetime.now()
 
         for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+
+            if not event.is_set:
+                camera.close()
+                break
+
             frame_image = frame.array
             cv2.line(frame_image, (300, 240), (340, 240), (128, 255, 128), 1)
             cv2.line(frame_image, (320, 220), (320, 260), (128, 255, 128), 1)
@@ -198,5 +215,5 @@ class FPV:
 if __name__ == '__main__':
     fpv = FPV()
     while 1:
-        fpv.capture_thread('127.0.0.1')
+        fpv.fpv_capture_thread('127.0.0.1')
         pass

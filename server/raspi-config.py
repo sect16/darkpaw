@@ -278,7 +278,7 @@ def run():                   #Main loop
 
     while True: 
         data = ''
-        data = tcpCliSock.recv(buffer_size).decode()
+        data = tcpCliSock.recv(BUFFER_SIZE).decode()
         if not data:
             continue
         elif 'L0' == data:
@@ -493,7 +493,7 @@ def run():                   #Main loop
 if __name__ == '__main__':    
     HOST = ''
     PORT = 10223                              #Define port serial 
-    buffer_size = 1024                             #Define buffer size
+    BUFFER_SIZE = 1024                             #Define buffer size
     addr = (HOST, PORT)
 
     tcpSerSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

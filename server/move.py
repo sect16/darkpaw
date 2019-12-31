@@ -11,7 +11,17 @@ import Kalman_filter
 import PID
 
 import config
+import coloredlogs, logging
 
+# Create a logger object.
+logger = logging.getLogger(__name__)
+
+# By default the install() function installs a handler on the root logger,
+# this means that log messages from your code and log messages from the
+# libraries that you use will all show up on the terminal.
+# coloredlogs.install(level='DEBUG')
+coloredlogs.install(level='DEBUG',
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
 pca = Adafruit_PCA9685.PCA9685()
 pca.set_pwm_freq(50)
 '''
@@ -133,7 +143,7 @@ def leg_IV(x,y,z):
 def mpu6050Test():
     while 1:
         accelerometer_data = sensor.get_accel_data()
-        print('X=%f,Y=%f,Z=%f'%(accelerometer_data['x'],accelerometer_data['y'],accelerometer_data['x']))
+        logger.debug('X=%f, Y=%f, Z=%f', accelerometer_data['x'], accelerometer_data['y'], accelerometer_data['x'])
         time.sleep(0.3)
 '''
 def move_diagonal(step):
@@ -388,7 +398,7 @@ def steady():
     Y_fix_output += Y_pid.GenOut(Y - Y_steady)
     X_fix_output = ctrl_range(X_fix_output, 100, -100)
     Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
-    print('Accelerometer [X,Y] = ',-X_fix_output,',',Y_fix_output)
+    logger.debug('Accelerometer [X,Y] = %s, %s', -X_fix_output, Y_fix_output)
     ctrl_pitch_roll(-X_fix_output, Y_fix_output)
 
 def release():
@@ -418,7 +428,7 @@ if __name__ == '__main__':
             break
             pass
         
-        #mpu6050Test()
+        mpu6050Test()
     except KeyboardInterrupt:
         time.sleep(1)
         release()
