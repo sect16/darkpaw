@@ -265,21 +265,21 @@ def call_steady(event):
     if funcMode == 0:
         tcp_client_socket.send('steady'.encode())
     else:
-        tcp_client_socket.send('funEnd'.encode())
+        tcp_client_socket.send('func_end'.encode())
 
 
 def call_find_color(event):
     if funcMode == 0:
         tcp_client_socket.send('FindColor'.encode())
     else:
-        tcp_client_socket.send('funEnd'.encode())
+        tcp_client_socket.send('func_end'.encode())
 
 
 def call_watch_dog(event):
     if funcMode == 0:
         tcp_client_socket.send('WatchDog'.encode())
     else:
-        tcp_client_socket.send('funEnd'.encode())
+        tcp_client_socket.send('func_end'.encode())
 
 
 def call_smooth(event):
@@ -381,7 +381,7 @@ def status_receive_thread(arg, event):
             elif 'Switch_1_off' in status_data:
                 switch_1 = 0
                 btn_Switch_1.config(bg=color_btn)
-            elif 'FunEnd' in status_data:
+            elif 'func_end' in status_data:
                 funcMode = 0
                 all_btn_normal()
             time.sleep(0.5)
