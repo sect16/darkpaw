@@ -9,6 +9,7 @@
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
 DO NOT increase or it may cause mechanical collisions.
 '''
+default_X = 50
 speed_set = 100     # Maximum radius of servo motors
 
 lower_leg_h = 500   # DOWN
