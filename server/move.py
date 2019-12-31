@@ -108,7 +108,7 @@ def set_pwm(servo, pos):
     config.servo[servo] = pos
     if config.servo_init.count(0) == 12:
         if config.servo.count(0) == 0:
-            config.servo_init = config.servo.copy()
+            config.servo_init = list(config.servo)
 
 def leg_I(x,y,z):
     set_pwm(0, int(config.upper_leg_m + (config.upper_leg_w*y/100)))
@@ -327,6 +327,7 @@ def robot_X(amp):
     set_pwm(6, int(config.torso_m2+wiggle-2*wiggle*amp/100))
     set_pwm(9, int(config.torso_m2+wiggle-2*wiggle*amp/100))
 
+
 def look_home():
     robot_stand(50)
 
@@ -370,7 +371,7 @@ def ctrl_yaw(wiggle, yaw): #Percentage wiggle
     look left <- yaw -> look right
     default value is 0
     '''
-    robot_X(50)
+    #robot_X(config.default_X)
     set_pwm(0, int(config.torso_m + wiggle*yaw/100))
     set_pwm(3, int(config.torso_m - wiggle*yaw/100))
     set_pwm(6, int(config.torso_m2 + wiggle*yaw/100))
@@ -400,10 +401,10 @@ def init_servos():
         if i == 4 or i == 7:
             set_pwm(i, config.lower_leg_m2)
         if i == 2 or i == 11:
-            set_pwm(i, config.upper_leg_h)
+            set_pwm(i, config.upper_leg_m)
         if i == 5 or i == 8:
-            set_pwm(i, config.upper_leg_l2)
-    robot_X(50)
+            set_pwm(i, config.upper_leg_m2)
+    robot_X(config.default_X)
     
 step_input = 1
 move_stu = 1
@@ -421,5 +422,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         time.sleep(1)
         release()
-    
-
