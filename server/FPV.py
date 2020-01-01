@@ -21,7 +21,7 @@ import config
 import coloredlogs, logging
 import PID
 pid = PID.PID()
-pid.SetKp(0.5)
+pid.SetKp(10)
 pid.SetKd(0)
 pid.SetKi(0)
 # Create a logger object.
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # libraries that you use will all show up on the terminal.
 # coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
 Y_lock = 0
 X_lock = 0
 tor = 50

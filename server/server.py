@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 # libraries that you use will all show up on the terminal.
 # coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
-# logger.basicConfig(level=logger.DEBUG, format='%(asctime)s) %(levelname)5s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
+# logger.basicConfig(level=logger.DEBUG, format='%(asctime)s) %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 # %clr(%d{${LOG_DATEFORMAT_PATTERN:HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(${PID: }){magenta} %clr(---){faint} %clr([%16.16t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
 logger.debug('Starting python...')
 '''
@@ -52,6 +52,7 @@ tcpCliSock = None
 HOST = None
 PORT = 10223  # Define port serial
 BUFFER = 1024  # Define buffer size
+SPEED = 150
 ADDR = (HOST, PORT)
 wiggle = 100
 kill_event = threading.Event()
@@ -206,6 +207,7 @@ def run():
     while run:
         #data = ''
         data = str(tcpCliSock.recv(BUFFER).decode())
+        logger.debug('Received data on tcp socket: %s', data)
         if not data:
             run = False
             raise Exception
@@ -310,9 +312,18 @@ def run():
         elif 'Switch_3_off' in data:
             switch.switch(3, 0)
             tcpCliSock.send('Switch_3_off'.encode())
+        elif 'disconnect' in data:
+            tcpCliSock.send('disconnect'.encode())
+            speak('Silly dog disconnected')
         else:
+            logger.warning('Unknown command received')
+            speak(data)
             pass
-        logger.debug('Received data on tcp socket: %s', data)
+
+
+def speak(text):
+    global SPEED
+    os.system(str('espeak-ng "%s" -s %d' % (text, SPEED)))
 
 
 # if __name__ == '__main__':
