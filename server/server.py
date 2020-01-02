@@ -20,6 +20,7 @@ import traceback
 import LED
 import speak_dict
 import config
+import subprocess
 import coloredlogs, logging
 
 # Create a logger object.
@@ -57,6 +58,8 @@ SPEED = 150
 ADDR = (HOST, PORT)
 wiggle = 100
 kill_event = threading.Event()
+server_address = ''
+stream_audio_started = 0
 
 
 def breath_led():
@@ -316,6 +319,15 @@ def run():
         elif 'disconnect' in data:
             tcpCliSock.send('disconnect'.encode())
             speak(speak_dict.disconnect)
+        elif 'stream_audio' in data:
+            global server_address, stream_audio_started
+            if stream_audio_started == 0:
+                logger.info('Audio streaming server starting...')
+                subprocess.Popen([str('cvlc -vvv alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':3030}"')], shell = True)
+                stream_audio_started = 1
+            else:
+                logger.info('Audio streaming server already started.')
+            tcpCliSock.send('stream_audio'.encode())
         else:
             logger.info('Speaking command received')
             speak(data)
@@ -352,9 +364,10 @@ def main():
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("1.1.1.1", 80))
-            ipaddr_check = s.getsockname()[0]
+            global server_address
+            server_address = s.getsockname()[0]
             s.close()
-            logger.debug('Server listening on: %s:%s', ipaddr_check, PORT)
+            logger.debug('Server listening on: %s:%s', server_address, PORT)
         except:
             logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
             # Define a thread for data receiving
@@ -387,6 +400,7 @@ def main():
             logger.debug('Waiting for connection...')
             tcpCliSock, addr = tcp_ser_sock.accept()
             logger.debug('Connected from %s', addr)
+            speak(speak_dict.connect)
             move.robot_stand(100)
             fps_threading = threading.Thread(target=FPV_thread, args=(0, kill_event), daemon=True)  # Define a thread for FPV and OpenCV
             fps_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
