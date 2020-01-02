@@ -407,9 +407,9 @@ def release():
 def init_servos():
     for i in range(0,12):
         if i == 1 or i == 10:
-            set_pwm(i, config.lower_leg_m)
+            set_pwm(i, config.lower_leg_l)
         if i == 4 or i == 7:
-            set_pwm(i, config.lower_leg_m2)
+            set_pwm(i, config.lower_leg_h2)
         if i == 2 or i == 11:
             set_pwm(i, config.upper_leg_m)
         if i == 5 or i == 8:

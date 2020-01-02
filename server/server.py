@@ -344,7 +344,6 @@ def main():
     global kill_event
     switch.switchSetup()
     switch.set_all_switch_off()
-    move.init_servos()
     kill_event.clear()
     HOST = ''
     PORT = 10223  # Define port serial
@@ -401,7 +400,10 @@ def main():
             tcpCliSock, addr = tcp_ser_sock.accept()
             logger.debug('Connected from %s', addr)
             speak(speak_dict.connect)
-            move.robot_stand(100)
+            move.init_servos()
+            time.sleep(1)
+            for x in range(99):
+                move.robot_stand(x+1)
             fps_threading = threading.Thread(target=FPV_thread, args=(0, kill_event), daemon=True)  # Define a thread for FPV and OpenCV
             fps_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
             fps_threading.start()  # Thread starts
@@ -422,14 +424,19 @@ def main():
     try:
         run()
     except:
+        logger.debug('Last servo positions: %s', config.servo)
         logger.error('Run exception, terminate and restart main(). %s', traceback.format_exc())
         kill_event.set()
         LED.colorWipe(Color(0,0,0))
+        # 150 - 500
+        current_pos = int((config.servo[1]-config.lower_leg_l)/(config.lower_leg_w*2)*100)
+        for x in range (current_pos):
+            move.robot_stand(current_pos-x)
         move.release()
         switch.switch(1, 0)
         switch.switch(2, 0)
         switch.switch(3, 0)
-        time.sleep(5)
+        time.sleep(2)
         tcp_ser_sock.close()
         tcpCliSock.close()
         main()

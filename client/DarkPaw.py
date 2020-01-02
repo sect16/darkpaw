@@ -542,7 +542,7 @@ def set_blue(event):
 
 
 def loop():  # GUI
-    global exit_flag, tcp_client_socket, root, e1, connect, label_ip_1, label_ip_2, color_btn, color_text, btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_smooth, btn_Fun5, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, e2  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
+    global exit_flag, tcp_client_socket, root, e1, connect, label_ip_1, label_ip_2, color_btn, color_text, btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, e2  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
     global tcp_client_socket
 
     color_bg = '#000000'  # Set background color
@@ -585,12 +585,13 @@ def loop():  # GUI
     e1.place(x=180, y=40)  # Define a Entry and put it in position
 
 
-    btn_e2 = tk.Button(root, width=10, text='Send', fg=color_text, bg=color_btn, relief='ridge', command=send_command)
+    btn_e2 = tk.Button(root, width=10, text='Send', fg=color_text, bg=color_btn, relief='ridge')
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
+    btn_e2.bind('<ButtonPress-1>', send_command)
+
     e2 = tk.Entry(root, show=None, width=64, bg="#37474F", fg='#eceff1')
     e2.place(x=30, y=300)  # Define a Entry and put it in position
     #btn_e2.bind('<ButtonPress-1>', tcp_client_socket.send(str(e2.get()).encode()))
-    root.bind('<Return>', send_command)
     label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=color_text, bg='#000000')
     label_ip_3.place(x=175, y=15)  # Define a Label and put it in position
 
@@ -645,21 +646,6 @@ def loop():  # GUI
     btn2.bind('<ButtonRelease-1>', call_turn_stop)
     btn3.bind('<ButtonRelease-1>', call_turn_stop)
 
-    root.bind('<KeyPress-w>', call_forward)
-    root.bind('<KeyPress-a>', call_left)
-    root.bind('<KeyPress-d>', call_right)
-    root.bind('<KeyPress-s>', call_back)
-
-    root.bind('<KeyPress-q>', call_left_side)
-    root.bind('<KeyPress-e>', call_right_side)
-    root.bind('<KeyRelease-q>', call_turn_stop)
-    root.bind('<KeyRelease-e>', call_turn_stop)
-
-    root.bind('<KeyRelease-w>', call_stop)
-    root.bind('<KeyRelease-a>', call_turn_stop)
-    root.bind('<KeyRelease-d>', call_turn_stop)
-    root.bind('<KeyRelease-s>', call_stop)
-
     btn_up = tk.Button(root, width=8, text='Up', fg=color_text, bg=color_btn, relief='ridge')
     btn_down = tk.Button(root, width=8, text='Down', fg=color_text, bg=color_btn, relief='ridge')
     btn_low = tk.Button(root, width=8, text='Low', fg=color_text, bg=color_btn, relief='ridge')
@@ -674,13 +660,7 @@ def loop():  # GUI
     btn_home.place(x=400, y=230)
     btn_left.place(x=330, y=195)
     btn_right.place(x=470, y=195)
-    root.bind('<KeyPress-i>', call_head_up)
-    root.bind('<KeyPress-k>', call_head_down)
-    root.bind('<KeyPress-u>', call_head_low)
-    root.bind('<KeyPress-o>', call_head_high)
-    root.bind('<KeyPress-h>', call_head_home)
-    root.bind('<KeyPress-j>', call_head_left)
-    root.bind('<KeyPress-l>', call_head_right)
+
     btn_up.bind('<ButtonPress-1>', call_head_up)
     btn_down.bind('<ButtonPress-1>', call_head_down)
     btn_low.bind('<ButtonPress-1>', call_head_low)
@@ -688,11 +668,11 @@ def loop():  # GUI
     btn_home.bind('<ButtonPress-1>', call_head_home)
     btn_left.bind('<ButtonPress-1>', call_head_left)
     btn_right.bind('<ButtonPress-1>', call_head_right)
+    
 
     btn14 = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect,
                       relief='ridge')
     btn14.place(x=315, y=15)  # Define a Button and put it in position
-    root.bind('<Return>', connect)
 
     var_R = tk.StringVar()
     var_R.set(0)
@@ -726,36 +706,43 @@ def loop():  # GUI
 
     btn_Steady = tk.Button(root, width=10, text='Steady', fg=color_text, bg=color_btn, relief='ridge')
     btn_Steady.place(x=30, y=445)
-    root.bind('<KeyPress-z>', call_steady)
     btn_Steady.bind('<ButtonPress-1>', call_steady)
 
     btn_FindColor = tk.Button(root, width=10, text='FindColor', fg=color_text, bg=color_btn, relief='ridge')
     btn_FindColor.place(x=115, y=445)
-    root.bind('<KeyPress-x>', call_find_color)
     btn_FindColor.bind('<ButtonPress-1>', call_find_color)
 
     btn_WatchDog = tk.Button(root, width=10, text='WatchDog', fg=color_text, bg=color_btn, relief='ridge')
     btn_WatchDog.place(x=200, y=445)
-    root.bind('<KeyPress-c>', call_watch_dog)
     btn_WatchDog.bind('<ButtonPress-1>', call_watch_dog)
 
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=color_text, bg=color_btn, relief='ridge')
     btn_smooth.place(x=285, y=445)
-    root.bind('<KeyPress-v>', call_smooth)
     btn_smooth.bind('<ButtonPress-1>', call_smooth)
 
-    btn_Fun5 = tk.Button(root, width=10, text='Audio On', fg=color_text, bg=color_btn, relief='ridge')
-    btn_Fun5.place(x=370, y=445)
-    root.bind('<KeyPress-b>', call_stream_audio)
-    btn_Fun5.bind('<ButtonPress-1>', call_stream_audio)
+    btn_audio = tk.Button(root, width=10, text='Audio On', fg=color_text, bg=color_btn, relief='ridge')
+    btn_audio.place(x=370, y=445)
+    btn_audio.bind('<ButtonPress-1>', call_stream_audio)
 
     btn_quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
     btn_quit.place(x=455, y=445)
-    # root.bind('<KeyPress-z>', call_WatchDog)
     btn_quit.bind('<ButtonPress-1>', exit)
+
+    root.bind_all('<KeyPress-Return>', send_command)
+    root.bind_all('<Button-1>', focus)
+    bind_keys()
 
     root.protocol("WM_DELETE_WINDOW", callback)
     root.mainloop()  # Run the mainloop()
+
+
+# This method is used to get
+# the name of the widget
+# which currently has the focus
+# by clicking Mouse Button-1
+def focus(event):
+    if str(root.focus_get()) == '.!entry2':
+        unbind_keys()
 
 
 def callback():
@@ -775,14 +762,81 @@ def closeEvent(self, event):
     exit()
 
 
-def send_command():
+def send_command(event):
     global tcp_client_socket
     if str(e2.get()).encode() != '' and connect_status == 0 :
         tcp_client_socket.send(str(e2.get()).encode())
+        e1.focus_set()
+        e2.delete(0, 'end')
+    bind_keys()
 
 
 def call_stream_audio(event):
     tcp_client_socket.send('stream_audio'.encode())
+
+
+def bind_keys():
+    global root
+    root.bind('<KeyPress-w>', call_forward)
+    root.bind('<KeyPress-s>', call_back)
+    root.bind('<KeyPress-a>', call_left)
+    root.bind('<KeyPress-d>', call_right)
+    
+    root.bind('<KeyPress-q>', call_left_side)
+    root.bind('<KeyPress-e>', call_right_side)
+    root.bind('<KeyRelease-q>', call_turn_stop)
+    root.bind('<KeyRelease-e>', call_turn_stop)
+    
+    root.bind('<KeyRelease-w>', call_stop)
+    root.bind('<KeyRelease-s>', call_stop)
+    root.bind('<KeyRelease-a>', call_turn_stop)
+    root.bind('<KeyRelease-d>', call_turn_stop)
+    
+    root.bind('<KeyPress-i>', call_head_up)
+    root.bind('<KeyPress-k>', call_head_down)
+    root.bind('<KeyPress-j>', call_head_left)
+    root.bind('<KeyPress-l>', call_head_right)
+    root.bind('<KeyPress-u>', call_head_low)
+    root.bind('<KeyPress-o>', call_head_high)
+    root.bind('<KeyPress-h>', call_head_home)
+    root.bind('<KeyPress-z>', call_steady)
+    root.bind('<KeyPress-x>', call_find_color)
+    root.bind('<KeyPress-c>', call_watch_dog)
+    root.bind('<KeyPress-v>', call_smooth)
+    root.bind('<KeyPress-b>', call_stream_audio)
+    logger.debug('Bind KeyPress')
+
+
+def unbind_keys():
+    global root
+    root.unbind('<KeyPress-w>')
+    root.unbind('<KeyPress-s>')
+    root.unbind('<KeyPress-a>')
+    root.unbind('<KeyPress-d>')
+
+    root.unbind('<KeyPress-q>')
+    root.unbind('<KeyPress-e>')
+    root.unbind('<KeyRelease-q>')
+    root.unbind('<KeyRelease-e>')
+
+    root.unbind('<KeyRelease-w>')
+    root.unbind('<KeyRelease-s>')
+    root.unbind('<KeyRelease-a>')
+    root.unbind('<KeyRelease-d>')
+
+    root.unbind('<KeyPress-i>')
+    root.unbind('<KeyPress-k>')
+    root.unbind('<KeyPress-j>')
+    root.unbind('<KeyPress-l>')
+    root.unbind('<KeyPress-u>')
+    root.unbind('<KeyPress-o>')
+    root.unbind('<KeyPress-h>')
+    root.unbind('<KeyPress-z>')
+    root.unbind('<KeyPress-x>')
+    root.unbind('<KeyPress-c>')
+    root.unbind('<KeyPress-v>')
+    root.unbind('<KeyPress-b>')
+    logger.debug('Unbind KeyPress')
 
 
 if __name__ == '__main__':
