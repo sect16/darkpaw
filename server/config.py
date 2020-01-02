@@ -1,6 +1,6 @@
 #!/usr/bin/env/python
 # File name   : config.py
-# Description : Global programe variables across modules for DarkPaw
+# Description : Global variables across modules for DarkPaw
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 2019/11/20

@@ -143,7 +143,6 @@ def start_fpv():
         video_threading = threading.Thread(target=video_thread, args=(0, fpv_event),
                                            daemon=True)  # Define a thread for FPV and OpenCV
         video_threading.start()  # Thread starts
-
         switch_fpv = 1
 
 
@@ -457,7 +456,7 @@ def socket_connect_thread(arg, event):  # Call this function to connect with the
 
                 replace_num('IP:', ip_address)
                 e1.config(state='disabled')  # Disable the Entry
-                # btn14.config(state='disabled')  # Disable the Entry
+                btn14.config(state='normal')  # Disable the Entry
                 btn14.config(text='Disconnect')
 
                 connect_status = 0  # '0' means connected
@@ -484,12 +483,15 @@ def socket_connect_thread(arg, event):  # Call this function to connect with the
     if connect_status == 1:
         label_ip_1.config(text='Disconnected')
         label_ip_1.config(bg='#F44336')
+        btn14.config(state='normal')
 
     logger.debug('Thread stopped')
 
 
 def connect():  # Call this function to connect with the server
     global gen_event, connect_status
+    if str(btn14['state']) == 'normal':
+        btn14['state'] = 'disabled'
     if connect_status == 1:
         logger.info('Connecting to server')
         gen_event.clear()
@@ -513,6 +515,7 @@ def disconnect():
         time.sleep(1)
         tcp_client_socket.close()  # Close socket or it may not connect with the server again
     btn14.config(text='Connect', fg=color_text, bg=color_btn)
+    btn14.config(state='normal')
     label_ip_1.config(text='Disconnected', fg=color_text, bg='#F44336')
     connect_status = 1
     all_btn_normal()
@@ -534,7 +537,8 @@ def set_blue(event):
 
 
 def loop():  # GUI
-    global exit_flag, tcp_client_socket, root, e1, connect, label_ip_1, label_ip_2, color_btn, color_text, btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_Fun4, btn_Fun5, btn_Quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
+    global exit_flag, tcp_client_socket, root, e1, connect, label_ip_1, label_ip_2, color_btn, color_text, btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_smooth, btn_Fun5, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, e2  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
+    global tcp_client_socket
 
     color_bg = '#000000'  # Set background color
     color_text = '#E1F5FE'  # Set text color
@@ -576,12 +580,12 @@ def loop():  # GUI
     e1.place(x=180, y=40)  # Define a Entry and put it in position
 
 
-    btn_e2 = tk.Button(root, width=10, text='Send', fg=color_text, bg=color_btn, relief='ridge')
+    btn_e2 = tk.Button(root, width=10, text='Send', fg=color_text, bg=color_btn, relief='ridge', command=send_command)
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
     e2 = tk.Entry(root, show=None, width=64, bg="#37474F", fg='#eceff1')
     e2.place(x=30, y=300)  # Define a Entry and put it in position
     #btn_e2.bind('<ButtonPress-1>', tcp_client_socket.send(str(e2.get()).encode()))
-
+    root.bind('<Return>', send_command)
     label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=color_text, bg='#000000')
     label_ip_3.place(x=175, y=15)  # Define a Label and put it in position
 
@@ -729,21 +733,21 @@ def loop():  # GUI
     btn_WatchDog.place(x=200, y=445)
     root.bind('<KeyPress-z>', call_watch_dog)
     btn_WatchDog.bind('<ButtonPress-1>', call_watch_dog)
+    btn_smooth = tk.Button(root, width=10, text='Smooth', fg=color_text, bg=color_btn, relief='ridge')
+    btn_smooth.place(x=285, y=445)
+    root.bind('<KeyPress-z>', call_smooth)
+    btn_smooth.bind('<ButtonPress-1>', call_smooth)
     '''
-    btn_Fun4 = tk.Button(root, width=10, text='Function 4', fg=color_text, bg=color_btn, relief='ridge')
-    btn_Fun4.place(x=285, y=445)
-    root.bind('<KeyPress-z>', call_WatchDog)
-    btn_Fun4.bind('<ButtonPress-1>', call_WatchDog)
 
     btn_Fun5 = tk.Button(root, width=10, text='Function 5', fg=color_text, bg=color_btn, relief='ridge')
     btn_Fun5.place(x=370, y=445)
     root.bind('<KeyPress-z>', call_WatchDog)
     btn_Fun5.bind('<ButtonPress-1>', call_WatchDog)
     '''
-    btn_Quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
-    btn_Quit.place(x=455, y=445)
+    btn_quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
+    btn_quit.place(x=455, y=445)
     # root.bind('<KeyPress-z>', call_WatchDog)
-    btn_Quit.bind('<ButtonPress-1>', exit)
+    btn_quit.bind('<ButtonPress-1>', exit)
 
     root.protocol("WM_DELETE_WINDOW", callback)
     root.mainloop()  # Run the mainloop()
@@ -764,6 +768,12 @@ def exit(event):
 
 def closeEvent(self, event):
     exit()
+
+
+def send_command():
+    global tcp_client_socket
+    if str(e2.get()).encode() != '' and connect_status == 0 :
+        tcp_client_socket.send(str(e2.get()).encode())
 
 
 if __name__ == '__main__':

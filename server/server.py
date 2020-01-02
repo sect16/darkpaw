@@ -12,12 +12,13 @@ import sys
 import time
 import threading
 import move
-import argparse  # from rpi_ws281x import *
+import argparse
+from rpi_ws281x import *
 import psutil
 import switch
 import traceback
-# import LED
-
+import LED
+import speak_dict
 import config
 import coloredlogs, logging
 
@@ -44,8 +45,8 @@ direction_command = 'no'
 turn_command = 'no'
 # pwm = Adafruit_PCA9685.PCA9685()
 # pwm.set_pwm_freq(50)
-# LED = LED.LED()
-SmoothMode = 0
+LED = LED.LED()
+smoothMode = 0
 steadyMode = 0
 addr = None
 tcpCliSock = None
@@ -57,9 +58,9 @@ ADDR = (HOST, PORT)
 wiggle = 100
 kill_event = threading.Event()
 
+
 def breath_led():
-    logger.debug('Dummy')
-    # LED.breath(255)
+    LED.breath(255)
 
 
 def ap_thread():
@@ -187,7 +188,7 @@ def FPV_thread(arg, event):
 
 
 def run():
-    global direction_command, turn_command, SmoothMode, steadyMode
+    global direction_command, turn_command, smoothMode, steadyMode
     # Define a thread for FPV and OpenCV
     moving_threading = threading.Thread(target=move_thread, args=(0, kill_event), daemon=True)
     # 'True' means it is a front thread,it would close when the mainloop() closes
@@ -246,7 +247,7 @@ def run():
             try:
                 set_R = data.split()
                 ws_R = int(set_R[1])
-                # LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                LED.colorWipe(Color(ws_R, ws_G, ws_B))
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
@@ -254,7 +255,7 @@ def run():
             try:
                 set_G = data.split()
                 ws_G = int(set_G[1])
-                # LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                LED.colorWipe(Color(ws_R, ws_G, ws_B))
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
@@ -262,25 +263,25 @@ def run():
             try:
                 set_B = data.split()
                 ws_B = int(set_B[1])
-                # LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                LED.colorWipe(Color(ws_R,ws_G,ws_B))
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'FindColor' in data:
-            # LED.breath_status_set(1)
+            LED.breath_status_set(1)
             fpv.FindColor(1)
             tcpCliSock.send('FindColor'.encode())
         elif 'WatchDog' in data:
-            # LED.breath_status_set(1)
+            LED.breath_status_set(1)
             fpv.WatchDog(1)
             tcpCliSock.send('WatchDog'.encode())
         elif 'steady' in data:
-            # LED.breath_status_set(1)
-            # LED.breath_color_set('blue')
+            LED.breath_status_set(1)
+            LED.breath_color_set('blue')
             steadyMode = 1
             tcpCliSock.send('steady'.encode())
         elif 'func_end' in data:
-            # LED.breath_status_set(0)
+            LED.breath_status_set(0)
             fpv.FindColor(0)
             fpv.WatchDog(0)
             steadyMode = 0
@@ -288,10 +289,10 @@ def run():
             tcpCliSock.send('func_end'.encode())
 
         elif 'Smooth_on' in data:
-            SmoothMode = 1
+            smoothMode = 1
             tcpCliSock.send('Smooth_on'.encode())
         elif 'Smooth_off' in data:
-            SmoothMode = 0
+            smoothMode = 0
             tcpCliSock.send('Smooth_off'.encode())
 
         elif 'Switch_1_on' in data:
@@ -314,9 +315,9 @@ def run():
             tcpCliSock.send('Switch_3_off'.encode())
         elif 'disconnect' in data:
             tcpCliSock.send('disconnect'.encode())
-            speak('Silly dog disconnected')
+            speak(speak_dict.disconnect)
         else:
-            logger.warning('Unknown command received')
+            logger.info('Speaking command received')
             speak(data)
             pass
 
@@ -337,7 +338,7 @@ def main():
     PORT = 10223  # Define port serial
     BUFSIZ = 1024  # Define buffer size
     ADDR = (HOST, PORT)
-    """    
+
     try:
         led_threading=threading.Thread(target=breath_led)         #Define a thread for LED breathing
         led_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
@@ -346,7 +347,7 @@ def main():
     except:
         logger.debug('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
         pass
-    """
+
     while 1:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -362,7 +363,7 @@ def main():
             ap_threading.setDaemon(True)
             # Thread starts
             ap_threading.start()
-            """
+
             LED.colorWipe(Color(0,16,50))
             time.sleep(1)
             LED.colorWipe(Color(0,16,100))
@@ -374,7 +375,7 @@ def main():
             LED.colorWipe(Color(0,16,255))
             time.sleep(1)
             LED.colorWipe(Color(35,255,35))
-            """
+
         try:
             global tcpCliSock
             global addr
@@ -394,21 +395,22 @@ def main():
         except:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
             kill_event.set()
-            # LED.colorWipe(Color(0,0,0))
+            LED.colorWipe(Color(0,0,0))
             pass
-    """
+
     try:
         LED.breath_status_set(0)
         LED.colorWipe(Color(64,128,255))
     except:
+        logger.error('Exception LED breath: %s', traceback.format_exc())
         pass
-    """
+
     try:
         run()
     except:
         logger.error('Run exception, terminate and restart main(). %s', traceback.format_exc())
         kill_event.set()
-        # LED.colorWipe(Color(0,0,0))
+        LED.colorWipe(Color(0,0,0))
         move.release()
         switch.switch(1, 0)
         switch.switch(2, 0)
