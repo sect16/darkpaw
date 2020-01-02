@@ -414,11 +414,16 @@ def info_receive_thread(arg, event):
                 label_cpu_temp.config(text='CPU Temp: %s℃' % cpu_temp)
                 label_cpu_use.config(text='CPU Usage: %s' % cpu_use)
                 label_ram.config(text='RAM Usage: %s' % ram_use)
+                retries = 0
+            elif retries >=10:
+                logger.error('Maximum retires reached (%d), disconnecting', retries)
+                disconnect()
             else:
                 logger.warning('Invalid info_data received from server: "%s"', info_data)
                 label_cpu_temp.config(text='CPU Temp: -')
                 label_cpu_use.config(text='CPU Usage: -')
                 label_ram.config(text='RAM Usage: -')
+                retries= retries + 1
         except:
             logger.error('Connection error, disconnecting')
             disconnect()
@@ -726,24 +731,24 @@ def loop():  # GUI
 
     btn_FindColor = tk.Button(root, width=10, text='FindColor', fg=color_text, bg=color_btn, relief='ridge')
     btn_FindColor.place(x=115, y=445)
-    root.bind('<KeyPress-z>', call_find_color)
+    root.bind('<KeyPress-x>', call_find_color)
     btn_FindColor.bind('<ButtonPress-1>', call_find_color)
 
     btn_WatchDog = tk.Button(root, width=10, text='WatchDog', fg=color_text, bg=color_btn, relief='ridge')
     btn_WatchDog.place(x=200, y=445)
-    root.bind('<KeyPress-z>', call_watch_dog)
+    root.bind('<KeyPress-c>', call_watch_dog)
     btn_WatchDog.bind('<ButtonPress-1>', call_watch_dog)
+
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=color_text, bg=color_btn, relief='ridge')
     btn_smooth.place(x=285, y=445)
-    root.bind('<KeyPress-z>', call_smooth)
+    root.bind('<KeyPress-v>', call_smooth)
     btn_smooth.bind('<ButtonPress-1>', call_smooth)
-    '''
 
-    btn_Fun5 = tk.Button(root, width=10, text='Function 5', fg=color_text, bg=color_btn, relief='ridge')
+    btn_Fun5 = tk.Button(root, width=10, text='Audio On', fg=color_text, bg=color_btn, relief='ridge')
     btn_Fun5.place(x=370, y=445)
-    root.bind('<KeyPress-z>', call_WatchDog)
-    btn_Fun5.bind('<ButtonPress-1>', call_WatchDog)
-    '''
+    root.bind('<KeyPress-b>', call_stream_audio)
+    btn_Fun5.bind('<ButtonPress-1>', call_stream_audio)
+
     btn_quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
     btn_quit.place(x=455, y=445)
     # root.bind('<KeyPress-z>', call_WatchDog)
@@ -774,6 +779,10 @@ def send_command():
     global tcp_client_socket
     if str(e2.get()).encode() != '' and connect_status == 0 :
         tcp_client_socket.send(str(e2.get()).encode())
+
+
+def call_stream_audio(event):
+    tcp_client_socket.send('stream_audio'.encode())
 
 
 if __name__ == '__main__':
