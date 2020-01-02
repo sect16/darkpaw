@@ -745,9 +745,13 @@ def loop():  # GUI
     # root.bind('<KeyPress-z>', call_WatchDog)
     btn_Quit.bind('<ButtonPress-1>', exit)
 
-    #root.protocol("WM_DELETE_WINDOW", exit(0))
+    root.protocol("WM_DELETE_WINDOW", callback)
     root.mainloop()  # Run the mainloop()
 
+
+def callback():
+    exit(0)
+    pass
 
 
 def exit(event):
@@ -763,9 +767,12 @@ def closeEvent(self, event):
 
 
 if __name__ == '__main__':
+    loop()
+    '''
     try:
         loop()  # Load GUI
     except:
         logger.error('Thread exception: %s', traceback.format_exc())
         disconnect()
         pass
+    '''
