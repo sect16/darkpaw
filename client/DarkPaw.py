@@ -15,25 +15,16 @@ import time
 import threading
 import tkinter as tk
 import traceback
-import sys
-
 import coloredlogs, logging
 
 # Create a logger object.
 logger = logging.getLogger(__name__)
-
-# By default the install() function installs a handler on the root logger,
-# this means that log messages from your code and log messages from the
-# libraries that you use will all show up on the terminal.
-# coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
                     fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
-# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s) %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
-# %clr(%d{${LOG_DATEFORMAT_PATTERN:HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(${PID: }){magenta} %clr(---){faint} %clr([%16.16t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
+
 logger.info('Starting python...')
 
 # Flags
-connect_status = 1  # Shows connection status
 move_forward_status = 0
 move_back_status = 0
 move_left_status = 0
@@ -44,9 +35,7 @@ funcMode = 0
 switch_3 = 0
 switch_2 = 0
 switch_1 = 0
-switch_fpv = 0
 smooth_mode = 0
-exit_flag = None
 
 # Variables
 frame_num = 0
@@ -58,7 +47,7 @@ addr = 0
 
 tcp_client_socket = None
 fpv_event = threading.Event()
-gen_event = threading.Event()
+connect_event = threading.Event()
 footage_socket = None
 font = None
 root = tk.Tk()  # Define a window named root
@@ -67,39 +56,23 @@ root = tk.Tk()  # Define a window named root
 BUFFER_SIZE = 1024
 SERVER_PORT = 10223  # Define port serial
 VIDEO_PORT = 5555
-
-def video_thread(arg, event):
-    global footage_socket, font, frame_num, fps, VIDEO_PORT
-    context = zmq.Context()
-    footage_socket = context.socket(zmq.SUB)
-    footage_socket.bind('tcp://*:%d' % (VIDEO_PORT))
-    footage_socket.setsockopt_string(zmq.SUBSCRIBE, np.unicode(''))
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    frame_num = 0
-    fps = 0
-    video_threading = threading.Thread(target=open_cv_thread, args=(0, fpv_event),
-                                       daemon=True)  # Define a thread for FPV and OpenCV
-    video_threading.start()  # Thread starts
+INFO_PORT = 2256  # Define port serial
 
 
 def get_fps_thread(arg, event):
     logger.debug('Thread started')
     global frame_num, fps
-    while not event.is_set():
-        try:
-            time.sleep(1)
-            fps = frame_num
-            frame_num = 0
-        except:
-            logger.error('Thread exception: %s', traceback.format_exc())
-            time.sleep(1)
+    while event.is_set():
+        time.sleep(1)
+        fps = frame_num
+        frame_num = 0
     logger.debug('Thread stopped')
 
 
 def open_cv_thread(arg, event):
     logger.debug('Thread started')
     global frame_num
-    while not event.is_set():
+    while event.is_set():
         try:
             frame = footage_socket.recv_string()
             img = base64.b64decode(frame)
@@ -111,15 +84,9 @@ def open_cv_thread(arg, event):
                             cv2.LINE_AA)
                 cv2.putText(source, ('CPU Usage: %s' % cpu_use), (370, 380), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
                 cv2.putText(source, ('RAM Usage: %s' % ram_use), (370, 410), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
-
-            # cv2.line(source,(320,240),(260,300),(255,255,255),1)
-            # cv2.line(source,(210,300),(260,300),(255,255,255),1)
-
-            # cv2.putText(source,('%sm'%ultra_data),(210,290), font, 0.5,(255,255,255),1,cv2.LINE_AA)
             except:
                 logger.error('Thread exception: %s', traceback.format_exc())
                 pass
-            # cv2.putText(source,('%sm'%ultra_data),(210,290), font, 0.5,(255,255,255),1,cv2.LINE_AA)
             cv2.imshow("Stream", source)
             frame_num += 1
             cv2.waitKey(1)
@@ -130,27 +97,6 @@ def open_cv_thread(arg, event):
             break
     cv2.destroyAllWindows()
     logger.debug('Thread stopped')
-
-
-def start_fpv():
-    global switch_fpv
-    if connect_status == 0 and switch_fpv == 0:
-        global fpv_event
-        fpv_event.clear()
-        fps_threading = threading.Thread(target=get_fps_thread, args=(0, fpv_event),
-                                         daemon=True)  # Define a thread for FPV and OpenCV
-        fps_threading.start()  # Thread starts
-        video_threading = threading.Thread(target=video_thread, args=(0, fpv_event),
-                                           daemon=True)  # Define a thread for FPV and OpenCV
-        video_threading.start()  # Thread starts
-        switch_fpv = 1
-
-
-def stop_fpv():
-    global switch_fpv
-    fpv_event.set()
-    cv2.destroyAllWindows()
-    switch_fpv = 0
 
 
 def replace_num(initial, new_num):  # Call this function to replace data in '.txt' file
@@ -312,20 +258,39 @@ def call_switch_3(event):
 
 
 def call_fpv(event):
-    global switch_fpv
-    if switch_fpv == 0:
-        start_fpv()
-    elif switch_fpv == 1:
-        stop_fpv()
+    global footage_socket, font, VIDEO_PORT, fpv_event, connect_event
+    if str(btn_FPV['state']) == 'normal':
+        btn_FPV['state'] = 'disabled'
+    if not fpv_event.is_set():
+        logger.info('Starting FPV')
+        if connect_event.is_set():
+            fpv_event.set()
+            fps_threading = threading.Thread(target=get_fps_thread, args=(0, fpv_event), daemon=True)
+            fps_threading.start()
+            context = zmq.Context()
+            footage_socket = context.socket(zmq.SUB)
+            footage_socket.bind('tcp://*:%d' % (VIDEO_PORT))
+            footage_socket.setsockopt_string(zmq.SUBSCRIBE, np.unicode(''))
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            # Define a thread for FPV and OpenCV
+            video_threading = threading.Thread(target=open_cv_thread, args=(0, fpv_event), daemon=True)
+            video_threading.start()
+            btn_FPV.config(bg='#00E676')
+            btn_FPV['state'] = 'normal'
+        else:
+            logger.info('Cannot start FPV when not connected')
+    elif fpv_event.is_set():
+        logger.info('Stopping FPV')
+        fpv_event.clear()
+        cv2.destroyAllWindows()
+        btn_FPV.config(bg=color_btn)
+        btn_FPV['state'] = 'normal'
 
 
 def all_btn_red():
     btn_Steady.config(bg='#FF6D00', fg='#000000')
     btn_FindColor.config(bg='#FF6D00', fg='#000000')
     btn_WatchDog.config(bg='#FF6D00', fg='#000000')
-    # btn_Fun4.config(bg='#FF6D00', fg='#000000')
-    # btn_Fun5.config(bg='#FF6D00', fg='#000000')
-    # btn_Fun6.config(bg='#FF6D00', fg='#000000')
 
 
 def all_btn_normal():
@@ -333,9 +298,6 @@ def all_btn_normal():
     btn_Steady.config(bg=color_btn, fg=color_text)
     btn_FindColor.config(bg=color_btn, fg=color_text)
     btn_WatchDog.config(bg=color_btn, fg=color_text)
-    # btn_Fun4.config(bg=color_btn, fg=color_text)
-    # btn_Fun5.config(bg=color_btn, fg=color_text)
-    # btn_Fun6.config(bg=color_btn, fg=color_text)
     switch_3 = 0
     switch_2 = 0
     switch_1 = 0
@@ -346,7 +308,7 @@ def all_btn_normal():
 def status_receive_thread(arg, event):
     logger.debug('Thread started')
     global funcMode, switch_3, switch_2, switch_1, smooth_mode, tcp_client_socket
-    while not event.is_set():
+    while event.is_set():
         try:
             status_data = (tcp_client_socket.recv(BUFFER_SIZE)).decode()
             logger.info('Received status info: %s' % (status_data,))
@@ -392,19 +354,17 @@ def status_receive_thread(arg, event):
     logger.debug('Thread stopped')
 
 
-def info_receive_thread(arg, event):
+def stat_receive_thread(arg, event):
     logger.debug('Thread started')
-    global cpu_temp, cpu_use, ram_use, gen_event
-    host = ''
-    info_port = 2256  # Define port serial
-    addr = (host, info_port)
+    global cpu_temp, cpu_use, ram_use, connect_event, INFO_PORT
+    addr = ('', INFO_PORT)
     info_sock = socket(AF_INET, SOCK_STREAM)
     info_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     info_sock.bind(addr)
     info_sock.listen(5)  # Start server,waiting for client
     info_sock, addr = info_sock.accept()
-    logger.info('Info connected')
-    while not event.is_set():
+    logger.info('Info port connected')
+    while event.is_set():
         try:
             info_data = str(info_sock.recv(BUFFER_SIZE).decode())
             info_get = info_data.split()
@@ -413,17 +373,17 @@ def info_receive_thread(arg, event):
                 logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s' % (cpu_temp, cpu_use, ram_use))
                 label_cpu_temp.config(text='CPU Temp: %s℃' % cpu_temp)
                 label_cpu_use.config(text='CPU Usage: %s' % cpu_use)
-                label_ram.config(text='RAM Usage: %s' % ram_use)
+                label_ram_use.config(text='RAM Usage: %s' % ram_use)
                 retries = 0
-            elif retries >=10:
+            elif retries >= 10:
                 logger.error('Maximum retires reached (%d), disconnecting', retries)
                 disconnect()
             else:
                 logger.warning('Invalid info_data received from server: "%s"', info_data)
                 label_cpu_temp.config(text='CPU Temp: -')
                 label_cpu_use.config(text='CPU Usage: -')
-                label_ram.config(text='RAM Usage: -')
-                retries= retries + 1
+                label_ram_use.config(text='RAM Usage: -')
+                retries = retries + 1
         except:
             logger.error('Connection error, disconnecting')
             disconnect()
@@ -431,98 +391,75 @@ def info_receive_thread(arg, event):
     logger.debug('Thread stopped')
 
 
-def socket_connect_thread(arg, event):  # Call this function to connect with the server
-    logger.debug('Thread started')
-    global addr, tcp_client_socket, BUFFER_SIZE, connect_status, SERVER_PORT
-    ip_address = e1.get()  # Get the IP address from Entry
-
-    if ip_address == '':  # If no input IP address in Entry,import a default IP
-        ip_address = num_import('IP:')
-        label_ip_1.config(text='Connecting')
-        label_ip_1.config(bg='#FF8F00')
-        label_ip_2.config(text='Default: %s' % ip_address)
-        pass
-
-    server_ip = ip_address
-    addr = (server_ip, SERVER_PORT)
-    tcp_client_socket = socket(AF_INET, SOCK_STREAM)  # Set connection value for socket
-    try:
-        for i in range(1, 6):  # Try 5 times if disconnected
-            # try:
-            if connect_status == 1:
-                logger.info("Connecting to server @ %s:%d..." % (server_ip, SERVER_PORT))
-                tcp_client_socket.connect(addr)  # Connection with the server
-
-                logger.info("Connected successfully")
-
-                label_ip_2.config(text='IP:%s' % ip_address)
-                label_ip_1.config(text='Connected')
-                label_ip_1.config(bg='#558B2F')
-
-                replace_num('IP:', ip_address)
-                e1.config(state='disabled')  # Disable the Entry
-                btn14.config(state='normal')  # Disable the Entry
-                btn14.config(text='Disconnect')
-
-                connect_status = 0  # '0' means connected
-
-                status_threading = threading.Thread(target=status_receive_thread, args=(0, gen_event),
-                                                    daemon=True)  # Define a thread for status data
-                status_threading.start()  # Thread starts
-
-                info_threading = threading.Thread(target=info_receive_thread, args=(0, gen_event),
-                                                  daemon=True)  # Define a thread for info data
-                info_threading.start()  # Thread starts
-                break
-            else:
-                logger.error("Cannot connect to server")
-                label_ip_1.config(text='Try %d/5 time(s)' % i)
-                label_ip_1.config(bg='#EF6C00')
-                logger.info('Try %d/5 time(s)' % i)
-                connect_status = 1
-                time.sleep(1)
-                continue
-    except:
-        logger.error('Unable to connect: %s', traceback.format_exc())
-
-    if connect_status == 1:
-        label_ip_1.config(text='Disconnected')
-        label_ip_1.config(bg='#F44336')
-        btn14.config(state='normal')
-
-    logger.debug('Thread stopped')
-
-
 def connect():  # Call this function to connect with the server
-    global gen_event, connect_status
-    if str(btn14['state']) == 'normal':
-        btn14['state'] = 'disabled'
-    if connect_status == 1:
+    global connect_event, addr, tcp_client_socket, BUFFER_SIZE, SERVER_PORT
+    if str(btn_connect['state']) == 'normal':
+        btn_connect['state'] = 'disabled'
+    if not connect_event.is_set():
         logger.info('Connecting to server')
-        gen_event.clear()
-        sc = threading.Thread(target=socket_connect_thread, args=(0, gen_event),
-                              daemon=True)  # Define a thread for connection
-        sc.start()  # Thread starts
-    elif connect_status == 0:
+        ip_address = e1.get()  # Get the IP address from Entry
+        if ip_address == '':  # If no input IP address in Entry,import a default IP
+            ip_address = num_import('IP:')
+            label_ip_1.config(text='Connecting')
+            label_ip_1.config(bg='#FF8F00')
+            label_ip_2.config(text='Default: %s' % ip_address)
+            pass
+        server_ip = ip_address
+        addr = (server_ip, SERVER_PORT)
+        tcp_client_socket = socket(AF_INET, SOCK_STREAM)  # Set connection value for socket
+        try:
+            for i in range(1, 6):  # Try 5 times if disconnected
+                if not connect_event.is_set():
+                    logger.info("Connecting to server @ %s:%d..." % (server_ip, SERVER_PORT))
+                    tcp_client_socket.connect(addr)  # Connection with the server
+                    logger.info("Connected successfully")
+                    label_ip_2.config(text='IP: %s' % ip_address)
+                    label_ip_1.config(text='Connected')
+                    label_ip_1.config(bg='#558B2F')
+                    replace_num('IP:', ip_address)
+                    e1.config(state='disabled')
+                    btn_connect.config(state='normal')
+                    btn_connect.config(text='Disconnect')
+                    connect_event.set() # Set to start threads
+                    status_threading = threading.Thread(target=status_receive_thread, args=(0, connect_event), daemon=True)
+                    status_threading.start()
+                    info_threading = threading.Thread(target=stat_receive_thread, args=(0, connect_event), daemon=True)
+                    info_threading.start()
+                    break
+                else:
+                    logger.error("Cannot connect to server")
+                    label_ip_1.config(text='Try %d/5 time(s)' % i)
+                    label_ip_1.config(bg='#EF6C00')
+                    logger.info('Try %d/5 time(s)' % i)
+                    time.sleep(1)
+                    continue
+        except:
+            logger.error('Unable to connect: %s', traceback.format_exc())
+        if not connect_event.is_set():
+            label_ip_1.config(text='Disconnected')
+            label_ip_1.config(bg='#F44336')
+            btn_connect.config(state='normal')
+    elif connect_event.is_set():
         disconnect()
 
 
 def disconnect():
     logger.info('Disconnecting from server')
-    global fpv_event, gen_event, connect_status, tcp_client_socket
-    fpv_event.set()
-    gen_event.set()
-    if tcp_client_socket is not None:
+    global fpv_event, connect_event, tcp_client_socket
+    fpv_event.clear() # Clear to kill threads
+    if connect_event.is_set():
         try:
             tcp_client_socket.send('disconnect'.encode())
         except:
             logger.error('Unable to send disconnect to server, quit anyway')
+        connect_event.clear()
         time.sleep(1)
         tcp_client_socket.close()  # Close socket or it may not connect with the server again
-    btn14.config(text='Connect', fg=color_text, bg=color_btn)
-    btn14.config(state='normal')
+    else:
+        connect_event.clear()
+    btn_connect.config(text='Connect', fg=color_text, bg=color_btn)
+    btn_connect.config(state='normal')
     label_ip_1.config(text='Disconnected', fg=color_text, bg='#F44336')
-    connect_status = 1
     all_btn_normal()
 
 
@@ -542,9 +479,7 @@ def set_blue(event):
 
 
 def loop():  # GUI
-    global exit_flag, tcp_client_socket, root, e1, connect, label_ip_1, label_ip_2, color_btn, color_text, btn14, label_cpu_temp, label_cpu_use, label_ram, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, e2  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
-    global tcp_client_socket
-
+    global tcp_client_socket, root, e1, label_ip_1, label_ip_2, color_btn, color_text, btn_connect, label_cpu_temp, label_cpu_use, label_ram_use, canvas_ultra, color_text, var_R, var_B, var_G, btn_Steady, btn_FindColor, btn_WatchDog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, e2  # The value of tcpClicSock changes in the function loop(),would also changes in global so the other functions could use it.
     color_bg = '#000000'  # Set background color
     color_text = '#E1F5FE'  # Set text color
     color_btn = '#0277BD'  # Set button color
@@ -569,8 +504,8 @@ def loop():  # GUI
     label_cpu_use = tk.Label(root, width=18, text='CPU Usage:', fg=color_text, bg='#212121')
     label_cpu_use.place(x=400, y=45)  # Define a Label and put it in position
 
-    label_ram = tk.Label(root, width=18, text='RAM Usage:', fg=color_text, bg='#212121')
-    label_ram.place(x=400, y=75)  # Define a Label and put it in position
+    label_ram_use = tk.Label(root, width=18, text='RAM Usage:', fg=color_text, bg='#212121')
+    label_ram_use.place(x=400, y=75)  # Define a Label and put it in position
 
     label_ip_0 = tk.Label(root, width=18, text='Status', fg=color_text, bg=color_btn)
     label_ip_0.place(x=30, y=110)  # Define a Label and put it in position
@@ -584,14 +519,13 @@ def loop():  # GUI
     e1 = tk.Entry(root, show=None, width=16, bg="#37474F", fg='#eceff1')
     e1.place(x=180, y=40)  # Define a Entry and put it in position
 
-
     btn_e2 = tk.Button(root, width=10, text='Send', fg=color_text, bg=color_btn, relief='ridge')
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
     btn_e2.bind('<ButtonPress-1>', send_command)
 
     e2 = tk.Entry(root, show=None, width=64, bg="#37474F", fg='#eceff1')
     e2.place(x=30, y=300)  # Define a Entry and put it in position
-    #btn_e2.bind('<ButtonPress-1>', tcp_client_socket.send(str(e2.get()).encode()))
+
     label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=color_text, bg='#000000')
     label_ip_3.place(x=175, y=15)  # Define a Label and put it in position
 
@@ -628,7 +562,6 @@ def loop():  # GUI
     # Enable FPV
     btn_FPV = tk.Button(root, width=8, text='Video', fg=color_text, bg=color_btn, relief='ridge')
     btn_FPV.place(x=315, y=60)  # Define a Button and put it in position
-    # btn_FPV.bind('<ButtonPress-1>', call_FPV)
     btn_FPV.bind('<ButtonRelease-1>', call_fpv)
 
     btn0.place(x=100, y=195)
@@ -668,11 +601,9 @@ def loop():  # GUI
     btn_home.bind('<ButtonPress-1>', call_head_home)
     btn_left.bind('<ButtonPress-1>', call_head_left)
     btn_right.bind('<ButtonPress-1>', call_head_right)
-    
 
-    btn14 = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect,
-                      relief='ridge')
-    btn14.place(x=315, y=15)  # Define a Button and put it in position
+    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect, relief='ridge')
+    btn_connect.place(x=315, y=15)  # Define a Button and put it in position
 
     var_R = tk.StringVar()
     var_R.set(0)
@@ -726,7 +657,7 @@ def loop():  # GUI
 
     btn_quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
     btn_quit.place(x=455, y=445)
-    btn_quit.bind('<ButtonPress-1>', exit)
+    btn_quit.bind('<ButtonPress-1>', terminate)
 
     root.bind_all('<KeyPress-Return>', send_command)
     root.bind_all('<Button-1>', focus)
@@ -746,11 +677,11 @@ def focus(event):
 
 
 def callback():
-    exit(0)
+    terminate(0)
     pass
 
 
-def exit(event):
+def terminate(event):
     global exit_flag, root
     exit_flag = 1
     disconnect()
@@ -758,13 +689,9 @@ def exit(event):
     root.destroy()
 
 
-def closeEvent(self, event):
-    exit()
-
-
 def send_command(event):
-    global tcp_client_socket
-    if str(e2.get()).encode() != '' and connect_status == 0 :
+    global tcp_client_socket, connect_event
+    if str(e2.get()).encode() != '' and connect_event.is_set():
         tcp_client_socket.send(str(e2.get()).encode())
         e1.focus_set()
         e2.delete(0, 'end')
@@ -781,17 +708,17 @@ def bind_keys():
     root.bind('<KeyPress-s>', call_back)
     root.bind('<KeyPress-a>', call_left)
     root.bind('<KeyPress-d>', call_right)
-    
+
     root.bind('<KeyPress-q>', call_left_side)
     root.bind('<KeyPress-e>', call_right_side)
     root.bind('<KeyRelease-q>', call_turn_stop)
     root.bind('<KeyRelease-e>', call_turn_stop)
-    
+
     root.bind('<KeyRelease-w>', call_stop)
     root.bind('<KeyRelease-s>', call_stop)
     root.bind('<KeyRelease-a>', call_turn_stop)
     root.bind('<KeyRelease-d>', call_turn_stop)
-    
+
     root.bind('<KeyPress-i>', call_head_up)
     root.bind('<KeyPress-k>', call_head_down)
     root.bind('<KeyPress-j>', call_head_left)
@@ -841,11 +768,3 @@ def unbind_keys():
 
 if __name__ == '__main__':
     loop()
-    '''
-    try:
-        loop()  # Load GUI
-    except:
-        logger.error('Thread exception: %s', traceback.format_exc())
-        disconnect()
-        pass
-    '''
