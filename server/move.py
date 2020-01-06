@@ -5,13 +5,14 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 import time
+
 import Adafruit_PCA9685
+import coloredlogs
+import logging
 
 import Kalman_filter
 import PID
-
 import config
-import coloredlogs, logging
 
 # Create a logger object.
 logger = logging.getLogger(__name__)
@@ -67,8 +68,6 @@ Leg_I   --- forward --- Leg_III
 Leg_II  -- backward --- Leg_IV 
 '''
 Set_Direction = 1
-reach_wiggle = 100
-max_wiggle = config.upper_leg_m
 
 '''
 the bigger pixel is, the slower the servos will run.
@@ -104,8 +103,8 @@ try:
 except:
     pass
 
-kalman_filter_X =  Kalman_filter.Kalman_filter(0.001,0.1)
-kalman_filter_Y =  Kalman_filter.Kalman_filter(0.001,0.1)
+kalman_filter_X =  Kalman_filter.Kalman_filter(0.001, 0.1)
+kalman_filter_Y =  Kalman_filter.Kalman_filter(0.001, 0.1)
 
 
 '''
@@ -114,6 +113,7 @@ if the robot roll over when turning, decrease this value below.
 turn_steady = 4/5  # 2/3 4/5 5/6 ...
 
 def set_pwm(servo, pos):
+    logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
     pca.set_pwm(servo, 0, pos)
     config.servo[servo] = pos
     if config.servo_init.count(0) == 12:
@@ -145,6 +145,7 @@ def mpu6050Test():
         accelerometer_data = sensor.get_accel_data()
         logger.debug('X=%f, Y=%f, Z=%f', accelerometer_data['x'], accelerometer_data['y'], accelerometer_data['x'])
         time.sleep(0.3)
+        break
 '''
 def move_diagonal(step):
     if step == 1:
@@ -405,6 +406,7 @@ def release():
     pca.set_all_pwm(0,0)
 
 def init_servos():
+    logger.debug('Initialize all servos... ')
     for i in range(0,12):
         if i == 1 or i == 10:
             set_pwm(i, config.lower_leg_l)
@@ -415,7 +417,8 @@ def init_servos():
         if i == 5 or i == 8:
             set_pwm(i, config.upper_leg_m2)
     robot_X(config.default_X)
-    
+    # logger.debug('Servo initialized: %s', config.servo)
+
 step_input = 1
 move_stu = 1
 if __name__ == '__main__':  

@@ -6,22 +6,24 @@
 # Date        : 29/11/2019
 
 import os
-import FPV
 import socket
-import sys
-import time
-import threading
-import move
-import argparse
-from rpi_ws281x import *
-import psutil
-import switch
-import traceback
-import LED
-import speak_dict
-import config
 import subprocess
-import coloredlogs, logging
+import threading
+import time
+import traceback
+
+import coloredlogs
+import logging
+import psutil
+from rpi_ws281x import *
+
+import FPV
+import LED
+import config
+import move
+import speak_dict
+import switch
+from speak import *
 
 # Create a logger object.
 logger = logging.getLogger(__name__)
@@ -31,7 +33,8 @@ logger = logging.getLogger(__name__)
 # libraries that you use will all show up on the terminal.
 # coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s',
+                    logger=logger)
 # logger.basicConfig(level=logger.DEBUG, format='%(asctime)s) %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 # %clr(%d{${LOG_DATEFORMAT_PATTERN:HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(${PID: }){magenta} %clr(---){faint} %clr([%16.16t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
 logger.debug('Starting python...')
@@ -47,14 +50,15 @@ turn_command = 'no'
 # pwm = Adafruit_PCA9685.PCA9685()
 # pwm.set_pwm_freq(50)
 LED = LED.LED()
+fpv = FPV.FPV()
 smoothMode = 0
 steadyMode = 0
 addr = None
-tcpCliSock = None
-HOST = None
+tcp_server_socket = None
+tcp_server = None
+HOST = ''
 PORT = 10223  # Define port serial
 BUFFER = 1024  # Define buffer size
-SPEED = 150
 ADDR = (HOST, PORT)
 wiggle = 100
 kill_event = threading.Event()
@@ -182,14 +186,6 @@ def info_send_client_thread(arg, event):
     logger.debug('Thread stopped')
 
 
-def FPV_thread(arg, event):
-    logger.debug('Thread started')
-    global fpv
-    fpv = FPV.FPV()
-    fpv.fpv_capture_thread(addr[0], event)
-    logger.debug('Thread stopped')
-
-
 def run():
     global direction_command, turn_command, smoothMode, steadyMode
     # Define a thread for FPV and OpenCV
@@ -209,8 +205,8 @@ def run():
     ws_B = 0
     run = True
     while run:
-        #data = ''
-        data = str(tcpCliSock.recv(BUFFER).decode())
+        # data = ''
+        data = str(tcp_server_socket.recv(BUFFER).decode())
         logger.debug('Received data on tcp socket: %s', data)
         if not data:
             run = False
@@ -266,94 +262,93 @@ def run():
             try:
                 set_B = data.split()
                 ws_B = int(set_B[1])
-                LED.colorWipe(Color(ws_R,ws_G,ws_B))
+                LED.colorWipe(Color(ws_R, ws_G, ws_B))
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'FindColor' in data:
             LED.breath_status_set(1)
             fpv.FindColor(1)
-            tcpCliSock.send('FindColor'.encode())
+            tcp_server_socket.send('FindColor'.encode())
         elif 'WatchDog' in data:
             LED.breath_status_set(1)
             fpv.WatchDog(1)
-            tcpCliSock.send('WatchDog'.encode())
+            tcp_server_socket.send('WatchDog'.encode())
         elif 'steady' in data:
             LED.breath_status_set(1)
             LED.breath_color_set('blue')
             steadyMode = 1
-            tcpCliSock.send('steady'.encode())
+            tcp_server_socket.send('steady'.encode())
         elif 'func_end' in data:
             LED.breath_status_set(0)
             fpv.FindColor(0)
             fpv.WatchDog(0)
             steadyMode = 0
             move.init_servos()
-            tcpCliSock.send('func_end'.encode())
+            tcp_server_socket.send('func_end'.encode())
 
         elif 'Smooth_on' in data:
             smoothMode = 1
-            tcpCliSock.send('Smooth_on'.encode())
+            tcp_server_socket.send('Smooth_on'.encode())
         elif 'Smooth_off' in data:
             smoothMode = 0
-            tcpCliSock.send('Smooth_off'.encode())
+            tcp_server_socket.send('Smooth_off'.encode())
 
         elif 'Switch_1_on' in data:
             switch.switch(1, 1)
-            tcpCliSock.send('Switch_1_on'.encode())
+            tcp_server_socket.send('Switch_1_on'.encode())
         elif 'Switch_1_off' in data:
             switch.switch(1, 0)
-            tcpCliSock.send('Switch_1_off'.encode())
+            tcp_server_socket.send('Switch_1_off'.encode())
         elif 'Switch_2_on' in data:
             switch.switch(2, 1)
-            tcpCliSock.send('Switch_2_on'.encode())
+            tcp_server_socket.send('Switch_2_on'.encode())
         elif 'Switch_2_off' in data:
             switch.switch(2, 0)
-            tcpCliSock.send('Switch_2_off'.encode())
+            tcp_server_socket.send('Switch_2_off'.encode())
         elif 'Switch_3_on' in data:
             switch.switch(3, 1)
-            tcpCliSock.send('Switch_3_on'.encode())
+            tcp_server_socket.send('Switch_3_on'.encode())
         elif 'Switch_3_off' in data:
             switch.switch(3, 0)
-            tcpCliSock.send('Switch_3_off'.encode())
+            tcp_server_socket.send('Switch_3_off'.encode())
+        elif 'start_video' in data:
+            config.VIDEO_OUT = 1
+            tcp_server_socket.send('start_video'.encode())
+        elif 'stop_video' in data:
+            config.VIDEO_OUT = 0
+            tcp_server_socket.send('stop_video'.encode())
         elif 'disconnect' in data:
-            tcpCliSock.send('disconnect'.encode())
-            speak(speak_dict.disconnect)
+            tcp_server_socket.send('disconnect'.encode())
         elif 'stream_audio' in data:
             global server_address, stream_audio_started
             if stream_audio_started == 0:
                 logger.info('Audio streaming server starting...')
-                subprocess.Popen([str('cvlc -vvv alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':3030}"')], shell = True)
+                subprocess.Popen([str(
+                    'cvlc -vvv alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':3030}"')],
+                                 shell=True)
                 stream_audio_started = 1
             else:
                 logger.info('Audio streaming server already started.')
-            tcpCliSock.send('stream_audio'.encode())
+            tcp_server_socket.send('stream_audio'.encode())
         else:
             logger.info('Speaking command received')
             speak(data)
             pass
 
 
-def speak(text):
-    global SPEED
-    os.system(str('espeak-ng "%s" -s %d' % (text, SPEED)))
-
-
 # if __name__ == '__main__':
 def main():
-    global kill_event
+    global kill_event, ADDR
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
-    HOST = ''
-    PORT = 10223  # Define port serial
-    BUFSIZ = 1024  # Define buffer size
-    ADDR = (HOST, PORT)
+
 
     try:
-        led_threading=threading.Thread(target=breath_led)         #Define a thread for LED breathing
-        led_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
-        led_threading.start()                                     #Thread starts
+        led_threading = threading.Thread(target=breath_led)  # Define a thread for LED breathing
+        led_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
+        led_threading.start()  # Thread starts
         LED.breath_color_set('blue')
     except:
         logger.debug('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
@@ -376,47 +371,49 @@ def main():
             # Thread starts
             ap_threading.start()
 
-            LED.colorWipe(Color(0,16,50))
+            LED.colorWipe(Color(0, 16, 50))
             time.sleep(1)
-            LED.colorWipe(Color(0,16,100))
+            LED.colorWipe(Color(0, 16, 100))
             time.sleep(1)
-            LED.colorWipe(Color(0,16,150))
+            LED.colorWipe(Color(0, 16, 150))
             time.sleep(1)
-            LED.colorWipe(Color(0,16,200))
+            LED.colorWipe(Color(0, 16, 200))
             time.sleep(1)
-            LED.colorWipe(Color(0,16,255))
+            LED.colorWipe(Color(0, 16, 255))
             time.sleep(1)
-            LED.colorWipe(Color(35,255,35))
+            LED.colorWipe(Color(35, 255, 35))
 
         try:
-            global tcpCliSock
+            global tcp_server_socket, tcp_server
             global addr
-            tcp_ser_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            tcp_ser_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            tcp_ser_sock.bind(ADDR)
+            tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            tcp_server.bind(ADDR)
             # Start server,waiting for client
-            tcp_ser_sock.listen(5)
+            tcp_server.listen(5)
             logger.debug('Waiting for connection...')
-            tcpCliSock, addr = tcp_ser_sock.accept()
+            tcp_server_socket, addr = tcp_server.accept()
             logger.debug('Connected from %s', addr)
             speak(speak_dict.connect)
             move.init_servos()
             time.sleep(1)
             for x in range(99):
-                move.robot_stand(x+1)
-            fps_threading = threading.Thread(target=FPV_thread, args=(0, kill_event), daemon=True)  # Define a thread for FPV and OpenCV
+                move.robot_stand(x + 1)
+            global fpv
+            fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=(addr[0], kill_event),
+                                             daemon=True)  # Define a thread for FPV and OpenCV
             fps_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
             fps_threading.start()  # Thread starts
             break
         except:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
             kill_event.set()
-            LED.colorWipe(Color(0,0,0))
+            LED.colorWipe(Color(0, 0, 0))
             pass
 
     try:
         LED.breath_status_set(0)
-        LED.colorWipe(Color(64,128,255))
+        LED.colorWipe(Color(64, 128, 255))
     except:
         logger.error('Exception LED breath: %s', traceback.format_exc())
         pass
@@ -424,22 +421,28 @@ def main():
     try:
         run()
     except:
-        logger.debug('Last servo positions: %s', config.servo)
         logger.error('Run exception, terminate and restart main(). %s', traceback.format_exc())
-        kill_event.set()
-        LED.colorWipe(Color(0,0,0))
-        # 150 - 500
-        current_pos = int((config.servo[1]-config.lower_leg_l)/(config.lower_leg_w*2)*100)
-        for x in range (current_pos):
-            move.robot_stand(current_pos-x)
-        move.release()
-        switch.switch(1, 0)
-        switch.switch(2, 0)
-        switch.switch(3, 0)
-        time.sleep(2)
-        tcp_ser_sock.close()
-        tcpCliSock.close()
+        disconnect()
         main()
+
+
+def disconnect():
+    logger.debug('Disconnecting and termination threads.')
+    speak(speak_dict.disconnect)
+    global tcp_server_socket, tcp_server, kill_event
+    kill_event.set()
+    LED.colorWipe(Color(0, 0, 0))
+    # 150 - 500
+    current_pos = int((config.servo[1] - config.lower_leg_l) / (config.lower_leg_w * 2) * 100)
+    for x in range(current_pos):
+        move.robot_stand(current_pos - x)
+    move.release()
+    switch.switch(1, 0)
+    switch.switch(2, 0)
+    switch.switch(3, 0)
+    time.sleep(2)
+    tcp_server.close()
+    tcp_server_socket.close()
 
 
 main()
