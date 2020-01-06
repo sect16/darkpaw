@@ -6,16 +6,17 @@
 # Author	  : Chin Pin Hon
 # Date		: 02/12/2019
 # 
-import cv2
-import zmq
 import base64
-import numpy as np
-from socket import *
-import time
 import threading
+import time
 import tkinter as tk
 import traceback
-import coloredlogs, logging
+from socket import *
+import coloredlogs
+import cv2
+import logging
+import numpy
+import zmq
 
 # Create a logger object.
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ addr = 0
 tcp_client_socket = None
 fpv_event = threading.Event()
 connect_event = threading.Event()
-footage_socket = None
+footage_socket_server = None
 font = None
 root = tk.Tk()  # Define a window named root
 
@@ -54,42 +55,8 @@ root = tk.Tk()  # Define a window named root
 BUFFER_SIZE = 1024
 SERVER_PORT = 10223  # Define port serial
 VIDEO_PORT = 5555
+VIDEO_TIMEOUT = 10000
 INFO_PORT = 2256  # Define port serial
-
-
-def get_fps_thread(arg, event):
-    logger.debug('Thread started')
-    global frame_num, fps
-    while event.is_set():
-        time.sleep(1)
-        fps = frame_num
-        frame_num = 0
-    logger.debug('Thread stopped')
-
-
-def open_cv_thread(arg, event):
-    logger.debug('Thread started')
-    global frame_num
-    while event.is_set():
-        try:
-            frame = footage_socket.recv_string()
-            img = base64.b64decode(frame)
-            npimg = np.frombuffer(img, dtype=np.uint8)
-            source = cv2.imdecode(npimg, 1)
-            cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(source, ('CPU Temperature: %s' % cpu_temp), (370, 350), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
-            cv2.putText(source, ('CPU Usage: %s' % cpu_use), (370, 380), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
-            cv2.putText(source, ('RAM Usage: %s' % ram_use), (370, 410), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
-            cv2.imshow("Stream", source)
-            frame_num += 1
-            cv2.waitKey(1)
-        except:
-            logger.error('Thread exception: %s', traceback.format_exc())
-            time.sleep(0.5)
-            break
-    cv2.destroyAllWindows()
-    logger.debug('Thread stopped')
-    btn_FPV.config(bg=color_btn)
 
 
 def replace_num(initial, new_num):  # Call this function to replace data in '.txt' file
@@ -251,22 +218,24 @@ def call_switch_3(event):
 
 
 def call_fpv(event):
-    global footage_socket, font, VIDEO_PORT, fpv_event, connect_event
+    global footage_socket_server, font, VIDEO_PORT, fpv_event, connect_event, VIDEO_TIMEOUT, context
     if str(btn_FPV['state']) == 'normal':
         btn_FPV['state'] = 'disabled'
     if not fpv_event.is_set():
         logger.info('Starting FPV')
         if connect_event.is_set():
             fpv_event.set()
-            fps_threading = threading.Thread(target=get_fps_thread, args=(0, fpv_event), daemon=True)
+            fps_threading = threading.Thread(target=get_fps_thread, args=([fpv_event]), daemon=True)
             fps_threading.start()
             context = zmq.Context()
-            footage_socket = context.socket(zmq.SUB)
-            footage_socket.bind('tcp://*:%d' % VIDEO_PORT)
-            footage_socket.setsockopt_string(zmq.SUBSCRIBE, np.unicode(''))
+            footage_socket_server = context.socket(zmq.SUB)
+            footage_socket_server.RCVTIMEO = VIDEO_TIMEOUT  # in milliseconds
+            # footage_socket_server.BACKLOG = 0  # in milliseconds
+            footage_socket_server.bind('tcp://*:%d' % VIDEO_PORT)
+            footage_socket_server.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
             font = cv2.FONT_HERSHEY_SIMPLEX
             # Define a thread for FPV and OpenCV
-            video_threading = threading.Thread(target=open_cv_thread, args=(0, fpv_event), daemon=True)
+            video_threading = threading.Thread(target=open_cv_thread, args=([fpv_event]), daemon=True)
             video_threading.start()
             btn_FPV.config(bg='#00E676')
             btn_FPV['state'] = 'normal'
@@ -275,9 +244,51 @@ def call_fpv(event):
     elif fpv_event.is_set():
         logger.info('Stopping FPV')
         fpv_event.clear()
-        cv2.destroyAllWindows()
-        btn_FPV.config(bg=color_btn)
-        btn_FPV['state'] = 'normal'
+
+
+def get_fps_thread(event):
+    logger.debug('Thread started')
+    global frame_num, fps
+    while event.is_set():
+        time.sleep(1)
+        fps = frame_num
+        frame_num = 0
+    logger.debug('Thread stopped')
+
+
+def open_cv_thread(event):
+    logger.debug('Thread started')
+    global frame_num, footage_socket_server, context
+    tcp_client_socket.send('start_video'.encode())
+    while event.is_set():
+        try:
+            frame = footage_socket_server.recv_string()
+            img = base64.b64decode(frame)
+            numpy_image = numpy.frombuffer(img, dtype=numpy.uint8)
+            source = cv2.imdecode(numpy_image, 1)
+            cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(source, ('CPU Temperature: %s' % cpu_temp), (370, 350), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
+            cv2.putText(source, ('CPU Usage: %s' % cpu_use), (370, 380), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
+            cv2.putText(source, ('RAM Usage: %s' % ram_use), (370, 410), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
+            cv2.imshow("Stream", source)
+            frame_num += 1
+            cv2.waitKey(1)
+        except:
+            logger.error('Thread exception: %s', traceback.format_exc())
+            time.sleep(0.5)
+            break
+    if connect_event.is_set():
+        try:
+            tcp_client_socket.send('stop_video'.encode())
+        except:
+            logger.error('Unable to send command.')
+    logger.debug('Destroying all CV2 windows')
+    cv2.destroyAllWindows()
+    footage_socket_server.__exit__()
+    btn_FPV.config(bg=color_btn)
+    btn_FPV['state'] = 'normal'
+    logger.debug('Thread stopped')
+    fpv_event.clear()
 
 
 def all_btn_red():
@@ -439,6 +450,7 @@ def disconnect():
     logger.info('Disconnecting from server')
     global fpv_event, connect_event, tcp_client_socket
     fpv_event.clear() # Clear to kill threads
+    time.sleep(0.5)
     if connect_event.is_set():
         try:
             tcp_client_socket.send('disconnect'.encode())
