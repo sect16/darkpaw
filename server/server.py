@@ -45,7 +45,7 @@ turn_command = 'no'
 # pwm.set_pwm_freq(50)
 LED = LED.LED()
 fpv = FPV.FPV()
-smoothMode = 0
+smooth_mode = 0
 steadyMode = 0
 addr = None
 tcp_server_socket = None
@@ -181,7 +181,7 @@ def info_send_client_thread(arg, event):
 
 
 def run():
-    global direction_command, turn_command, smoothMode, steadyMode
+    global direction_command, turn_command, smooth_mode, steadyMode
     # Define a thread for FPV and OpenCV
     moving_threading = threading.Thread(target=move_thread, args=(0, kill_event), daemon=True)
     # 'True' means it is a front thread,it would close when the mainloop() closes
@@ -197,14 +197,11 @@ def run():
     ws_R = 0
     ws_G = 0
     ws_B = 0
-    run = True
-    while run:
-        # data = ''
+    while not kill_event.is_set():
         data = str(tcp_server_socket.recv(BUFFER).decode())
         logger.debug('Received data on tcp socket: %s', data)
         if not data:
-            run = False
-            raise Exception
+            continue
         elif 'forward' == data:
             direction_command = 'forward'
         elif 'backward' == data:
@@ -314,6 +311,7 @@ def run():
             tcp_server_socket.send('stop_video'.encode())
         elif 'disconnect' in data:
             tcp_server_socket.send('disconnect'.encode())
+            disconnect()
         elif 'stream_audio' in data:
             global server_address, stream_audio_started
             if stream_audio_started == 0:
@@ -436,6 +434,7 @@ def disconnect():
     time.sleep(2)
     tcp_server.close()
     tcp_server_socket.close()
+    main()
 
 
 main()
