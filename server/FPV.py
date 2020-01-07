@@ -10,10 +10,8 @@ import base64
 import datetime
 from collections import deque
 
-import coloredlogs
 import cv2
 import imutils
-import logging
 import numpy
 import picamera
 import zmq
@@ -21,11 +19,10 @@ from picamera.array import PiRGBArray
 
 import LED
 import PID
-import config
 # from rpi_ws281x import *
 import move
-import speak_dict
 import speak as speak
+import speak_dict
 from speak import *
 
 PORT = 5555
@@ -47,12 +44,15 @@ logger = logging.getLogger(__name__)
 # libraries that you use will all show up on the terminal.
 # coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s',
+                    logger=logger)
 Y_lock = 0
 X_lock = 0
 tor = 50
 FindColorMode = 0
 WatchDogMode = 0
+
+
 # LED = LED.LED()
 
 

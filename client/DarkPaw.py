@@ -7,20 +7,22 @@
 # Date		: 02/12/2019
 # 
 import base64
+import logging
 import threading
 import time
 import tkinter as tk
 import traceback
 from socket import *
+
 import coloredlogs
 import cv2
-import logging
 import numpy
 import zmq
 
 # Create a logger object.
 logger = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG', fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
+coloredlogs.install(level='DEBUG',
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 logger.info('Starting python...')
 
 # Flags
@@ -267,7 +269,8 @@ def open_cv_thread(event):
             numpy_image = numpy.frombuffer(img, dtype=numpy.uint8)
             source = cv2.imdecode(numpy_image, 1)
             cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(source, ('CPU Temperature: %s' % cpu_temp), (370, 350), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
+            cv2.putText(source, ('CPU Temperature: %s' % cpu_temp), (370, 350), font, 0.5, (128, 255, 128), 1,
+                        cv2.LINE_AA)
             cv2.putText(source, ('CPU Usage: %s' % cpu_use), (370, 380), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
             cv2.putText(source, ('RAM Usage: %s' % ram_use), (370, 410), font, 0.5, (128, 255, 128), 1, cv2.LINE_AA)
             cv2.imshow("Stream", source)
@@ -423,8 +426,9 @@ def connect():  # Call this function to connect with the server
                     e1.config(state='disabled')
                     btn_connect.config(state='normal')
                     btn_connect.config(text='Disconnect')
-                    connect_event.set() # Set to start threads
-                    status_threading = threading.Thread(target=status_receive_thread, args=(0, connect_event), daemon=True)
+                    connect_event.set()  # Set to start threads
+                    status_threading = threading.Thread(target=status_receive_thread, args=(0, connect_event),
+                                                        daemon=True)
                     status_threading.start()
                     info_threading = threading.Thread(target=stat_receive_thread, args=(0, connect_event), daemon=True)
                     info_threading.start()
@@ -449,7 +453,7 @@ def connect():  # Call this function to connect with the server
 def disconnect():
     logger.info('Disconnecting from server')
     global fpv_event, connect_event, tcp_client_socket
-    fpv_event.clear() # Clear to kill threads
+    fpv_event.clear()  # Clear to kill threads
     time.sleep(0.5)
     if connect_event.is_set():
         try:
@@ -516,7 +520,8 @@ def loop():  # GUI
     e1.place(x=180, y=40)  # Define a Entry and put it in position
     e2.place(x=30, y=300)  # Define a Entry and put it in position
 
-    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect, relief='ridge')
+    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn, command=connect,
+                            relief='ridge')
     btn0 = tk.Button(root, width=8, text='Forward', fg=color_text, bg=color_btn, relief='ridge')
     btn1 = tk.Button(root, width=8, text='Backward', fg=color_text, bg=color_btn, relief='ridge')
     btn2 = tk.Button(root, width=8, text='Left', fg=color_text, bg=color_btn, relief='ridge')

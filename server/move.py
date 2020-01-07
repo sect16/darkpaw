@@ -4,11 +4,11 @@
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
+import logging
 import time
 
 import Adafruit_PCA9685
 import coloredlogs
-import logging
 
 import Kalman_filter
 import PID
@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 # libraries that you use will all show up on the terminal.
 # coloredlogs.install(level='DEBUG')
 coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s', logger=logger)
+                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s',
+                    logger=logger)
 pca = Adafruit_PCA9685.PCA9685()
 pca.set_pwm_freq(50)
 '''
@@ -59,7 +60,7 @@ for i in range(0,12):
         exec('pwm%d=config.upper_leg_m2'%i)
         exec('pwm%d_max=config.upper_leg_h2'%i)
         exec('pwm%d_min=config.upper_leg_l2'%i)
-'''        
+'''
 '''
 Leg_I   --- forward --- Leg_III
                |
@@ -99,18 +100,19 @@ Y_pid.SetKi(D)
 
 try:
     from mpu6050 import mpu6050
+
     sensor = mpu6050(0x68)
 except:
     pass
 
-kalman_filter_X =  Kalman_filter.Kalman_filter(0.001, 0.1)
-kalman_filter_Y =  Kalman_filter.Kalman_filter(0.001, 0.1)
-
+kalman_filter_X = Kalman_filter.Kalman_filter(0.001, 0.1)
+kalman_filter_Y = Kalman_filter.Kalman_filter(0.001, 0.1)
 
 '''
 if the robot roll over when turning, decrease this value below.
 '''
-turn_steady = 4/5  # 2/3 4/5 5/6 ...
+turn_steady = 4 / 5  # 2/3 4/5 5/6 ...
+
 
 def set_pwm(servo, pos):
     logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
@@ -120,25 +122,30 @@ def set_pwm(servo, pos):
         if config.servo.count(0) == 0:
             config.servo_init = list(config.servo)
 
-def leg_I(x,y,z):
-    set_pwm(0, int(config.upper_leg_m + (config.upper_leg_w*y/100)))
-    set_pwm(1, int(config.lower_leg_m + (config.lower_leg_w*z/100)))
-    set_pwm(2, int(config.torso_m + (config.torso_w*-x/100)))
 
-def leg_II(x,y,z):
-    set_pwm(3, int(config.upper_leg_m + (config.upper_leg_w*y/100)))
-    set_pwm(4, int(config.lower_leg_m2 + (config.lower_leg_w*-z/100)))
-    set_pwm(5, int(config.torso_m2 + (config.torso_w*x/100)))
+def leg_I(x, y, z):
+    set_pwm(0, int(config.upper_leg_m + (config.upper_leg_w * y / 100)))
+    set_pwm(1, int(config.lower_leg_m + (config.lower_leg_w * z / 100)))
+    set_pwm(2, int(config.torso_m + (config.torso_w * -x / 100)))
 
-def leg_III(x,y,z):
-    set_pwm(6, int(config.upper_leg_m2 + (config.upper_leg_w*y/100)))
-    set_pwm(7, int(config.lower_leg_m2 + (config.lower_leg_w*-z/100)))
-    set_pwm(8, int(config.torso_m2 + (config.torso_w*x/100)))
-    
-def leg_IV(x,y,z):
-    set_pwm(9, int(config.upper_leg_m2 + (config.upper_leg_w*-y/100)))
-    set_pwm(10, int(config.upper_leg_m + (config.upper_leg_w*z/100)))
-    set_pwm(11, int(config.torso_m + (config.torso_w*-x/100)))
+
+def leg_II(x, y, z):
+    set_pwm(3, int(config.upper_leg_m + (config.upper_leg_w * y / 100)))
+    set_pwm(4, int(config.lower_leg_m2 + (config.lower_leg_w * -z / 100)))
+    set_pwm(5, int(config.torso_m2 + (config.torso_w * x / 100)))
+
+
+def leg_III(x, y, z):
+    set_pwm(6, int(config.upper_leg_m2 + (config.upper_leg_w * y / 100)))
+    set_pwm(7, int(config.lower_leg_m2 + (config.lower_leg_w * -z / 100)))
+    set_pwm(8, int(config.torso_m2 + (config.torso_w * x / 100)))
+
+
+def leg_IV(x, y, z):
+    set_pwm(9, int(config.upper_leg_m2 + (config.upper_leg_w * -y / 100)))
+    set_pwm(10, int(config.upper_leg_m + (config.upper_leg_w * z / 100)))
+    set_pwm(11, int(config.torso_m + (config.torso_w * -x / 100)))
+
 
 def mpu6050Test():
     while 1:
@@ -146,6 +153,8 @@ def mpu6050Test():
         logger.debug('X=%f, Y=%f, Z=%f', accelerometer_data['x'], accelerometer_data['y'], accelerometer_data['x'])
         time.sleep(0.3)
         break
+
+
 '''
 def move_diagonal(step):
     if step == 1:
@@ -327,20 +336,22 @@ def dove_move_diagonal(step, speed, command):
             leg_tripod('IV', step_IV, i, -speed)
 '''
 
+
 def robot_X(amp):
     '''
     when amp is 0, robot <body>
     when amp is 100, robot >body<
     '''
     wiggle = config.torso_w
-    set_pwm(0, int(config.torso_m-wiggle+2*wiggle*amp/100))
-    set_pwm(3, int(config.torso_m-wiggle+2*wiggle*amp/100))
-    set_pwm(6, int(config.torso_m2+wiggle-2*wiggle*amp/100))
-    set_pwm(9, int(config.torso_m2+wiggle-2*wiggle*amp/100))
+    set_pwm(0, int(config.torso_m - wiggle + 2 * wiggle * amp / 100))
+    set_pwm(3, int(config.torso_m - wiggle + 2 * wiggle * amp / 100))
+    set_pwm(6, int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100))
+    set_pwm(9, int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100))
 
 
 def look_home():
     robot_stand(50)
+
 
 def robot_stand(height):
     '''
@@ -349,10 +360,11 @@ def robot_stand(height):
     lowest point 0
     range(100,0)
     '''
-    set_pwm(1, int(config.lower_leg_l + (config.lower_leg_w*2/100*height)))
-    set_pwm(4, int(config.lower_leg_h - (config.lower_leg_w*2/100*height)))
-    set_pwm(7, int(config.lower_leg_h - (config.lower_leg_w*2/100*height)))
-    set_pwm(10, int(config.lower_leg_l + (config.lower_leg_w*2/100*height)))
+    set_pwm(1, int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height)))
+    set_pwm(4, int(config.lower_leg_h - (config.lower_leg_w * 2 / 100 * height)))
+    set_pwm(7, int(config.lower_leg_h - (config.lower_leg_w * 2 / 100 * height)))
+    set_pwm(10, int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height)))
+
 
 def ctrl_range(raw, max_genout, min_genout):
     if raw > max_genout:
@@ -362,31 +374,37 @@ def ctrl_range(raw, max_genout, min_genout):
     else:
         raw_output = raw
     return int(raw_output)
-    
-def ctrl_pitch_roll(pitch, roll): #Percentage wiggle
-    wiggle=config.lower_leg_w
+
+
+def ctrl_pitch_roll(pitch, roll):  # Percentage wiggle
+    wiggle = config.lower_leg_w
     '''
     look up <- pitch -> look down.
     lean right <- roll -> lean left.
     default values are 0.
     range(-100, 100)
     '''
-    set_pwm(1, ctrl_range((config.lower_leg_m-wiggle*pitch/100-wiggle*roll/100), config.lower_leg_h, config.lower_leg_l))
-    set_pwm(4, ctrl_range((config.lower_leg_m2-wiggle*pitch/100+wiggle*roll/100), config.lower_leg_h2, config.lower_leg_l2))
-    set_pwm(7, ctrl_range((config.lower_leg_m2+wiggle*pitch/100-wiggle*roll/100), config.lower_leg_h2, config.lower_leg_l2))
-    set_pwm(10, ctrl_range((config.lower_leg_m+wiggle*pitch/100+wiggle*roll/100), config.lower_leg_h, config.lower_leg_l))
+    set_pwm(1, ctrl_range((config.lower_leg_m - wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h,
+                          config.lower_leg_l))
+    set_pwm(4, ctrl_range((config.lower_leg_m2 - wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h2,
+                          config.lower_leg_l2))
+    set_pwm(7, ctrl_range((config.lower_leg_m2 + wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h2,
+                          config.lower_leg_l2))
+    set_pwm(10, ctrl_range((config.lower_leg_m + wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h,
+                           config.lower_leg_l))
 
 
-def ctrl_yaw(wiggle, yaw): #Percentage wiggle
+def ctrl_yaw(wiggle, yaw):  # Percentage wiggle
     '''
     look left <- yaw -> look right
     default value is 0
     '''
-    #robot_X(config.default_X)
-    set_pwm(0, int(config.torso_m + wiggle*yaw/100))
-    set_pwm(3, int(config.torso_m - wiggle*yaw/100))
-    set_pwm(6, int(config.torso_m2 + wiggle*yaw/100))
-    set_pwm(9, int(config.torso_m2 - wiggle*yaw/100))
+    # robot_X(config.default_X)
+    set_pwm(0, int(config.torso_m + wiggle * yaw / 100))
+    set_pwm(3, int(config.torso_m - wiggle * yaw / 100))
+    set_pwm(6, int(config.torso_m2 + wiggle * yaw / 100))
+    set_pwm(9, int(config.torso_m2 - wiggle * yaw / 100))
+
 
 def steady():
     global X_fix_output, Y_fix_output
@@ -402,12 +420,14 @@ def steady():
     logger.debug('Accelerometer [X,Y] = %s, %s', -X_fix_output, Y_fix_output)
     ctrl_pitch_roll(-X_fix_output, Y_fix_output)
 
+
 def release():
-    pca.set_all_pwm(0,0)
+    pca.set_all_pwm(0, 0)
+
 
 def init_servos():
     logger.debug('Initialize all servos... ')
-    for i in range(0,12):
+    for i in range(0, 12):
         if i == 1 or i == 10:
             set_pwm(i, config.lower_leg_l)
         if i == 4 or i == 7:
@@ -419,9 +439,10 @@ def init_servos():
     robot_X(config.default_X)
     # logger.debug('Servo initialized: %s', config.servo)
 
+
 step_input = 1
 move_stu = 1
-if __name__ == '__main__':  
+if __name__ == '__main__':
     init_servos()
     time.sleep(1)
     try:
@@ -430,7 +451,7 @@ if __name__ == '__main__':
             time.sleep(0.1)
             break
             pass
-        
+
         mpu6050Test()
     except KeyboardInterrupt:
         time.sleep(1)
