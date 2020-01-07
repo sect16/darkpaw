@@ -5,21 +5,15 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 
-import os
 import socket
 import subprocess
-import threading
-import time
 import traceback
 
-import coloredlogs
-import logging
 import psutil
 from rpi_ws281x import *
 
 import FPV
 import LED
-import config
 import move
 import speak_dict
 import switch
@@ -326,7 +320,7 @@ def run():
                 logger.info('Audio streaming server starting...')
                 subprocess.Popen([str(
                     'cvlc -vvv alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':3030}"')],
-                                 shell=True)
+                    shell=True)
                 stream_audio_started = 1
             else:
                 logger.info('Audio streaming server already started.')
@@ -343,7 +337,6 @@ def main():
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
-
 
     try:
         led_threading = threading.Thread(target=breath_led)  # Define a thread for LED breathing

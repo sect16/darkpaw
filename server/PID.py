@@ -14,16 +14,16 @@ class PID:
         self.Kd = 0
         self.Initialize()
 
-    def SetKp(self,invar):
+    def SetKp(self, invar):
         self.Kp = invar
 
-    def SetKi(self,invar):
+    def SetKi(self, invar):
         self.Ki = invar
 
-    def SetKd(self,invar):
+    def SetKd(self, invar):
         self.Kd = invar
 
-    def SetPrevError(self,preverror):
+    def SetPrevError(self, preverror):
         self.prev_error = preverror
 
     def Initialize(self):
@@ -36,22 +36,24 @@ class PID:
         self.Ci = 0
         self.Cd = 0
 
-    def GenOut(self,error):
+    def GenOut(self, error):
         self.currtime = time.time()
         dt = self.currtime - self.prevtime
         de = error - self.prev_error
 
-        self.Cp = self.Kp*error
-        self.Ci += error*dt
+        self.Cp = self.Kp * error
+        self.Ci += error * dt
 
         self.Cd = 0
         if dt > 0:
-            self.Cd = de/dt
+            self.Cd = de / dt
 
         self.prevtime = self.currtime
         self.prev_error = error
 
-        return self.Cp + (self.Ki*self.Ci) + (self.Kd*self.Cd)
+        return self.Cp + (self.Ki * self.Ci) + (self.Kd * self.Cd)
+
+
 '''
 pid = PID()
 pid.SetKp(Kp)

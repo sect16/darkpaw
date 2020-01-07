@@ -5,9 +5,10 @@
 # E-mail      : support@adeept.com
 # Author      : original code by Tony DiCola (tony@tonydicola.com)
 # Date        : 2018/10/12
-import time
-from rpi_ws281x import *
 import argparse
+import time
+
+from rpi_ws281x import *
 
 # LED strip configuration:
 LED_COUNT = 6  # Number of LED pixels.

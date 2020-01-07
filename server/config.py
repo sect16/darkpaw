@@ -10,7 +10,6 @@ allow_speak = 1
 VIDEO_OUT = 0
 last_text = ''
 
-
 '''
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
 DO NOT increase or it may cause mechanical collisions.
