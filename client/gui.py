@@ -5,6 +5,7 @@ import coloredlogs
 
 import config
 import video
+import functions
 
 root = tk.Tk()  # Define a window named root
 # Create a logger object.
