@@ -24,35 +24,36 @@ yaw_left_status = 0
 yaw_right_status = 0
 smooth_mode = 0
 
-color_swt_act = config.COLOR_SWT_ACT
-color_btn_act = config.COLOR_BTN_ACT
-color_bg = config.COLOR_BG  # Set background color
-color_text = config.COLOR_TEXT
-color_btn = config.COLOR_BTN
-label_bg = config.LABEL_BG
+COLOR_SWT_ACT = config.COLOR_SWT_ACT
+COLOR_BTN_ACT = config.COLOR_BTN_ACT
+COLOR_BG = config.COLOR_BG  # Set background color
+COLOR_TEXT = config.COLOR_TEXT
+COLOR_BTN = config.COLOR_BTN
+label_bg = config.COLOR_BTN
+COLOR_BTN_RED = config.COLOR_BTN_RED
 
 
 def loop():  # GUI
-    global interface, root, e1, e2, label_ip_1, label_ip_2, color_btn, color_text, btn_connect, \
-        label_cpu_temp, label_cpu_use, label_ram_use, color_text, var_R, var_B, var_G, btn_steady, btn_find_color, \
+    global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+        label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV
     root.title('DarkPaw')  # Main window title
     root.geometry('565x510')  # Main window size
-    root.config(bg=color_bg)  # Set the background color of root window
+    root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
         logo = tk.PhotoImage(file='logo.png')  # Define the picture of logo (Only supports '.png' and '.gif')
-        l_logo = tk.Label(root, image=logo, bg=color_bg)  # Set a label to show the logo picture
+        l_logo = tk.Label(root, image=logo, bg=COLOR_BG)  # Set a label to show the logo picture
         l_logo.place(x=60, y=7)  # Place the Label in a right position
     except:
         pass
-    label_cpu_temp = tk.Label(root, width=18, text='CPU Temp:', fg=color_text, bg='#212121')
-    label_cpu_use = tk.Label(root, width=18, text='CPU Usage:', fg=color_text, bg='#212121')
-    label_ram_use = tk.Label(root, width=18, text='RAM Usage:', fg=color_text, bg='#212121')
-    label_ip_0 = tk.Label(root, width=18, text='Status', fg=color_text, bg=color_btn)
-    label_ip_1 = tk.Label(root, width=18, text='Disconnected', fg=color_text, bg='#F44336')
-    label_ip_2 = tk.Label(root, width=18, text='Use default IP', fg=color_text, bg=color_btn)
-    label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=color_text, bg='#000000')
-    label_open_cv = tk.Label(root, width=28, text='OpenCV Status', fg=color_text, bg=color_btn)
+    label_cpu_temp = tk.Label(root, width=18, text='CPU Temp:', fg=COLOR_TEXT, bg='#212121')
+    label_cpu_use = tk.Label(root, width=18, text='CPU Usage:', fg=COLOR_TEXT, bg='#212121')
+    label_ram_use = tk.Label(root, width=18, text='RAM Usage:', fg=COLOR_TEXT, bg='#212121')
+    label_ip_0 = tk.Label(root, width=18, text='Status', fg=COLOR_TEXT, bg=COLOR_BTN)
+    label_ip_1 = tk.Label(root, width=18, text='Disconnected', fg=COLOR_TEXT, bg='#F44336')
+    label_ip_2 = tk.Label(root, width=18, text='Use default IP', fg=COLOR_TEXT, bg=COLOR_BTN)
+    label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=COLOR_TEXT, bg='#000000')
+    label_open_cv = tk.Label(root, width=28, text='OpenCV Status', fg=COLOR_TEXT, bg=COLOR_BTN)
     label_cpu_temp.place(x=400, y=15)  # Define a Label and put it in position
     label_cpu_use.place(x=400, y=45)  # Define a Label and put it in position
     label_ram_use.place(x=400, y=75)  # Define a Label and put it in position
@@ -67,27 +68,27 @@ def loop():  # GUI
     e1.place(x=180, y=40)  # Define a Entry and put it in position
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
-    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=color_text, bg=color_btn,
-                            command=interface.connect,
+    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN,
+                            command=functions.connect,
                             relief='ridge')
-    btn0 = tk.Button(root, width=8, text='Forward', fg=color_text, bg=color_btn, relief='ridge')
-    btn1 = tk.Button(root, width=8, text='Backward', fg=color_text, bg=color_btn, relief='ridge')
-    btn2 = tk.Button(root, width=8, text='Left', fg=color_text, bg=color_btn, relief='ridge')
-    btn3 = tk.Button(root, width=8, text='Right', fg=color_text, bg=color_btn, relief='ridge')
-    btn_up = tk.Button(root, width=8, text='Up', fg=color_text, bg=color_btn, relief='ridge')
-    btn_down = tk.Button(root, width=8, text='Down', fg=color_text, bg=color_btn, relief='ridge')
-    btn_home = tk.Button(root, width=8, text='Home', fg=color_text, bg=color_btn, relief='ridge')
-    btn_FPV = tk.Button(root, width=8, text='Video', fg=color_text, bg=color_btn, relief='ridge')
-    btn_e2 = tk.Button(root, width=10, text='Send', fg=color_text, bg=color_btn, relief='ridge')
-    btn_left_side = tk.Button(root, width=8, text='<--', fg=color_text, bg=color_btn, relief='ridge')
-    btn_right_side = tk.Button(root, width=8, text='-->', fg=color_text, bg=color_btn, relief='ridge')
-    btn_left = tk.Button(root, width=8, text='Left', fg=color_text, bg=color_btn, relief='ridge')
-    btn_right = tk.Button(root, width=8, text='Right', fg=color_text, bg=color_btn, relief='ridge')
-    btn_low = tk.Button(root, width=8, text='Low', fg=color_text, bg=color_btn, relief='ridge')
-    btn_high = tk.Button(root, width=8, text='High', fg=color_text, bg=color_btn, relief='ridge')
-    btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=color_text, bg=color_btn, relief='ridge')
-    btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=color_text, bg=color_btn, relief='ridge')
-    btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=color_text, bg=color_btn, relief='ridge')
+    btn0 = tk.Button(root, width=8, text='Forward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn1 = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn2 = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn3 = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_up = tk.Button(root, width=8, text='Up', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_down = tk.Button(root, width=8, text='Down', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_FPV = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_e2 = tk.Button(root, width=10, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_low = tk.Button(root, width=8, text='Low', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_high = tk.Button(root, width=8, text='High', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
     btn_connect.place(x=315, y=15)  # Define a Button and put it in position
     btn0.place(x=100, y=195)
@@ -113,7 +114,7 @@ def loop():  # GUI
     var_R.set(0)
     scale_R = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
                        tickinterval=None, resolution=1, variable=var_R, troughcolor='#F44336', command=set_R,
-                       fg=color_text, bg=color_bg, highlightthickness=0)
+                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
     scale_R.place(x=30, y=330)  # Define a Scale and put it in position
 
     var_G = tk.StringVar()
@@ -121,7 +122,7 @@ def loop():  # GUI
 
     scale_G = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
                        tickinterval=None, resolution=1, variable=var_G, troughcolor='#00E676', command=set_G,
-                       fg=color_text, bg=color_bg, highlightthickness=0)
+                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
     scale_G.place(x=30, y=360)  # Define a Scale and put it in position
 
     var_B = tk.StringVar()
@@ -129,33 +130,33 @@ def loop():  # GUI
 
     scale_B = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
                        tickinterval=None, resolution=1, variable=var_B, troughcolor='#448AFF', command=set_B,
-                       fg=color_text, bg=color_bg, highlightthickness=0)
+                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
     scale_B.place(x=30, y=390)  # Define a Scale and put it in position
 
-    canvas_cover = tk.Canvas(root, bg=color_bg, height=30, width=510, highlightthickness=0)
+    canvas_cover = tk.Canvas(root, bg=COLOR_BG, height=30, width=510, highlightthickness=0)
     canvas_cover.place(x=30, y=420)
 
-    btn_find_color = tk.Button(root, width=10, text='FindColor', fg=color_text, bg=color_btn, relief='ridge')
+    btn_find_color = tk.Button(root, width=10, text='FindColor', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_color.place(x=115, y=445)
     btn_find_color.bind('<ButtonPress-1>', call_find_color)
 
-    btn_watchdog = tk.Button(root, width=10, text='WatchDog', fg=color_text, bg=color_btn, relief='ridge')
+    btn_watchdog = tk.Button(root, width=10, text='WatchDog', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_watchdog.place(x=200, y=445)
     btn_watchdog.bind('<ButtonPress-1>', call_watchdog)
 
-    btn_audio = tk.Button(root, width=10, text='Audio On', fg=color_text, bg=color_btn, relief='ridge')
+    btn_audio = tk.Button(root, width=10, text='Audio On', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_audio.place(x=370, y=445)
     btn_audio.bind('<ButtonPress-1>', call_stream_audio)
 
-    btn_quit = tk.Button(root, width=10, text='Quit', fg=color_text, bg=color_btn, relief='ridge')
+    btn_quit = tk.Button(root, width=10, text='Quit', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_quit.place(x=455, y=445)
-    btn_quit.bind('<ButtonPress-1>', interface.terminate)
+    btn_quit.bind('<ButtonPress-1>', functions.terminate)
 
-    btn_steady = tk.Button(root, width=10, text='Steady', fg=color_text, bg=color_btn, relief='ridge')
+    btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.place(x=30, y=445)
     btn_steady.bind('<ButtonPress-1>', call_steady)
 
-    btn_smooth = tk.Button(root, width=10, text='Smooth', fg=color_text, bg=color_btn, relief='ridge')
+    btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_smooth.place(x=285, y=445)
     btn_smooth.bind('<ButtonPress-1>', call_smooth)
 
@@ -186,7 +187,7 @@ def loop():  # GUI
     root.bind_all('<KeyPress-Return>', send_command)
     root.bind_all('<Button-1>', focus)
     bind_keys()
-    root.protocol("WM_DELETE_WINDOW", lambda: interface.terminate(0))
+    root.protocol("WM_DELETE_WINDOW", lambda: functions.terminate(0))
     root.mainloop()  # Run the mainloop()
 
 
@@ -254,14 +255,14 @@ def unbind_keys():
 def call_forward(event):  # When this function is called,client commands the car to move forward
     global move_forward_status
     if move_forward_status == 0:
-        interface.send('forward')
+        functions.send('forward')
         move_forward_status = 1
 
 
 def call_back(event):  # When this function is called,client commands the car to move backward
     global move_backward_status
     if move_backward_status == 0:
-        interface.send('backward')
+        functions.send('backward')
         move_backward_status = 1
 
 
@@ -269,7 +270,7 @@ def call_stop(event):  # When this function is called,client commands the car to
     global move_forward_status, move_backward_status, move_left_status, move_right_status, yaw_left_status, yaw_right_status
     move_forward_status = 0
     move_backward_status = 0
-    interface.send('DS')
+    functions.send('DS')
 
 
 def call_turn_stop(event):  # When this function is called,client commands the car to stop moving
@@ -278,126 +279,126 @@ def call_turn_stop(event):  # When this function is called,client commands the c
     move_right_status = 0
     yaw_left_status = 0
     yaw_right_status = 0
-    interface.send('TS')
+    functions.send('TS')
 
 
 def call_left(event):  # When this function is called,client commands the car to turn left
     global move_left_status
     if move_left_status == 0:
-        interface.send('left')
+        functions.send('left')
         move_left_status = 1
 
 
 def call_right(event):  # When this function is called,client commands the car to turn right
     global move_right_status
     if move_right_status == 0:
-        interface.send('right')
+        functions.send('right')
         move_right_status = 1
 
 
 def call_left_side(event):
     global yaw_left_status
     if yaw_left_status == 0:
-        interface.send('leftside')
+        functions.send('leftside')
         yaw_left_status = 1
 
 
 def call_right_side(event):
     global yaw_right_status
     if yaw_right_status == 0:
-        interface.send('rightside')
+        functions.send('rightside')
         yaw_right_status = 1
 
 
 def call_head_up(event):
-    interface.send('headup')
+    functions.send('headup')
 
 
 def call_head_down(event):
-    interface.send('headdown')
+    functions.send('headdown')
 
 
 def call_head_left(event):
-    interface.send('headleft')
+    functions.send('headleft')
 
 
 def call_head_right(event):
-    interface.send('headright')
+    functions.send('headright')
 
 
 def call_head_low(event):
-    interface.send('low')
+    functions.send('low')
 
 
 def call_head_high(event):
-    interface.send('high')
+    functions.send('high')
 
 
 def call_head_home(event):
-    interface.send('headhome')
+    functions.send('headhome')
 
 
 def call_steady(event):
     if func_mode == 0:
-        interface.send('steady')
+        functions.send('steady')
     else:
-        interface.send('func_end')
+        functions.send('func_end')
 
 
 def call_find_color(event):
     if func_mode == 0:
-        interface.send('FindColor')
+        functions.send('FindColor')
     else:
-        interface.send('func_end')
+        functions.send('func_end')
 
 
 def call_watchdog(event):
     if func_mode == 0:
-        interface.send('WatchDog')
+        functions.send('WatchDog')
     else:
-        interface.send('func_end')
+        functions.send('func_end')
 
 
 def call_smooth(event):
     if smooth_mode == 0:
-        interface.send('Smooth_on')
+        functions.send('Smooth_on')
     else:
-        interface.send('Smooth_off')
+        functions.send('Smooth_off')
 
 
 def call_switch_1(event):
     if switch_1 == 0:
-        interface.send('Switch_1_on')
+        functions.send('Switch_1_on')
     else:
-        interface.send('Switch_1_off')
+        functions.send('Switch_1_off')
 
 
 def call_switch_2(event):
     if switch_2 == 0:
-        interface.send('Switch_2_on')
+        functions.send('Switch_2_on')
     else:
-        interface.send('Switch_2_off')
+        functions.send('Switch_2_off')
 
 
 def call_switch_3(event):
     if switch_3 == 0:
-        interface.send('Switch_3_on')
+        functions.send('Switch_3_on')
     else:
-        interface.send('Switch_3_off')
+        functions.send('Switch_3_off')
 
 
 def all_btn_red():
-    btn_steady.config(bg='#FF6D00', fg='#000000')
-    btn_find_color.config(bg='#FF6D00', fg='#000000')
-    btn_watchdog.config(bg='#FF6D00', fg='#000000')
+    btn_steady.config(bg=COLOR_BTN_RED, fg='#000000')
+    btn_find_color.config(bg=COLOR_BTN_RED, fg='#000000')
+    btn_watchdog.config(bg=COLOR_BTN_RED, fg='#000000')
 
 
 def all_btn_normal():
     global func_mode, switch_1, switch_2, switch_3, smooth_mode
-    btn_find_color.config(bg=color_btn, fg=color_text)
-    btn_watchdog.config(bg=color_btn, fg=color_text)
+    btn_find_color.config(bg=COLOR_BTN, fg=COLOR_TEXT)
+    btn_watchdog.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     func_mode = 0
-    btn_steady.config(bg=color_btn, fg=color_text)
+    btn_steady.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     switch_3 = 0
     switch_2 = 0
     switch_1 = 0
@@ -409,39 +410,39 @@ def button_update(status_data):
     if 'FindColor' in status_data:
         func_mode = 1
         all_btn_red()
-        btn_find_color.config(bg=color_btn_act)
+        btn_find_color.config(bg=COLOR_BTN_ACT)
     elif 'WatchDog' in status_data:
         func_mode = 1
         all_btn_red()
-        btn_watchdog.config(bg=color_btn_act)
+        btn_watchdog.config(bg=COLOR_BTN_ACT)
     elif 'steady' in status_data:
         func_mode = 1
         all_btn_red()
-        btn_steady.config(bg=color_btn_act)
+        btn_steady.config(bg=COLOR_BTN_ACT)
     elif 'Switch_3_on' in status_data:
-        btn_Switch_3.config(bg=color_swt_act)
+        btn_Switch_3.config(bg=COLOR_SWT_ACT)
         switch_3 = 1
     elif 'Switch_2_on' in status_data:
         switch_2 = 1
-        btn_Switch_2.config(bg=color_swt_act)
+        btn_Switch_2.config(bg=COLOR_SWT_ACT)
     elif 'Switch_1_on' in status_data:
         switch_1 = 1
-        btn_Switch_1.config(bg=color_swt_act)
+        btn_Switch_1.config(bg=COLOR_SWT_ACT)
     elif 'Switch_3_off' in status_data:
         switch_3 = 0
-        btn_Switch_3.config(bg=color_btn)
+        btn_Switch_3.config(bg=COLOR_BTN)
     elif 'Switch_2_off' in status_data:
         switch_2 = 0
-        btn_Switch_2.config(bg=color_btn)
+        btn_Switch_2.config(bg=COLOR_BTN)
     elif 'Switch_1_off' in status_data:
         switch_1 = 0
-        btn_Switch_1.config(bg=color_btn)
+        btn_Switch_1.config(bg=COLOR_BTN)
     elif 'Smooth_on' in status_data:
         smooth_mode = 1
-        btn_smooth.config(bg=color_swt_act)
+        btn_smooth.config(bg=COLOR_SWT_ACT)
     elif 'Smooth_off' in status_data:
         smooth_mode = 0
-        btn_smooth.config(bg=color_btn)
+        btn_smooth.config(bg=COLOR_BTN)
     elif 'func_end' in status_data:
         all_btn_normal()
 
@@ -474,16 +475,15 @@ def set_B():
 
 
 def send_command(event):
-    global interface
-    if e2.get() != '' and interface.connect_event.is_set():
-        interface.send(e2.get())
+    if e2.get() != '' and functions.connect_event.is_set():
+        functions.send(e2.get())
         e1.focus_set()
         e2.delete(0, 'end')
     bind_keys()
 
 
 def call_stream_audio(event):
-    interface.send('stream_audio')
+    functions.send('stream_audio')
 
 
 def destroy():
