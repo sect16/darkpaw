@@ -9,8 +9,8 @@ import cv2
 import numpy
 import zmq
 
+import functions
 import gui
-import interface
 
 # Configuration
 VIDEO_PORT = 5555
@@ -23,8 +23,8 @@ coloredlogs.install(level='DEBUG',
                     fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 
 # Variables
-connect_event = interface.connect_event
-fpv_event = interface.fpv_event
+connect_event = functions.connect_event
+fpv_event = functions.fpv_event
 footage_socket_server = None
 frame_num = 0
 fps = 0
@@ -69,7 +69,7 @@ def call_fpv(event):
 def open_cv_thread(event):
     logger.debug('Thread started')
     global frame_num, footage_socket_server, FONT, fps
-    interface.tcp_client_socket.send('start_video'.encode())
+    functions.send('start_video')
     while event.is_set():
         try:
             frame = footage_socket_server.recv_string()
@@ -77,11 +77,11 @@ def open_cv_thread(event):
             numpy_image = numpy.frombuffer(img, dtype=numpy.uint8)
             source = cv2.imdecode(numpy_image, 1)
             cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), FONT, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(source, ('CPU Temperature: %s' % interface.cpu_temp), (370, 350), FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('CPU Temperature: %s' % functions.cpu_temp), (370, 350), FONT, 0.5, (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('CPU Usage: %s' % interface.cpu_use), (370, 380), FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('CPU Usage: %s' % functions.cpu_use), (370, 380), FONT, 0.5, (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('RAM Usage: %s' % interface.ram_use), (370, 410), FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('RAM Usage: %s' % functions.ram_use), (370, 410), FONT, 0.5, (128, 255, 128), 1,
                         cv2.LINE_AA)
             cv2.imshow("Stream", source)
             frame_num += 1
@@ -92,7 +92,7 @@ def open_cv_thread(event):
             break
     if connect_event.is_set():
         try:
-            interface.tcp_client_socket.send('stop_video'.encode())
+            functions.send('stop_video')
         except:
             logger.error('Unable to send command.')
     logger.debug('Destroying all CV2 windows')

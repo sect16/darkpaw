@@ -169,10 +169,12 @@ def disconnect():
 
 
 def terminate(event):
+    logger.info('Exiting application...')
     disconnect()
     time.sleep(0.5)
     gui.destroy()
 
 
 def send(value):
+    logger.info('Sending data: %s', value)
     tcp_client_socket.send(value.encode())
