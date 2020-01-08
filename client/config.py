@@ -15,3 +15,9 @@ LABEL_BG = '#F44336'
 # color_can = '#212121'  # Set canvas color
 # color_oval = '#2196F3'  # Set oval color
 COLOR_BTN_RED = '#FF6D00'
+
+INFO_PORT = 2256  # Define port serial
+SERVER_PORT = 10223  # Define port serial
+BUFFER_SIZE = 1024
+ULTRA_PORT = 2257  # Define port serial
+ULTRA_SENSOR = None

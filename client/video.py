@@ -11,6 +11,7 @@ import zmq
 
 import functions
 import gui
+import config
 
 # Configuration
 VIDEO_PORT = 5555
@@ -98,7 +99,7 @@ def open_cv_thread(event):
     logger.debug('Destroying all CV2 windows')
     cv2.destroyAllWindows()
     footage_socket_server.__exit__()
-    gui.btn_FPV.config(bg=gui.color_btn)
+    gui.btn_FPV.config(bg=config.COLOR_BTN)
     gui.btn_FPV['state'] = 'normal'
     logger.debug('Thread stopped')
     fpv_event.clear()
