@@ -24,6 +24,8 @@ switch_3 = 0
 yaw_left_status = 0
 yaw_right_status = 0
 smooth_mode = 0
+sport_mode_on = 0
+ultrasonic_mode = 0
 
 COLOR_SWT_ACT = config.COLOR_SWT_ACT
 COLOR_BTN_ACT = config.COLOR_BTN_ACT
@@ -37,8 +39,8 @@ COLOR_BTN_RED = config.COLOR_BTN_RED
 def loop():  # GUI
     global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
-        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV
-    root.title('DarkPaw')  # Main window title
+        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
+        btn_ultra, btn_find_line, btn_sport
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -81,15 +83,6 @@ def loop():  # GUI
     btn_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_FPV = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_e2 = tk.Button(root, width=10, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_low = tk.Button(root, width=8, text='Low', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_high = tk.Button(root, width=8, text='High', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
     btn_connect.place(x=315, y=15)  # Define a Button and put it in position
     btn0.place(x=100, y=195)
@@ -100,16 +93,7 @@ def loop():  # GUI
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
     btn_up.place(x=400, y=195)
     btn_down.place(x=400, y=265)
-    btn_left_side.place(x=30, y=195)
-    btn_right_side.place(x=170, y=195)
     btn_home.place(x=400, y=230)
-    btn_low.place(x=330, y=230)
-    btn_high.place(x=470, y=230)
-    btn_left.place(x=330, y=195)
-    btn_right.place(x=470, y=195)
-    btn_Switch_1.place(x=30, y=265)
-    btn_Switch_2.place(x=100, y=265)
-    btn_Switch_3.place(x=170, y=265)
 
     var_R = tk.StringVar()
     var_R.set(0)
@@ -153,14 +137,6 @@ def loop():  # GUI
     btn_quit.place(x=455, y=445)
     btn_quit.bind('<ButtonPress-1>', functions.terminate)
 
-    btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_steady.place(x=30, y=445)
-    btn_steady.bind('<ButtonPress-1>', call_steady)
-
-    btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_smooth.place(x=285, y=445)
-    btn_smooth.bind('<ButtonPress-1>', call_smooth)
-
     btn0.bind('<ButtonPress-1>', call_forward)
     btn1.bind('<ButtonPress-1>', call_back)
     btn2.bind('<ButtonPress-1>', call_left)
@@ -174,6 +150,19 @@ def loop():  # GUI
     btn1.bind('<ButtonRelease-1>', call_stop)
     btn2.bind('<ButtonRelease-1>', call_turn_stop)
     btn3.bind('<ButtonRelease-1>', call_turn_stop)
+    root.bind_all('<KeyPress-Return>', send_command)
+    root.bind_all('<Button-1>', focus)
+
+    # Darkpaw specific GUI
+    btn_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_low = tk.Button(root, width=8, text='Low', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_high = tk.Button(root, width=8, text='High', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_left_side.bind('<ButtonPress-1>', call_left_side)
     btn_right_side.bind('<ButtonPress-1>', call_right_side)
     btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
@@ -185,8 +174,26 @@ def loop():  # GUI
     btn_right.bind('<ButtonPress-1>', call_head_right)
     btn_left_side.bind('<ButtonRelease-1>', call_turn_stop)
     btn_right_side.bind('<ButtonRelease-1>', call_turn_stop)
-    root.bind_all('<KeyPress-Return>', send_command)
-    root.bind_all('<Button-1>', focus)
+    btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_steady.bind('<ButtonPress-1>', call_steady)
+    btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_smooth.bind('<ButtonPress-1>', call_smooth)
+
+    # Car specific GUI
+    btn_sport = tk.Button(root, width=8, text='GT', bg='#F44336', fg='#FFFFFF', relief='ridge')
+    btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_ultra = tk.Button(root, width=10, text='Ultrasonic', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    canvas_ultra = tk.Canvas(root, bg=COLOR_BTN, height=23, width=352, highlightthickness=0)
+    ################################
+    # canvas_rec=canvas_ultra.create_rectangle(0,0,340,30,fill = '#FFFFFF',width=0)
+    # canvas_text=canvas_ultra.create_text((90,11),text='Ultrasonic Output: 0.75m',fill=color_text)
+    ################################
+    btn_find_line.bind('<ButtonPress-1>', call_find_line)
+    btn_ultra.bind('<ButtonPress-1>', call_ultra)
+    btn_sport.bind('<ButtonPress-1>', call_sport_mode)
+
+    exec(open("custom.py").read())
+
     bind_keys()
     root.protocol("WM_DELETE_WINDOW", lambda: functions.terminate(0))
     root.mainloop()  # Run the mainloop()
@@ -194,33 +201,7 @@ def loop():  # GUI
 
 def bind_keys():
     global root
-    root.bind('<KeyPress-w>', call_forward)
-    root.bind('<KeyPress-s>', call_back)
-    root.bind('<KeyPress-a>', call_left)
-    root.bind('<KeyPress-d>', call_right)
-
-    root.bind('<KeyPress-q>', call_left_side)
-    root.bind('<KeyPress-e>', call_right_side)
-    root.bind('<KeyRelease-q>', call_turn_stop)
-    root.bind('<KeyRelease-e>', call_turn_stop)
-
-    root.bind('<KeyRelease-w>', call_stop)
-    root.bind('<KeyRelease-s>', call_stop)
-    root.bind('<KeyRelease-a>', call_turn_stop)
-    root.bind('<KeyRelease-d>', call_turn_stop)
-
-    root.bind('<KeyPress-h>', call_head_home)
-    root.bind('<KeyPress-i>', call_head_up)
-    root.bind('<KeyPress-k>', call_head_down)
-    root.bind('<KeyPress-x>', call_find_color)
-    root.bind('<KeyPress-c>', call_watchdog)
-    root.bind('<KeyPress-b>', call_stream_audio)
-    root.bind('<KeyPress-j>', call_head_left)
-    root.bind('<KeyPress-l>', call_head_right)
-    root.bind('<KeyPress-u>', call_head_low)
-    root.bind('<KeyPress-o>', call_head_high)
-    root.bind('<KeyPress-z>', call_steady)
-    root.bind('<KeyPress-v>', call_smooth)
+    exec(open("key_bind.py").read())
     logger.debug('Bind KeyPress')
 
 
@@ -388,64 +369,111 @@ def call_switch_3(event):
         functions.send('Switch_3_off')
 
 
+def call_sport_mode(event):
+    global sport_mode_on
+    if sport_mode_on:
+        functions.send('SportModeOff')
+    else:
+        functions.send('SportModeOn')
+
+
+def call_ultra(event):
+    global ultrasonic_mode
+    if func_mode == 0:
+        functions.send('Ultrasonic')
+        ultrasonic_mode = 1
+    else:
+        functions.send('func_end')
+
+
+def call_find_line(event):
+    if func_mode == 0:
+        functions.send('FindLine')
+    else:
+        functions.send('func_end')
+
+
 def all_btn_red():
-    btn_steady.config(bg=COLOR_BTN_RED, fg='#000000')
     btn_find_color.config(bg=COLOR_BTN_RED, fg='#000000')
     btn_watchdog.config(bg=COLOR_BTN_RED, fg='#000000')
+    try:
+        btn_steady.config(bg=COLOR_BTN_RED, fg='#000000')
+    except NameError:
+        pass
+    try:
+        btn_ultra.config(bg=COLOR_BTN_RED, fg='#000000')
+    except NameError:
+        pass
 
 
 def all_btn_normal():
-    global func_mode, switch_1, switch_2, switch_3, smooth_mode
+    global func_mode, switch_1, switch_2, switch_3, smooth_mode, btn_steady, btn_ultra
     btn_find_color.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     btn_watchdog.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     func_mode = 0
-    btn_steady.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     switch_3 = 0
     switch_2 = 0
     switch_1 = 0
     smooth_mode = 0
+    try:
+        btn_steady.config(bg=COLOR_BTN, fg=COLOR_TEXT)
+    except NameError:
+        pass
+    try:
+        btn_ultra.config(bg=COLOR_BTN, fg=COLOR_TEXT)
+    except NameError:
+        pass
 
 
 def button_update(status_data):
-    global switch_1, switch_2, switch_3, func_mode, btn_smooth, smooth_mode
-    if 'FindColor' in status_data:
-        func_mode = 1
-        all_btn_red()
-        btn_find_color.config(bg=COLOR_BTN_ACT)
-    elif 'WatchDog' in status_data:
-        func_mode = 1
-        all_btn_red()
-        btn_watchdog.config(bg=COLOR_BTN_ACT)
-    elif 'steady' in status_data:
-        func_mode = 1
-        all_btn_red()
-        btn_steady.config(bg=COLOR_BTN_ACT)
-    elif 'Switch_3_on' in status_data:
-        btn_Switch_3.config(bg=COLOR_SWT_ACT)
-        switch_3 = 1
-    elif 'Switch_2_on' in status_data:
-        switch_2 = 1
-        btn_Switch_2.config(bg=COLOR_SWT_ACT)
-    elif 'Switch_1_on' in status_data:
-        switch_1 = 1
-        btn_Switch_1.config(bg=COLOR_SWT_ACT)
-    elif 'Switch_3_off' in status_data:
-        switch_3 = 0
-        btn_Switch_3.config(bg=COLOR_BTN)
-    elif 'Switch_2_off' in status_data:
-        switch_2 = 0
-        btn_Switch_2.config(bg=COLOR_BTN)
-    elif 'Switch_1_off' in status_data:
-        switch_1 = 0
-        btn_Switch_1.config(bg=COLOR_BTN)
-    elif 'Smooth_on' in status_data:
-        smooth_mode = 1
-        btn_smooth.config(bg=COLOR_SWT_ACT)
-    elif 'Smooth_off' in status_data:
-        smooth_mode = 0
-        btn_smooth.config(bg=COLOR_BTN)
-    elif 'func_end' in status_data:
-        all_btn_normal()
+    global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+        label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
+        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
+        btn_ultra, btn_find_line, btn_sport, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode, canvas_rec, canvas_text
+    try:
+        if 'FindColor' in status_data:
+            func_mode = 1
+            all_btn_red()
+            btn_find_color.config(bg=COLOR_BTN_ACT)
+        elif 'WatchDog' in status_data:
+            func_mode = 1
+            all_btn_red()
+            btn_watchdog.config(bg=COLOR_BTN_ACT)
+        elif 'steady' in status_data:
+            func_mode = 1
+            all_btn_red()
+            btn_steady.config(bg=COLOR_BTN_ACT)
+        elif 'Switch_3_on' in status_data:
+            btn_Switch_3.config(bg=COLOR_SWT_ACT)
+            switch_3 = 1
+        elif 'Switch_2_on' in status_data:
+            switch_2 = 1
+            btn_Switch_2.config(bg=COLOR_SWT_ACT)
+        elif 'Switch_1_on' in status_data:
+            switch_1 = 1
+            btn_Switch_1.config(bg=COLOR_SWT_ACT)
+        elif 'Switch_3_off' in status_data:
+            switch_3 = 0
+            btn_Switch_3.config(bg=COLOR_BTN)
+        elif 'Switch_2_off' in status_data:
+            switch_2 = 0
+            btn_Switch_2.config(bg=COLOR_BTN)
+        elif 'Switch_1_off' in status_data:
+            switch_1 = 0
+            btn_Switch_1.config(bg=COLOR_BTN)
+        elif 'Smooth_on' in status_data:
+            smooth_mode = 1
+            btn_smooth.config(bg=COLOR_SWT_ACT)
+        elif 'Smooth_off' in status_data:
+            smooth_mode = 0
+            btn_smooth.config(bg=COLOR_BTN)
+        elif 'func_end' in status_data:
+            all_btn_normal()
+            ultrasonic_mode = 0
+            canvas_rec = canvas_ultra.create_rectangle(0, 0, 352, 30, fill=color_btn, width=0)
+            canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill=color_text)
+    except NameError:
+        pass
 
 
 # This method is used to get
