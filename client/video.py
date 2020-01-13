@@ -16,7 +16,6 @@ import config
 # Configuration
 VIDEO_PORT = 5555
 VIDEO_TIMEOUT = 10000
-FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 # Create a logger object.
 logger = logging.getLogger(__name__)
@@ -42,7 +41,7 @@ def get_fps_thread(event):
 
 
 def call_fpv(event):
-    global footage_socket_server, FONT, VIDEO_PORT, fpv_event, connect_event, VIDEO_TIMEOUT
+    global footage_socket_server, VIDEO_PORT, fpv_event, connect_event, VIDEO_TIMEOUT
     if str(gui.btn_FPV['state']) == 'normal':
         gui.btn_FPV['state'] = 'disabled'
     if not fpv_event.is_set():
@@ -69,7 +68,7 @@ def call_fpv(event):
 
 def open_cv_thread(event):
     logger.debug('Thread started')
-    global frame_num, footage_socket_server, FONT, fps
+    global frame_num, footage_socket_server, fps
     functions.send('start_video')
     while event.is_set():
         try:
@@ -77,13 +76,23 @@ def open_cv_thread(event):
             img = base64.b64decode(frame)
             numpy_image = numpy.frombuffer(img, dtype=numpy.uint8)
             source = cv2.imdecode(numpy_image, 1)
-            cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), FONT, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(source, ('CPU Temperature: %s' % functions.cpu_temp), (370, 350), FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), config.FONT, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.putText(source, ('CPU Temperature: %s' % functions.cpu_temp), (370, 350), config.FONT, 0.5,
+                        (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('CPU Usage: %s' % functions.cpu_use), (370, 380), FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('CPU Usage: %s' % functions.cpu_use), (370, 380), config.FONT, 0.5, (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('RAM Usage: %s' % functions.ram_use), (370, 410), FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('RAM Usage: %s' % functions.ram_use), (370, 410), config.FONT, 0.5, (128, 255, 128), 1,
                         cv2.LINE_AA)
+
+            # Ultra thread with data is called from GUI
+            if gui.ultrasonic_mode == 1:
+                cv2.line(source, (320, 240), (260, 300), (255, 255, 255), 1)
+                cv2.line(source, (210, 300), (260, 300), (255, 255, 255), 1)
+                cv2.putText(source, ('%sm' % config.ultra_data), (210, 290), config.FONT, 0.5, (255, 255, 255), 1,
+                            cv2.LINE_AA)
+                # cv2.putText(source,('%sm'% config.ultra_data),(210,290), config.FONT, 0.5,(255,255,255),1,cv2.LINE_AA)
+
             cv2.imshow("Stream", source)
             frame_num += 1
             cv2.waitKey(1)

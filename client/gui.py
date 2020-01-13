@@ -6,6 +6,7 @@ import coloredlogs
 import config
 import video
 import functions
+import traceback
 
 root = tk.Tk()  # Define a window named root
 # Create a logger object.
@@ -40,7 +41,7 @@ def loop():  # GUI
     global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
-        btn_ultra, btn_find_line, btn_sport
+        btn_ultra, btn_find_line, btn_sport, canvas_ultra
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -66,8 +67,8 @@ def loop():  # GUI
     label_ip_3.place(x=175, y=15)  # Define a Label and put it in position
     label_open_cv.place(x=180, y=110)  # Define a Label and put it in position
 
-    e1 = tk.Entry(root, show=None, width=16, bg="#37474F", fg='#eceff1')
-    e2 = tk.Entry(root, show=None, width=71, bg="#37474F", fg='#eceff1')
+    e1 = tk.Entry(root, show=None, width=16, bg='#FFFFFF', fg='#eceff1')
+    e2 = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#eceff1')
     e1.place(x=180, y=40)  # Define a Entry and put it in position
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
@@ -118,8 +119,12 @@ def loop():  # GUI
                        fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
     scale_B.place(x=30, y=390)  # Define a Scale and put it in position
 
-    canvas_cover = tk.Canvas(root, bg=COLOR_BG, height=30, width=510, highlightthickness=0)
-    canvas_cover.place(x=30, y=420)
+    canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=352, highlightthickness=0)
+
+    # Canvas testing
+    # canvas_ultra.place(x=30, y=145)
+    # canvas_rec = canvas_ultra.create_rectangle(0, 0, (352 - int(float(0.75) * 352 / 3)), 30, fill='#448AFF', width=0)
+    # canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic Output: %sm' % 0.75, fill=COLOR_TEXT)
 
     btn_find_color = tk.Button(root, width=10, text='FindColor', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_color.place(x=115, y=445)
@@ -252,6 +257,8 @@ def call_stop(event):  # When this function is called,client commands the car to
     global move_forward_status, move_backward_status, move_left_status, move_right_status, yaw_left_status, yaw_right_status
     move_forward_status = 0
     move_backward_status = 0
+    yaw_left_status = 0
+    yaw_right_status = 0
     functions.send('DS')
 
 
@@ -320,13 +327,6 @@ def call_head_home(event):
     functions.send('headhome')
 
 
-def call_steady(event):
-    if func_mode == 0:
-        functions.send('steady')
-    else:
-        functions.send('func_end')
-
-
 def call_find_color(event):
     if func_mode == 0:
         functions.send('FindColor')
@@ -367,6 +367,13 @@ def call_switch_3(event):
         functions.send('Switch_3_on')
     else:
         functions.send('Switch_3_off')
+
+
+def call_steady(event):
+    if func_mode == 0:
+        functions.send('steady')
+    else:
+        functions.send('func_end')
 
 
 def call_sport_mode(event):
@@ -469,11 +476,12 @@ def button_update(status_data):
             btn_smooth.config(bg=COLOR_BTN)
         elif 'func_end' in status_data:
             all_btn_normal()
-            ultrasonic_mode = 0
-            canvas_rec = canvas_ultra.create_rectangle(0, 0, 352, 30, fill=color_btn, width=0)
-            canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill=color_text)
-    except NameError:
-        pass
+            if config.ULTRA_SENSOR is not None:
+                ultrasonic_mode = 0
+                canvas_rec = canvas_ultra.create_rectangle(0, 0, 352, 30, fill=COLOR_BTN, width=0)
+                canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill=COLOR_TEXT)
+    except:
+        logger.error('Button status update exception: %s', traceback.format_exc())
 
 
 # This method is used to get

@@ -5,6 +5,10 @@
 # Author      : Chin Pin Hon
 # Date        : 2019/11/20
 
+import cv2
+
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
 SPEAK_SPEED = 150
 allow_speak = 1
 VIDEO_OUT = 0

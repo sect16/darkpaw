@@ -4,6 +4,7 @@
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 2019/11/20
+import cv2
 
 COLOR_SWT_ACT = '#4CAF50'
 COLOR_BTN_ACT = '#00E676'
@@ -15,9 +16,12 @@ LABEL_BG = '#F44336'
 # color_can = '#212121'  # Set canvas color
 # color_oval = '#2196F3'  # Set oval color
 COLOR_BTN_RED = '#FF6D00'
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 INFO_PORT = 2256  # Define port serial
 SERVER_PORT = 10223  # Define port serial
 BUFFER_SIZE = 1024
 ULTRA_PORT = 2257  # Define port serial
 ULTRA_SENSOR = None
+
+ultra_data = 0
