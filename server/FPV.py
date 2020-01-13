@@ -85,8 +85,6 @@ class FPV:
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
 
-        font = cv2.FONT_HERSHEY_SIMPLEX
-
         camera = picamera.PiCamera()
         camera.resolution = resolution
         camera.framerate = 20
@@ -119,7 +117,8 @@ class FPV:
                                         cv2.CHAIN_APPROX_SIMPLE)[-2]
                 center = None
                 if len(cnts) > 0:
-                    cv2.putText(frame_image, 'Target Detected', (40, 60), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(frame_image, 'Target Detected', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
+                                cv2.LINE_AA)
                     c = max(cnts, key=cv2.contourArea)
                     ((x, y), radius) = cv2.minEnclosingCircle(c)
                     M = cv2.moments(c)
@@ -160,7 +159,8 @@ class FPV:
                     LED.breath_color_set('red')
 
                 else:
-                    cv2.putText(frame_image, 'Target Detecting', (40, 60), font, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(frame_image, 'Target Detecting', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
+                                cv2.LINE_AA)
                     LED.breath_color_set('yellow')
 
                 for i in range(1, len(pts)):

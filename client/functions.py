@@ -122,9 +122,6 @@ def connect():  # Call this function to connect with the server
             status_threading.start()
             info_threading = threading.Thread(target=stat_receive_thread, args=([connect_event]), daemon=True)
             info_threading.start()
-            if config.ULTRA_SENSOR is not None:
-                ultra_threading = threading.Thread(target=gui.video.ultra_receive, args=([connect_event]), daemon=True)
-                ultra_threading.start()
         except:
             logger.error('Unable to connect: %s', traceback.format_exc())
         if not connect_event.is_set():
