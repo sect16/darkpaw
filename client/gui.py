@@ -9,9 +9,7 @@ GUI layout definition
 
 import logging
 import tkinter as tk
-
 import coloredlogs
-
 import config
 import video
 import functions
@@ -50,7 +48,7 @@ def loop():  # GUI
     """
     Main GUI layout
     """
-    global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+    global root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
         btn_ultra, btn_find_line, btn_sport, canvas_ultra
@@ -256,7 +254,6 @@ def unbind_keys():
 def call_forward(event):
     """
     When this function is called, client commands the robot to move forward
-    :param event: Tkinter event
     """
     global move_forward_status
     if move_forward_status == 0:
@@ -536,7 +533,7 @@ def set_B():
 
 def send_command(event):
     """
-    This function sends TTS test to robot when connection is established. Nothing is sent is connection off.
+    This function sends TTS string to robot when connection is established. Nothing is sent is connection off.
     :param event:
     """
     if e2.get() != '' and functions.connect_event.is_set():
