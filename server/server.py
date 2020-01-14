@@ -257,20 +257,20 @@ def run():
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
-        elif 'FindColor' in data:
+        elif 'FindColor' == data:
             LED.breath_status_set(1)
             fpv.FindColor(1)
             tcp_server_socket.send('FindColor'.encode())
-        elif 'WatchDog' in data:
+        elif 'WatchDog' == data:
             LED.breath_status_set(1)
             fpv.WatchDog(1)
             tcp_server_socket.send('WatchDog'.encode())
-        elif 'steady' in data:
+        elif 'steady' == data:
             LED.breath_status_set(1)
             LED.breath_color_set('blue')
             steadyMode = 1
             tcp_server_socket.send('steady'.encode())
-        elif 'func_end' in data:
+        elif 'func_end' == data:
             LED.breath_status_set(0)
             fpv.FindColor(0)
             fpv.WatchDog(0)
@@ -278,41 +278,45 @@ def run():
             move.init_servos()
             tcp_server_socket.send('func_end'.encode())
 
-        elif 'Smooth_on' in data:
+        elif 'Smooth_on' == data:
             smoothMode = 1
             tcp_server_socket.send('Smooth_on'.encode())
-        elif 'Smooth_off' in data:
+        elif 'Smooth_off' == data:
             smoothMode = 0
             tcp_server_socket.send('Smooth_off'.encode())
 
-        elif 'Switch_1_on' in data:
+        elif 'Switch_1_on' == data:
             switch.switch(1, 1)
             tcp_server_socket.send('Switch_1_on'.encode())
-        elif 'Switch_1_off' in data:
+        elif 'Switch_1_off' == data:
             switch.switch(1, 0)
             tcp_server_socket.send('Switch_1_off'.encode())
-        elif 'Switch_2_on' in data:
+        elif 'Switch_2_on' == data:
             switch.switch(2, 1)
             tcp_server_socket.send('Switch_2_on'.encode())
-        elif 'Switch_2_off' in data:
+        elif 'Switch_2_off' == data:
             switch.switch(2, 0)
             tcp_server_socket.send('Switch_2_off'.encode())
-        elif 'Switch_3_on' in data:
+        elif 'Switch_3_on' == data:
             switch.switch(3, 1)
             tcp_server_socket.send('Switch_3_on'.encode())
-        elif 'Switch_3_off' in data:
+        elif 'Switch_3_off' == data:
             switch.switch(3, 0)
             tcp_server_socket.send('Switch_3_off'.encode())
-        elif 'start_video' in data:
+        elif 'start_video' == data:
             config.VIDEO_OUT = 1
             tcp_server_socket.send('start_video'.encode())
-        elif 'stop_video' in data:
+        elif 'stop_video' == data:
             config.VIDEO_OUT = 0
             tcp_server_socket.send('stop_video'.encode())
-        elif 'disconnect' in data:
+        elif 'disconnect' == data:
             tcp_server_socket.send('disconnect'.encode())
             disconnect()
-        elif 'stream_audio' in data:
+        elif 'Ultrasonic' == data:
+            tcp_server_socket.send('Ultrasonic'.encode())
+        elif 'Ultrasonic_end' == data:
+            tcp_server_socket.send('Ultrasonic_end'.encode())
+        elif 'stream_audio' == data:
             global server_address, stream_audio_started
             if stream_audio_started == 0:
                 logger.info('Audio streaming server starting...')
