@@ -15,6 +15,7 @@ coloredlogs.install(level='DEBUG',
                     fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 fpv_event = threading.Event()
 connect_event = threading.Event()
+ultra_event = threading.Event()
 cpu_temp = 0
 cpu_use = 0
 ram_use = 0
@@ -96,12 +97,14 @@ def connect():  # Call this function to connect with the server
     if not connect_event.is_set():
         # logger.info('Connecting to server')
         ip_address = gui.e1.get()  # Get the IP address from Entry
+        gui.label_ip_1.config(bg='#FF8F00')
+        gui.e1.config(state='disabled')
         if ip_address == '':  # If no input IP address in Entry,import a default IP
             ip_address = num_import('IP:')
-            gui.label_ip_1.config(text='Connecting')
-            gui.label_ip_1.config(bg='#FF8F00')
             gui.label_ip_2.config(text='Default: %s' % ip_address)
             pass
+        gui.label_ip_1.config(text='Connecting')
+        gui.label_ip_1.config(bg='#FF8F00')
         server_ip = ip_address
         addr = (server_ip, config.SERVER_PORT)
         tcp_client_socket = socket(AF_INET, SOCK_STREAM)  # Set connection value for socket
@@ -113,7 +116,7 @@ def connect():  # Call this function to connect with the server
             gui.label_ip_1.config(text='Connected')
             gui.label_ip_1.config(bg='#558B2F')
             replace_num('IP:', ip_address)
-            gui.e1.config(state='disabled')
+            gui.e2.config(state='normal')
             gui.btn_connect.config(state='normal')
             gui.btn_connect.config(text='Disconnect')
             connect_event.set()  # Set to start threads
@@ -150,6 +153,9 @@ def disconnect():
     gui.btn_connect.config(state='normal')
     gui.label_ip_1.config(text='Disconnected', fg=config.COLOR_TEXT, bg=config.LABEL_BG)
     gui.all_btn_normal()
+    gui.unbind_keys()
+    gui.e1.config(state='normal')
+    gui.e2.config(state='disabled')
 
 
 def terminate(event):
@@ -160,5 +166,19 @@ def terminate(event):
 
 
 def send(value):
-    logger.info('Sending data: %s', value)
-    tcp_client_socket.send(value.encode())
+    if not connect_event.is_set():
+        logger.warning('Unable to send command, no connection.')
+    elif connect_event.is_set():
+        logger.info('Sending data: %s', value)
+        tcp_client_socket.send(value.encode())
+    else:
+        logger.warning('Unable to send command, unknown connection status.')
+
+
+def start_ultra():
+    global ultra_event
+    if gui.ultrasonic_mode == 0 and not ultra_event.is_set() and config.ULTRA_SENSOR is not None:
+        import ultra
+        ultra_event.set()
+        ultra_threading = threading.Thread(target=ultra.ultra_receive, args=([ultra_event]), daemon=True)
+        ultra_threading.start()

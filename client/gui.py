@@ -67,8 +67,10 @@ def loop():  # GUI
     label_ip_3.place(x=175, y=15)  # Define a Label and put it in position
     label_open_cv.place(x=180, y=110)  # Define a Label and put it in position
 
-    e1 = tk.Entry(root, show=None, width=16, bg='#FFFFFF', fg='#eceff1')
-    e2 = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#eceff1')
+    e1 = tk.Entry(root, show=None, width=16, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+                  state='normal')
+    e2 = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+                  state='disabled')
     e1.place(x=180, y=40)  # Define a Entry and put it in position
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
@@ -120,7 +122,7 @@ def loop():  # GUI
     scale_B.place(x=30, y=390)  # Define a Scale and put it in position
 
     canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=352, highlightthickness=0)
-
+    canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
     # Canvas testing
     # canvas_ultra.place(x=30, y=145)
     # canvas_rec = canvas_ultra.create_rectangle(0, 0, (352 - int(float(0.75) * 352 / 3)), 30, fill='#448AFF', width=0)
@@ -184,15 +186,9 @@ def loop():  # GUI
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_smooth.bind('<ButtonPress-1>', call_smooth)
 
-    # Car specific GUI
     btn_sport = tk.Button(root, width=8, text='GT', bg='#F44336', fg='#FFFFFF', relief='ridge')
     btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_ultra = tk.Button(root, width=10, text='Ultrasonic', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    canvas_ultra = tk.Canvas(root, bg=COLOR_BTN, height=23, width=352, highlightthickness=0)
-    ################################
-    # canvas_rec=canvas_ultra.create_rectangle(0,0,340,30,fill = '#FFFFFF',width=0)
-    # canvas_text=canvas_ultra.create_text((90,11),text='Ultrasonic Output: 0.75m',fill=color_text)
-    ################################
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
     btn_sport.bind('<ButtonPress-1>', call_sport_mode)
@@ -386,11 +382,11 @@ def call_sport_mode(event):
 
 def call_ultra(event):
     global ultrasonic_mode
-    if func_mode == 0:
+    if ultrasonic_mode == 0:
         functions.send('Ultrasonic')
-        ultrasonic_mode = 1
     else:
-        functions.send('func_end')
+        functions.ultra_event.clear()
+        functions.send('Ultrasonic_end')
 
 
 def call_find_line(event):
@@ -405,10 +401,6 @@ def all_btn_red():
     btn_watchdog.config(bg=COLOR_BTN_RED, fg='#000000')
     try:
         btn_steady.config(bg=COLOR_BTN_RED, fg='#000000')
-    except NameError:
-        pass
-    try:
-        btn_ultra.config(bg=COLOR_BTN_RED, fg='#000000')
     except NameError:
         pass
 
@@ -426,60 +418,61 @@ def all_btn_normal():
         btn_steady.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     except NameError:
         pass
-    try:
-        btn_ultra.config(bg=COLOR_BTN, fg=COLOR_TEXT)
-    except NameError:
-        pass
 
 
 def button_update(status_data):
     global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
-        btn_ultra, btn_find_line, btn_sport, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode, canvas_rec, canvas_text
+        btn_ultra, btn_find_line, btn_sport, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode
     try:
-        if 'FindColor' in status_data:
+        if 'FindColor' == status_data:
             func_mode = 1
             all_btn_red()
             btn_find_color.config(bg=COLOR_BTN_ACT)
-        elif 'WatchDog' in status_data:
+        elif 'WatchDog' == status_data:
             func_mode = 1
             all_btn_red()
             btn_watchdog.config(bg=COLOR_BTN_ACT)
-        elif 'steady' in status_data:
+        elif 'steady' == status_data:
             func_mode = 1
             all_btn_red()
             btn_steady.config(bg=COLOR_BTN_ACT)
-        elif 'Switch_3_on' in status_data:
+        elif 'Ultrasonic' == status_data:
+            btn_ultra.config(bg=COLOR_BTN_ACT)
+            functions.start_ultra()
+            try:
+                btn_ultra.config(bg=COLOR_BTN_RED, fg='#000000')
+            except NameError:
+                pass
+        elif 'Ultrasonic_end' == status_data and config.ULTRA_SENSOR is not None:
+            pass
+        elif 'Switch_3_on' == status_data:
             btn_Switch_3.config(bg=COLOR_SWT_ACT)
             switch_3 = 1
-        elif 'Switch_2_on' in status_data:
+        elif 'Switch_2_on' == status_data:
             switch_2 = 1
             btn_Switch_2.config(bg=COLOR_SWT_ACT)
-        elif 'Switch_1_on' in status_data:
+        elif 'Switch_1_on' == status_data:
             switch_1 = 1
             btn_Switch_1.config(bg=COLOR_SWT_ACT)
-        elif 'Switch_3_off' in status_data:
+        elif 'Switch_3_off' == status_data:
             switch_3 = 0
             btn_Switch_3.config(bg=COLOR_BTN)
-        elif 'Switch_2_off' in status_data:
+        elif 'Switch_2_off' == status_data:
             switch_2 = 0
             btn_Switch_2.config(bg=COLOR_BTN)
-        elif 'Switch_1_off' in status_data:
+        elif 'Switch_1_off' == status_data:
             switch_1 = 0
             btn_Switch_1.config(bg=COLOR_BTN)
-        elif 'Smooth_on' in status_data:
+        elif 'Smooth_on' == status_data:
             smooth_mode = 1
             btn_smooth.config(bg=COLOR_SWT_ACT)
-        elif 'Smooth_off' in status_data:
+        elif 'Smooth_off' == status_data:
             smooth_mode = 0
             btn_smooth.config(bg=COLOR_BTN)
-        elif 'func_end' in status_data:
+        elif 'func_end' == status_data:
             all_btn_normal()
-            if config.ULTRA_SENSOR is not None:
-                ultrasonic_mode = 0
-                canvas_rec = canvas_ultra.create_rectangle(0, 0, 352, 30, fill=COLOR_BTN, width=0)
-                canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill=COLOR_TEXT)
     except:
         logger.error('Button status update exception: %s', traceback.format_exc())
 
