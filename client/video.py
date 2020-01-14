@@ -1,3 +1,11 @@
+# E-mail      : sect16@gmail.com
+# Author      : Chin Pin Hon
+# Date        : 14.01.2020
+
+"""
+This script creates the video window, initiates the connection and inserts an overlay.
+"""
+
 import base64
 import logging
 import threading
@@ -13,10 +21,6 @@ import functions
 import gui
 import config
 
-# Configuration
-VIDEO_PORT = 5555
-VIDEO_TIMEOUT = 10000
-
 # Create a logger object.
 logger = logging.getLogger(__name__)
 coloredlogs.install(level='DEBUG',
@@ -31,6 +35,10 @@ fps = 0
 
 
 def get_fps_thread(event):
+    """
+    This function calculates the number of frame per second.
+    :param event: Event flag to signal termination.
+    """
     global fps, frame_num
     logger.debug('Thread started')
     while event.is_set():
@@ -41,7 +49,11 @@ def get_fps_thread(event):
 
 
 def call_fpv(event):
-    global footage_socket_server, VIDEO_PORT, fpv_event, connect_event, VIDEO_TIMEOUT
+    """
+    This function creates a ZMQ socket server to receive video footage.
+    :param event: Event flag to signal termination.
+    """
+    global footage_socket_server, fpv_event, connect_event
     if str(gui.btn_FPV['state']) == 'normal':
         gui.btn_FPV['state'] = 'disabled'
     if not fpv_event.is_set():
@@ -51,8 +63,8 @@ def call_fpv(event):
             fps_threading = threading.Thread(target=get_fps_thread, args=([fpv_event]), daemon=True)
             fps_threading.start()
             footage_socket_server = zmq.Context().socket(zmq.SUB)
-            footage_socket_server.RCVTIMEO = VIDEO_TIMEOUT  # in milliseconds
-            footage_socket_server.bind('tcp://*:%d' % VIDEO_PORT)
+            footage_socket_server.RCVTIMEO = config.VIDEO_TIMEOUT  # in milliseconds
+            footage_socket_server.bind('tcp://*:%d' % config.VIDEO_PORT)
             footage_socket_server.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
             # Define a thread for FPV and OpenCV
             video_threading = threading.Thread(target=open_cv_thread, args=([fpv_event]), daemon=True)
@@ -67,6 +79,10 @@ def call_fpv(event):
 
 
 def open_cv_thread(event):
+    """
+    This function creates an overlay for the received video footage.
+    :param event: Event flag to signal termination.
+    """
     logger.debug('Thread started')
     global frame_num, footage_socket_server, fps
     functions.send('start_video')

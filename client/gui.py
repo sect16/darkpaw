@@ -1,3 +1,12 @@
+#!/usr/bin/env/python
+# E-mail      : sect16@gmail.com
+# Author      : Chin Pin Hon
+# Date        : 14.01.2020
+
+"""
+GUI layout definition
+"""
+
 import logging
 import tkinter as tk
 
@@ -38,6 +47,9 @@ COLOR_BTN_RED = config.COLOR_BTN_RED
 
 
 def loop():  # GUI
+    """
+    Main GUI layout
+    """
     global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
@@ -138,7 +150,7 @@ def loop():  # GUI
 
     btn_audio = tk.Button(root, width=10, text='Audio On', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_audio.place(x=370, y=445)
-    btn_audio.bind('<ButtonPress-1>', call_stream_audio)
+    btn_audio.bind('<ButtonPress-1>', lambda _: functions.send('stream_audio'))
 
     btn_quit = tk.Button(root, width=10, text='Quit', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_quit.place(x=455, y=445)
@@ -148,9 +160,9 @@ def loop():  # GUI
     btn1.bind('<ButtonPress-1>', call_back)
     btn2.bind('<ButtonPress-1>', call_left)
     btn3.bind('<ButtonPress-1>', call_right)
-    btn_up.bind('<ButtonPress-1>', call_head_up)
-    btn_down.bind('<ButtonPress-1>', call_head_down)
-    btn_home.bind('<ButtonPress-1>', call_head_home)
+    btn_up.bind('<ButtonPress-1>', lambda _: functions.send('headup'))
+    btn_down.bind('<ButtonPress-1>', lambda _: functions.send('headdown'))
+    btn_home.bind('<ButtonPress-1>', lambda _: functions.send('headhome'))
     btn_FPV.bind('<ButtonRelease-1>', video.call_fpv)
     btn_e2.bind('<ButtonRelease-1>', send_command)
     btn0.bind('<ButtonRelease-1>', call_stop)
@@ -175,10 +187,10 @@ def loop():  # GUI
     btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
     btn_Switch_2.bind('<ButtonPress-1>', call_switch_2)
     btn_Switch_3.bind('<ButtonPress-1>', call_switch_3)
-    btn_low.bind('<ButtonPress-1>', call_head_low)
-    btn_high.bind('<ButtonPress-1>', call_head_high)
-    btn_left.bind('<ButtonPress-1>', call_head_left)
-    btn_right.bind('<ButtonPress-1>', call_head_right)
+    btn_low.bind('<ButtonPress-1>', lambda _: functions.send('low'))
+    btn_high.bind('<ButtonPress-1>', lambda _: functions.send('high'))
+    btn_left.bind('<ButtonPress-1>', lambda _: functions.send('headleft'))
+    btn_right.bind('<ButtonPress-1>', lambda _: functions.send('headright'))
     btn_left_side.bind('<ButtonRelease-1>', call_turn_stop)
     btn_right_side.bind('<ButtonRelease-1>', call_turn_stop)
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -201,12 +213,18 @@ def loop():  # GUI
 
 
 def bind_keys():
+    """
+    Function to assign keyboard key bindings
+    """
     global root
     exec(open("key_bind.py").read())
     logger.debug('Bind KeyPress')
 
 
 def unbind_keys():
+    """
+    Function to remove keyboard key bindings
+    """
     global root
     root.unbind('<KeyPress-w>')
     root.unbind('<KeyPress-s>')
@@ -235,21 +253,33 @@ def unbind_keys():
     logger.debug('Unbind KeyPress')
 
 
-def call_forward(event):  # When this function is called,client commands the car to move forward
+def call_forward(event):
+    """
+    When this function is called, client commands the robot to move forward
+    :param event: Tkinter event
+    """
     global move_forward_status
     if move_forward_status == 0:
         functions.send('forward')
         move_forward_status = 1
 
 
-def call_back(event):  # When this function is called,client commands the car to move backward
+def call_back(event):
+    """
+    When this function is called, client commands the robot to move backwards
+    :param event: Tkinter event
+    """
     global move_backward_status
     if move_backward_status == 0:
         functions.send('backward')
         move_backward_status = 1
 
 
-def call_stop(event):  # When this function is called,client commands the car to stop moving
+def call_stop(event):
+    """
+    When this function is called, client commands the robot to stop moving
+    :param event: Tkinter event
+    """
     global move_forward_status, move_backward_status, move_left_status, move_right_status, yaw_left_status, yaw_right_status
     move_forward_status = 0
     move_backward_status = 0
@@ -258,7 +288,11 @@ def call_stop(event):  # When this function is called,client commands the car to
     functions.send('DS')
 
 
-def call_turn_stop(event):  # When this function is called,client commands the car to stop moving
+def call_turn_stop(event):
+    """
+    When this function is called, client commands the robot to stop moving
+    :param event: Tkinter event
+    """
     global move_forward_status, move_backward_status, move_left_status, move_right_status, yaw_left_status, yaw_right_status
     move_left_status = 0
     move_right_status = 0
@@ -267,14 +301,22 @@ def call_turn_stop(event):  # When this function is called,client commands the c
     functions.send('TS')
 
 
-def call_left(event):  # When this function is called,client commands the car to turn left
+def call_left(event):
+    """
+    When this function is called, client commands the robot to turn left
+    :param event: Tkinter event
+    """
     global move_left_status
     if move_left_status == 0:
         functions.send('left')
         move_left_status = 1
 
 
-def call_right(event):  # When this function is called,client commands the car to turn right
+def call_right(event):
+    """
+    When this function is called, client commands the robot to turn right
+    :param event: Tkinter event
+    """
     global move_right_status
     if move_right_status == 0:
         functions.send('right')
@@ -293,34 +335,6 @@ def call_right_side(event):
     if yaw_right_status == 0:
         functions.send('rightside')
         yaw_right_status = 1
-
-
-def call_head_up(event):
-    functions.send('headup')
-
-
-def call_head_down(event):
-    functions.send('headdown')
-
-
-def call_head_left(event):
-    functions.send('headleft')
-
-
-def call_head_right(event):
-    functions.send('headright')
-
-
-def call_head_low(event):
-    functions.send('low')
-
-
-def call_head_high(event):
-    functions.send('high')
-
-
-def call_head_home(event):
-    functions.send('headhome')
 
 
 def call_find_color(event):
@@ -397,6 +411,9 @@ def call_find_line(event):
 
 
 def all_btn_red():
+    """
+    Returns all special function buttons to red state
+    """
     btn_find_color.config(bg=COLOR_BTN_RED, fg='#000000')
     btn_watchdog.config(bg=COLOR_BTN_RED, fg='#000000')
     try:
@@ -406,13 +423,13 @@ def all_btn_red():
 
 
 def all_btn_normal():
-    global func_mode, switch_1, switch_2, switch_3, smooth_mode, btn_steady, btn_ultra
+    """
+    Returns all function buttons to normal state
+    """
+    global func_mode, smooth_mode, btn_steady
     btn_find_color.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     btn_watchdog.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     func_mode = 0
-    switch_3 = 0
-    switch_2 = 0
-    switch_1 = 0
     smooth_mode = 0
     try:
         btn_steady.config(bg=COLOR_BTN, fg=COLOR_TEXT)
@@ -421,6 +438,10 @@ def all_btn_normal():
 
 
 def button_update(status_data):
+    """
+    This function is called to update the GUI according to data received from robot.
+    :param status_data: String data received from robot
+    """
     global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
@@ -477,16 +498,25 @@ def button_update(status_data):
         logger.error('Button status update exception: %s', traceback.format_exc())
 
 
-# This method is used to get
-# the name of the widget
-# which currently has the focus
-# by clicking Mouse Button-1
 def focus(event):
+    """
+    This method is used to get
+    the name of the widget
+    which currently has the focus
+    by clicking Mouse Button-1
+    :param event: Tkinter event
+    """
     if str(root.focus_get()) == '.!entry2':
         unbind_keys()
 
 
 def stat_update(cpu_temp, cpu_use, ram_use):
+    """
+    This function updates the GUI label from statistical data received from robot.
+    :param cpu_temp: CPU Temperature value
+    :param cpu_use: CPU usage value
+    :param ram_use: RAM usage value
+    """
     label_cpu_temp.config(text='CPU Temp: %s℃' % cpu_temp)
     label_cpu_use.config(text='CPU Usage: %s' % cpu_use)
     label_ram_use.config(text='RAM Usage: %s' % ram_use)
@@ -505,16 +535,14 @@ def set_B():
 
 
 def send_command(event):
+    """
+    This function sends TTS test to robot when connection is established. Nothing is sent is connection off.
+    :param event:
+    """
     if e2.get() != '' and functions.connect_event.is_set():
         functions.send(e2.get())
         e1.focus_set()
         e2.delete(0, 'end')
+    else:
+        logger.warning('Unable to send, not connected')
     bind_keys()
-
-
-def call_stream_audio(event):
-    functions.send('stream_audio')
-
-
-def destroy():
-    root.destroy()
