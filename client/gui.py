@@ -8,12 +8,15 @@ GUI layout definition
 """
 
 import logging
+import time
 import tkinter as tk
+import traceback
+
 import coloredlogs
+
 import config
 import video
-import functions
-import traceback
+from functions import send, connect, terminate, ultra_event, start_ultra, connect_event
 
 root = tk.Tk()  # Define a window named root
 # Create a logger object.
@@ -85,7 +88,7 @@ def loop():  # GUI
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
     btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN,
-                            command=functions.connect,
+                            command=connect,
                             relief='ridge')
     btn0 = tk.Button(root, width=8, text='Forward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn1 = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -112,7 +115,7 @@ def loop():  # GUI
     var_R.set(0)
     scale_R = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
                        tickinterval=None, resolution=1, variable=var_R, troughcolor='#F44336', command=set_R,
-                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
+                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
     scale_R.place(x=30, y=330)  # Define a Scale and put it in position
 
     var_G = tk.StringVar()
@@ -120,16 +123,16 @@ def loop():  # GUI
 
     scale_G = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
                        tickinterval=None, resolution=1, variable=var_G, troughcolor='#00E676', command=set_G,
-                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
-    scale_G.place(x=30, y=360)  # Define a Scale and put it in position
+                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
+    scale_G.place(x=30, y=370)  # Define a Scale and put it in position
 
     var_B = tk.StringVar()
     var_B.set(0)
 
     scale_B = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
                        tickinterval=None, resolution=1, variable=var_B, troughcolor='#448AFF', command=set_B,
-                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0)
-    scale_B.place(x=30, y=390)  # Define a Scale and put it in position
+                       fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
+    scale_B.place(x=30, y=410)  # Define a Scale and put it in position
 
     canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=352, highlightthickness=0)
     canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
@@ -139,28 +142,28 @@ def loop():  # GUI
     # canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic Output: %sm' % 0.75, fill=COLOR_TEXT)
 
     btn_find_color = tk.Button(root, width=10, text='FindColor', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_find_color.place(x=115, y=445)
+    btn_find_color.place(x=115, y=465)
     btn_find_color.bind('<ButtonPress-1>', call_find_color)
 
     btn_watchdog = tk.Button(root, width=10, text='WatchDog', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_watchdog.place(x=200, y=445)
+    btn_watchdog.place(x=200, y=465)
     btn_watchdog.bind('<ButtonPress-1>', call_watchdog)
 
     btn_audio = tk.Button(root, width=10, text='Audio On', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_audio.place(x=370, y=445)
-    btn_audio.bind('<ButtonPress-1>', lambda _: functions.send('stream_audio'))
+    btn_audio.place(x=370, y=465)
+    btn_audio.bind('<ButtonPress-1>', lambda _: send('stream_audio'))
 
     btn_quit = tk.Button(root, width=10, text='Quit', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_quit.place(x=455, y=445)
-    btn_quit.bind('<ButtonPress-1>', functions.terminate)
+    btn_quit.place(x=455, y=465)
+    btn_quit.bind('<ButtonPress-1>', terminate)
 
     btn0.bind('<ButtonPress-1>', call_forward)
     btn1.bind('<ButtonPress-1>', call_back)
     btn2.bind('<ButtonPress-1>', call_left)
     btn3.bind('<ButtonPress-1>', call_right)
-    btn_up.bind('<ButtonPress-1>', lambda _: functions.send('headup'))
-    btn_down.bind('<ButtonPress-1>', lambda _: functions.send('headdown'))
-    btn_home.bind('<ButtonPress-1>', lambda _: functions.send('headhome'))
+    btn_up.bind('<ButtonPress-1>', lambda _: send('headup'))
+    btn_down.bind('<ButtonPress-1>', lambda _: send('headdown'))
+    btn_home.bind('<ButtonPress-1>', lambda _: send('headhome'))
     btn_FPV.bind('<ButtonRelease-1>', video.call_fpv)
     btn_e2.bind('<ButtonRelease-1>', send_command)
     btn0.bind('<ButtonRelease-1>', call_stop)
@@ -185,10 +188,10 @@ def loop():  # GUI
     btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
     btn_Switch_2.bind('<ButtonPress-1>', call_switch_2)
     btn_Switch_3.bind('<ButtonPress-1>', call_switch_3)
-    btn_low.bind('<ButtonPress-1>', lambda _: functions.send('low'))
-    btn_high.bind('<ButtonPress-1>', lambda _: functions.send('high'))
-    btn_left.bind('<ButtonPress-1>', lambda _: functions.send('headleft'))
-    btn_right.bind('<ButtonPress-1>', lambda _: functions.send('headright'))
+    btn_low.bind('<ButtonPress-1>', lambda _: send('low'))
+    btn_high.bind('<ButtonPress-1>', lambda _: send('high'))
+    btn_left.bind('<ButtonPress-1>', lambda _: send('headleft'))
+    btn_right.bind('<ButtonPress-1>', lambda _: send('headright'))
     btn_left_side.bind('<ButtonRelease-1>', call_turn_stop)
     btn_right_side.bind('<ButtonRelease-1>', call_turn_stop)
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -206,7 +209,7 @@ def loop():  # GUI
     exec(open("custom.py").read())
 
     bind_keys()
-    root.protocol("WM_DELETE_WINDOW", lambda: functions.terminate(0))
+    root.protocol("WM_DELETE_WINDOW", lambda: terminate(0))
     root.mainloop()  # Run the mainloop()
 
 
@@ -257,7 +260,7 @@ def call_forward(event):
     """
     global move_forward_status
     if move_forward_status == 0:
-        functions.send('forward')
+        send('forward')
         move_forward_status = 1
 
 
@@ -268,7 +271,7 @@ def call_back(event):
     """
     global move_backward_status
     if move_backward_status == 0:
-        functions.send('backward')
+        send('backward')
         move_backward_status = 1
 
 
@@ -282,7 +285,7 @@ def call_stop(event):
     move_backward_status = 0
     yaw_left_status = 0
     yaw_right_status = 0
-    functions.send('DS')
+    send('DS')
 
 
 def call_turn_stop(event):
@@ -295,7 +298,7 @@ def call_turn_stop(event):
     move_right_status = 0
     yaw_left_status = 0
     yaw_right_status = 0
-    functions.send('TS')
+    send('TS')
 
 
 def call_left(event):
@@ -305,7 +308,7 @@ def call_left(event):
     """
     global move_left_status
     if move_left_status == 0:
-        functions.send('left')
+        send('left')
         move_left_status = 1
 
 
@@ -316,95 +319,95 @@ def call_right(event):
     """
     global move_right_status
     if move_right_status == 0:
-        functions.send('right')
+        send('right')
         move_right_status = 1
 
 
 def call_left_side(event):
     global yaw_left_status
     if yaw_left_status == 0:
-        functions.send('leftside')
+        send('leftside')
         yaw_left_status = 1
 
 
 def call_right_side(event):
     global yaw_right_status
     if yaw_right_status == 0:
-        functions.send('rightside')
+        send('rightside')
         yaw_right_status = 1
 
 
 def call_find_color(event):
     if func_mode == 0:
-        functions.send('FindColor')
+        send('FindColor')
     else:
-        functions.send('func_end')
+        send('func_end')
 
 
 def call_watchdog(event):
     if func_mode == 0:
-        functions.send('WatchDog')
+        send('WatchDog')
     else:
-        functions.send('func_end')
+        send('func_end')
 
 
 def call_smooth(event):
     if smooth_mode == 0:
-        functions.send('Smooth_on')
+        send('Smooth_on')
     else:
-        functions.send('Smooth_off')
+        send('Smooth_off')
 
 
 def call_switch_1(event):
     if switch_1 == 0:
-        functions.send('Switch_1_on')
+        send('Switch_1_on')
     else:
-        functions.send('Switch_1_off')
+        send('Switch_1_off')
 
 
 def call_switch_2(event):
     if switch_2 == 0:
-        functions.send('Switch_2_on')
+        send('Switch_2_on')
     else:
-        functions.send('Switch_2_off')
+        send('Switch_2_off')
 
 
 def call_switch_3(event):
     if switch_3 == 0:
-        functions.send('Switch_3_on')
+        send('Switch_3_on')
     else:
-        functions.send('Switch_3_off')
+        send('Switch_3_off')
 
 
 def call_steady(event):
     if func_mode == 0:
-        functions.send('steady')
+        send('steady')
     else:
-        functions.send('func_end')
+        send('func_end')
 
 
 def call_sport_mode(event):
     global sport_mode_on
     if sport_mode_on:
-        functions.send('SportModeOff')
+        send('SportModeOff')
     else:
-        functions.send('SportModeOn')
+        send('SportModeOn')
 
 
 def call_ultra(event):
     global ultrasonic_mode
     if ultrasonic_mode == 0:
-        functions.send('Ultrasonic')
+        send('Ultrasonic')
     else:
-        functions.ultra_event.clear()
-        functions.send('Ultrasonic_end')
+        ultra_event.clear()
+        send('Ultrasonic_end')
 
 
 def call_find_line(event):
     if func_mode == 0:
-        functions.send('FindLine')
+        send('FindLine')
     else:
-        functions.send('func_end')
+        send('func_end')
 
 
 def all_btn_red():
@@ -439,7 +442,7 @@ def button_update(status_data):
     This function is called to update the GUI according to data received from robot.
     :param status_data: String data received from robot
     """
-    global functions, root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+    global root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
         btn_ultra, btn_find_line, btn_sport, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode
@@ -458,7 +461,7 @@ def button_update(status_data):
             btn_steady.config(bg=COLOR_BTN_ACT)
         elif 'Ultrasonic' == status_data:
             btn_ultra.config(bg=COLOR_BTN_ACT)
-            functions.start_ultra()
+            start_ultra()
             try:
                 btn_ultra.config(bg=COLOR_BTN_RED, fg='#000000')
             except NameError:
@@ -519,16 +522,19 @@ def stat_update(cpu_temp, cpu_use, ram_use):
     label_ram_use.config(text='RAM Usage: %s' % ram_use)
 
 
-def set_R():
-    return 'wsR %s' % var_R.get()
+def set_R(event):
+    time.sleep(0.03)
+    send('wsR %s' % var_R.get())
 
 
-def set_G():
-    return 'wsG %s' % var_G.get()
+def set_G(event):
+    time.sleep(0.03)
+    send('wsG %s' % var_G.get())
 
 
-def set_B():
-    return
+def set_B(event):
+    time.sleep(0.03)
+    send('wsB %s' % var_B.get())
 
 
 def send_command(event):
@@ -536,8 +542,8 @@ def send_command(event):
     This function sends TTS string to robot when connection is established. Nothing is sent is connection off.
     :param event:
     """
-    if e2.get() != '' and functions.connect_event.is_set():
-        functions.send(e2.get())
+    if e2.get() != '' and connect_event.is_set():
+        send(e2.get())
         e1.focus_set()
         e2.delete(0, 'end')
     else:
