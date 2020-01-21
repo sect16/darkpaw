@@ -21,6 +21,7 @@ LABEL_BG = '#F44336'
 # color_oval = '#2196F3'  # Set oval color
 COLOR_BTN_RED = '#FF6D00'
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+MAX_CONTOUR_AREA = 5000
 
 # Configuration
 INFO_PORT = 2256  # Define port serial
