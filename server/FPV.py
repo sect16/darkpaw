@@ -32,7 +32,6 @@ pid = PID.PID()
 pid.SetKp(10)
 pid.SetKd(0)
 pid.SetKi(0)
-max_contour_area = 5000
 
 context = zmq.Context()
 footage_socket_client = None
@@ -197,7 +196,7 @@ class FPV:
                 # loop over the contours
                 for c in cnts:
                     # if the contour is too small, ignore it
-                    if cv2.contourArea(c) < max_contour_area:
+                    if cv2.contourArea(c) < config.MAX_CONTOUR_AREA:
                         logger.debug('Contour too small, ignoring...')
                         continue
                     else:
