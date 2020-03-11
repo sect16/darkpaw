@@ -7,14 +7,13 @@
 
 import argparse
 import base64
-import datetime
-from collections import deque
-
 import cv2
+import datetime
 import imutils
 import numpy
 import picamera
 import zmq
+from collections import deque
 from picamera.array import PiRGBArray
 
 import LED
@@ -23,6 +22,7 @@ import PID
 import move
 import speak as speak
 import speak_dict
+from logger import *
 from speak import *
 
 PORT = 5555
@@ -35,16 +35,7 @@ pid.SetKi(0)
 
 context = zmq.Context()
 footage_socket_client = None
-# Create a logger object.
-logger = logging.getLogger(__name__)
 
-# By default the install() function installs a handler on the root logger,
-# this means that log messages from your code and log messages from the
-# libraries that you use will all show up on the terminal.
-# coloredlogs.install(level='DEBUG')
-coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s',
-                    logger=logger)
 Y_lock = 0
 X_lock = 0
 tor = 50

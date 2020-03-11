@@ -1,17 +1,9 @@
-import logging
 import os
 import threading
 import time
 
-import coloredlogs
-
 import config
-
-# Create a logger object.
-logger = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s',
-                    logger=logger)
+from logger import *
 
 
 def speak(text):

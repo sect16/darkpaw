@@ -7,24 +7,17 @@ This script creates the video window, initiates the connection and inserts an ov
 """
 
 import base64
-import logging
+import cv2
+import numpy
 import threading
 import time
 import traceback
-
-import coloredlogs
-import cv2
-import numpy
 import zmq
 
+import config
 import functions
 import gui
-import config
-
-# Create a logger object.
-logger = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
+from logger import *
 
 # Variables
 connect_event = functions.connect_event

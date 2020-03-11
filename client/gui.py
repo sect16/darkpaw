@@ -7,22 +7,19 @@
 GUI layout definition
 """
 
-import logging
 import time
 import tkinter as tk
 import traceback
 
-import coloredlogs
-
 import config
+import logger
 import video
 from functions import send, connect, terminate, ultra_event, start_ultra, connect_event
+from logger import *
 
 root = tk.Tk()  # Define a window named root
 # Create a logger object.
-logger = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
+
 # Flags
 move_forward_status = 0
 move_backward_status = 0
