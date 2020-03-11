@@ -7,21 +7,15 @@
 Functions for starting threads
 """
 
-import logging
 import threading
 import time
 import traceback
 from socket import *
 
-import coloredlogs
-
-# Create a logger object.
 import config
 import gui
+from logger import *
 
-logger = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG',
-                    fmt='%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-39s: %(message)s')
 fpv_event = threading.Event()
 connect_event = threading.Event()
 ultra_event = threading.Event()
