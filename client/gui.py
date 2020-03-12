@@ -194,7 +194,8 @@ def loop():  # GUI
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_smooth.bind('<ButtonPress-1>', call_smooth)
+    # TO-DO why the need to call each time???
+    # btn_smooth.bind('<ButtonPress-1>', call_smooth)
 
     btn_sport = tk.Button(root, width=8, text='GT', bg='#F44336', fg='#FFFFFF', relief='ridge')
     btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -203,7 +204,7 @@ def loop():  # GUI
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
     btn_sport.bind('<ButtonPress-1>', call_sport_mode)
 
-    exec(open("custom.py").read())
+    exec (open("custom.py").read())
 
     bind_keys()
     root.protocol("WM_DELETE_WINDOW", lambda: terminate(0))
@@ -215,7 +216,25 @@ def bind_keys():
     Function to assign keyboard key bindings
     """
     global root
-    exec(open("key_bind.py").read())
+    # exec(open("key_binding.txt").read())
+    thisDict = dict()
+    initial = 0
+    ptr = 1
+    f = open("key_binding.txt", "r")
+    for line in f:
+        if line.find('Start key binding definition') == 0:
+            initial = ptr
+        if initial > 0 & line.find('<KeyPress-') == 0:
+            thisList = line.replace(" ", "").replace("\n", "").split(',', 2)
+            if len(thisList) == 2:
+                thisDict[thisList[0]] = thisList[1]
+        ptr += 1
+    for x, y in thisDict.items():
+        logger.debug('Got record: ' + x + ',' + y)
+        if y.find('call') == -1:
+            eval('root.bind(\'' + x + '\', lambda _: send(\'' + y + '\'))')
+        else:
+            eval('root.bind(\'' + x + '\', ' + y + ')')
     logger.debug('Bind KeyPress')
 
 
