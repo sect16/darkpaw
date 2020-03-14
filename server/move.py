@@ -10,8 +10,9 @@ import time
 import Kalman_filter
 import PID
 import config
-from logger import *
+import logging
 
+logger = logging.getLogger(__name__)
 pca = Adafruit_PCA9685.PCA9685()
 pca.set_pwm_freq(50)
 '''

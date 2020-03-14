@@ -10,12 +10,13 @@ Functions for starting threads
 import threading
 import time
 import traceback
+import logging
 from socket import *
 
 import config
 import gui
-from logger import *
 
+logger = logging.getLogger(__name__)
 fpv_event = threading.Event()
 connect_event = threading.Event()
 ultra_event = threading.Event()

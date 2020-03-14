@@ -1,10 +1,11 @@
 import os
 import threading
 import time
+import logging
 
 import config
-from logger import *
 
+logger = logging.getLogger(__name__)
 
 def speak(text):
     speak_threading = threading.Thread(target=speak_thread, args=[text], daemon=True)
