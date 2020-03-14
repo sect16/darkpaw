@@ -7,17 +7,18 @@
 
 import argparse
 import base64
-import cv2
 import datetime
+import logging
+from collections import deque
+
+import cv2
 import imutils
 import numpy
 import picamera
 import zmq
-from collections import deque
 from picamera.array import PiRGBArray
 
 import LED
-import logging
 import PID
 import config
 # from rpi_ws281x import *
@@ -27,8 +28,6 @@ import speak_dict
 
 logger = logging.getLogger(__name__)
 
-PORT = 5555
-resolution = [640, 480]
 LED = LED.LED()
 pid = PID.PID()
 pid.SetKp(10)
@@ -69,7 +68,7 @@ class FPV:
         WatchDogMode = invar
 
     def fpv_capture_thread(self, client_ip_address, event):
-        global PORT, footage_socket_client
+        global footage_socket_client
         logger.debug('Starting thread')
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,
@@ -78,9 +77,9 @@ class FPV:
         pts = deque(maxlen=args["buffer"])
 
         camera = picamera.PiCamera()
-        camera.resolution = resolution
+        camera.resolution = config.RESOLUTION
         camera.framerate = 20
-        rawCapture = PiRGBArray(camera, size=resolution)
+        rawCapture = PiRGBArray(camera, size=config.RESOLUTION)
 
         avg = None
         motionCounter = 0
@@ -97,9 +96,7 @@ class FPV:
             cv2.line(frame_image, (320, 220), (320, 260), (128, 255, 128), 1)
             timestamp = datetime.datetime.now()
 
-            if not FindColorMode:
-                pass
-            else:
+            if FindColorMode:
                 ####>>>OpenCV Start<<<####
                 hsv = cv2.cvtColor(frame_image, cv2.COLOR_BGR2HSV)
                 mask = cv2.inRange(hsv, self.colorLower, self.colorUpper)
@@ -162,9 +159,7 @@ class FPV:
                     cv2.line(frame_image, pts[i - 1], pts[i], (0, 0, 255), thickness)
                 ####>>>OpenCV Ends<<<####
 
-            if not WatchDogMode:
-                pass
-            else:
+            if WatchDogMode:
                 gray = cv2.cvtColor(frame_image, cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
@@ -185,12 +180,11 @@ class FPV:
                 cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
                                         cv2.CHAIN_APPROX_SIMPLE)
                 cnts = imutils.grab_contours(cnts)
-
                 # loop over the contours
                 for c in cnts:
                     # if the contour is too small, ignore it
                     if cv2.contourArea(c) < config.MAX_CONTOUR_AREA:
-                        logger.debug('Contour too small, ignoring...')
+                        logger.debug('Contour too small (%s), ignoring...', cv2.contourArea(c))
                         continue
                     else:
                         speak(speak_dict.bark)
@@ -227,11 +221,11 @@ class FPV:
 
 def init_client(client_ip_address):
     global footage_socket_client
-    logger.debug('Capture connection (%s:%s)', client_ip_address, PORT)
+    logger.debug('Capture connection (%s:%s)', client_ip_address, config.FPV_PORT)
     footage_socket_client = context.socket(zmq.PUB)
     footage_socket_client.setsockopt(zmq.LINGER, 0)
     footage_socket_client.setsockopt(zmq.BACKLOG, 0)
-    footage_socket_client.connect('tcp://%s:%d' % (client_ip_address, PORT))
+    footage_socket_client.connect('tcp://%s:%d' % (client_ip_address, config.FPV_PORT))
 
 
 if __name__ == '__main__':

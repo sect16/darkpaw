@@ -1,9 +1,6 @@
 #! /usr/bin/python
-# File name   : pid.py
-# Description : By controlling Servo,thecamera can move Up and down,left and right and the Ultrasonic wave can move to left and right.
-# E-mail      : support@adeept.com
-# Author      : William
-# Date        : 2018/08/22
+# File name   : PID.py
+
 import time
 
 
@@ -59,7 +56,6 @@ pid = PID()
 pid.SetKp(Kp)
 pid.SetKi(Ki)
 pid.SetKd(Kd)
-
 fb = 0
 outv = 0
 

@@ -19,7 +19,6 @@ from functions import send, connect, terminate, ultra_event, start_ultra, connec
 logger = logging.getLogger(__name__)
 root = tk.Tk()  # Define a window named root
 keyDict = dict()
-
 # Flags
 move_forward_status = 0
 move_backward_status = 0
@@ -194,10 +193,7 @@ def loop():  # GUI
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    # TO-DO why the need to call each time???
-    # btn_smooth.bind('<ButtonPress-1>', call_smooth)
-
-    btn_sport = tk.Button(root, width=8, text='GT', bg='#F44336', fg='#FFFFFF', relief='ridge')
+    btn_sport = tk.Button(root, width=8, text='GT', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_ultra = tk.Button(root, width=10, text='Ultrasonic', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line.bind('<ButtonPress-1>', call_find_line)

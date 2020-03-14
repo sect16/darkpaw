@@ -19,18 +19,29 @@ handlers:
     stream: ext://sys.stdout
 
 
-root:
-  level: INFO
-  handlers: [console]
-  propogate: yes
-
 loggers:
   server:
     level: INFO
     handlers: [console]
     propogate: no
 
+  speak:
+    level: INFO
+    handlers: [console]
+    propogate: no
+
   move:
+    level: INFO
+    handlers: [console]
+    propogate: no
+
+  FPV:
+    level: INFO
+    handlers: [console]
+    propogate: no
+
+
+  servo:
     level: DEBUG
     handlers: [console]
     propogate: no
