@@ -5,10 +5,12 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 
-import psutil
 import socket
 import subprocess
 import traceback
+
+import psutil
+
 from rpi_ws281x import *
 
 import FPV
@@ -19,7 +21,9 @@ import switch
 from logger import *
 from speak import *
 
-logger.debug('Starting python...')
+logger = logging.getLogger(__name__)
+logger.info('Starting python...')
+
 '''
 Initiation number of steps, don't have to change it.
 '''
@@ -146,7 +150,7 @@ def move_thread(i, event):
             move.robot_X(50)
             move.steady()
             logger.debug('steady')
-            time.sleep(0.2)
+            # time.sleep(0.2)
     logger.debug('Thread stopped')
 
 
@@ -157,7 +161,7 @@ def info_send_client_thread(arg, event):
     SERVER_ADDR = (SERVER_IP, SERVER_PORT)
     Info_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     Info_Socket.connect(SERVER_ADDR)
-    logger.debug('Server address %s', SERVER_ADDR)
+    logger.info('Server address %s', SERVER_ADDR)
     while not event.is_set():
         try:
             Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()).encode())
@@ -334,7 +338,7 @@ def main():
         led_threading.start()  # Thread starts
         LED.breath_color_set('blue')
     except:
-        logger.debug('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
+        logger.error('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
         pass
 
     while 1:
@@ -344,7 +348,7 @@ def main():
             global server_address
             server_address = s.getsockname()[0]
             s.close()
-            logger.debug('Server listening on: %s:%s', server_address, PORT)
+            logger.info('Server listening on: %s:%s', server_address, PORT)
         except:
             logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
             # Define a thread for data receiving
@@ -374,9 +378,9 @@ def main():
             tcp_server.bind(ADDR)
             # Start server,waiting for client
             tcp_server.listen(5)
-            logger.debug('Waiting for connection...')
+            logger.info('Waiting for connection...')
             tcp_server_socket, addr = tcp_server.accept()
-            logger.debug('Connected from %s', addr)
+            logger.info('Connected from %s', addr)
             speak(speak_dict.connect)
             move.init_servos()
             time.sleep(1)
@@ -410,7 +414,7 @@ def main():
 
 
 def disconnect():
-    logger.debug('Disconnecting and termination threads.')
+    logger.info('Disconnecting and termination threads.')
     speak(speak_dict.disconnect)
     global tcp_server_socket, tcp_server, kill_event
     kill_event.set()

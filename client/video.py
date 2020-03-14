@@ -13,11 +13,13 @@ import threading
 import time
 import traceback
 import zmq
+import logging
 
 import config
 import functions
 import gui
-from logger import *
+
+logger = logging.getLogger(__name__)
 
 # Variables
 connect_event = functions.connect_event

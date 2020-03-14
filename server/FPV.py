@@ -17,13 +17,15 @@ from collections import deque
 from picamera.array import PiRGBArray
 
 import LED
+import logging
 import PID
+import config
 # from rpi_ws281x import *
 import move
 import speak as speak
 import speak_dict
-from logger import *
-from speak import *
+
+logger = logging.getLogger(__name__)
 
 PORT = 5555
 resolution = [640, 480]

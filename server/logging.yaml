@@ -1,0 +1,36 @@
+version: 1
+disable_existing_loggers: true
+
+
+formatters:
+  standard:
+    format: "%(asctime)s %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-20s: %(message)s"
+  colored_console:
+    (): coloredlogs.ColoredFormatter
+    fmt: "%(asctime)s.%(msecs)03d %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-20s: %(message)s"
+    field_styles: {'asctime': {'color': ''}, 'thread': {'color': 'magenta'}, 'funcName': {'color': 'cyan'}}
+
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: colored_console
+    stream: ext://sys.stdout
+
+
+root:
+  level: INFO
+  handlers: [console]
+  propogate: yes
+
+loggers:
+  server:
+    level: INFO
+    handlers: [console]
+    propogate: no
+
+  move:
+    level: DEBUG
+    handlers: [console]
+    propogate: no

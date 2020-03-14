@@ -4,9 +4,11 @@
 
 """
 This file contains robot specific key binding config.
+
+Syntax is case sensitive.
 """
 
-Start key binding definition
+<Start key binding definition>
 <KeyPress-w>, call_forward
 <KeyPress-s>, call_back
 <KeyPress-a>, call_left
@@ -36,3 +38,4 @@ Start key binding definition
 
 <KeyPress-z>, call_steady
 <KeyPress-v>, call_smooth
+<EOF>
