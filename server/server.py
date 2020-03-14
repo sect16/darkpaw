@@ -4,10 +4,13 @@
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
-
+import os
 import socket
 import subprocess
+import threading
+import time
 import traceback
+import logging
 
 import psutil
 
@@ -15,14 +18,13 @@ from rpi_ws281x import *
 
 import FPV
 import LED
+import config
 import move
 import speak_dict
 import switch
-from logger import *
-from speak import *
+from speak import speak
 
 logger = logging.getLogger(__name__)
-logger.info('Starting python...')
 
 '''
 Initiation number of steps, don't have to change it.
@@ -43,9 +45,9 @@ addr = None
 tcp_server_socket = None
 tcp_server = None
 HOST = ''
-PORT = 10223  # Define port serial
+
 BUFFER = 1024  # Define buffer size
-ADDR = (HOST, PORT)
+ADDR = (HOST, config.SERVER_PORT)
 wiggle = 100
 kill_event = threading.Event()
 server_address = ''
@@ -157,8 +159,7 @@ def move_thread(i, event):
 def info_send_client_thread(arg, event):
     logger.debug('Thread started')
     SERVER_IP = addr[0]
-    SERVER_PORT = 2256  # Define port serial
-    SERVER_ADDR = (SERVER_IP, SERVER_PORT)
+    SERVER_ADDR = (SERVER_IP, config.INFO_PORT)
     Info_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     Info_Socket.connect(SERVER_ADDR)
     logger.info('Server address %s', SERVER_ADDR)
@@ -327,6 +328,7 @@ def run():
 
 # if __name__ == '__main__':
 def main():
+    logger.info('Starting server...')
     global kill_event, ADDR
     switch.switchSetup()
     switch.set_all_switch_off()
@@ -348,7 +350,7 @@ def main():
             global server_address
             server_address = s.getsockname()[0]
             s.close()
-            logger.info('Server listening on: %s:%s', server_address, PORT)
+            logger.info('Server listening on: %s:%s', server_address, config.SERVER_PORT)
         except:
             logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
             # Define a thread for data receiving
@@ -389,7 +391,6 @@ def main():
             global fpv
             fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=(addr[0], kill_event),
                                              daemon=True)  # Define a thread for FPV and OpenCV
-            fps_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
             fps_threading.start()  # Thread starts
             break
         except:
@@ -432,5 +433,3 @@ def disconnect():
     tcp_server_socket.close()
     main()
 
-
-main()

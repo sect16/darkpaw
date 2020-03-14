@@ -62,7 +62,7 @@ def status_client_thread(event):
     :param event: Clear event flag to terminate thread
     """
     logger.debug('Thread started')
-    global funcMode, tcp_client_socket
+    global tcp_client_socket
     while event.is_set():
         try:
             status_data = (tcp_client_socket.recv(config.BUFFER_SIZE)).decode()
@@ -156,6 +156,7 @@ def connect():  # Call this function to connect with the server
             gui.label_ip_1.config(text='Disconnected')
             gui.label_ip_1.config(bg=config.LABEL_BG)
             gui.btn_connect.config(state='normal')
+            gui.e1.config(state='normal')
     elif connect_event.is_set():
         disconnect()
 

@@ -14,6 +14,13 @@ allow_speak = 1
 VIDEO_OUT = 0
 last_text = ''
 
+INFO_PORT = 2256  # Define port serial
+SERVER_PORT = 10223  # Define port serial
+BUFFER_SIZE = 1024  # Define buffer size
+MAX_CONTOUR_AREA = 5000
+FPV_PORT = 5555
+RESOLUTION = [640, 480]
+
 '''
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
 DO NOT increase or it may cause mechanical collisions.

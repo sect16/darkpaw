@@ -7,17 +7,17 @@ This script creates the video window, initiates the connection and inserts an ov
 """
 
 import base64
-import cv2
-import numpy
 import threading
 import time
 import traceback
-import zmq
 import logging
 
 import config
+import cv2
 import functions
 import gui
+import numpy
+import zmq
 
 logger = logging.getLogger(__name__)
 

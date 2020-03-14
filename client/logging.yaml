@@ -18,12 +18,6 @@ handlers:
     formatter: colored_console
     stream: ext://sys.stdout
 
-
-root:
-  level: INFO
-  handlers: [console]
-  propogate: yes
-
 loggers:
   gui:
     level: INFO
