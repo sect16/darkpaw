@@ -384,8 +384,8 @@ def main():
             tcp_server_socket, addr = tcp_server.accept()
             logger.info('Connected from %s', addr)
             speak(speak_dict.connect)
-            move.init_servos()
             time.sleep(1)
+            move.init_servos()
             for x in range(99):
                 move.robot_stand(x + 1)
             global fpv

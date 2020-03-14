@@ -411,11 +411,22 @@ def steady():
 
 
 def release():
+    logger.info('Releasing servos...')
     pca.set_all_pwm(0, 0)
 
 
 def init_servos():
-    logger.debug('Initialize all servos... ')
+    logger.info('Initializing all servos... ')
+    for i in range(0, 12):
+        if i == 1 or i == 10:
+            set_pwm(i, config.lower_leg_l - 2)
+        if i == 4 or i == 7:
+            set_pwm(i, config.lower_leg_h2 - 2)
+        if i == 2 or i == 11:
+            set_pwm(i, config.upper_leg_m - 2)
+        if i == 5 or i == 8:
+            set_pwm(i, config.upper_leg_m2 - 2)
+    robot_X(config.default_X - 2)
     for i in range(0, 12):
         if i == 1 or i == 10:
             set_pwm(i, config.lower_leg_l)
@@ -426,7 +437,7 @@ def init_servos():
         if i == 5 or i == 8:
             set_pwm(i, config.upper_leg_m2)
     robot_X(config.default_X)
-    # logger.debug('Servo initialized: %s', config.servo)
+    logger.debug('Servo status: %s', config.servo)
 
 
 step_input = 1
