@@ -240,9 +240,9 @@ def bind_keys():
     for x, y in keyDict.items():
         logger.debug('Got record: ' + x + ',' + y)
         if y.find('call') == -1:
-            eval('root.bind(\'' + x + '\', lambda _: send(\'' + y + '\'))')
+            eval('root.bind(\'<' + x + '>\', lambda _: send(\'' + y + '\'))')
         else:
-            eval('root.bind(\'' + x + '\', ' + y + ')')
+            eval('root.bind(\'<' + x + '>\', ' + y + ')')
     logger.debug('Bind KeyPress')
 
 
