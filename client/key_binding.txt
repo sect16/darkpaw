@@ -9,33 +9,33 @@ Syntax is case sensitive.
 """
 
 <Start key binding definition>
-<KeyPress-w>, call_forward
-<KeyPress-s>, call_back
-<KeyPress-a>, call_left
-<KeyPress-d>, call_right
+KeyPress-w, call_forward
+KeyPress-s, call_back
+KeyPress-a, call_left
+KeyPress-d, call_right
 
-<KeyPress-q>, call_left_side
-<KeyPress-e>, call_right_side
-<KeyRelease-q>, call_turn_stop
-<KeyRelease-e>, call_turn_stop
+KeyPress-q, call_left_side
+KeyPress-e, call_right_side
+KeyRelease-q, call_turn_stop
+KeyRelease-e, call_turn_stop
 
-<KeyRelease-w>, call_stop
-<KeyRelease-s>, call_stop
-<KeyRelease-a>, call_turn_stop
-<KeyRelease-d>, call_turn_stop
+KeyRelease-w, call_stop
+KeyRelease-s, call_stop
+KeyRelease-a, call_turn_stop
+KeyRelease-d, call_turn_stop
 
-<KeyPress-h>, headhome
-<KeyPress-i>, headup
-<KeyPress-k>, headdown
-<KeyPress-x>, call_find_color
-<KeyPress-c>, call_watchdog
+KeyPress-h, headhome
+KeyPress-i, headup
+KeyPress-k, headdown
+KeyPress-x, call_find_color
+KeyPress-c, call_watchdog
 
-<KeyPress-b>, stream_audio
-<KeyPress-j>, headleft
-<KeyPress-l>, headright
-<KeyPress-u>, low
-<KeyPress-o>, high
+KeyPress-b, stream_audio
+KeyPress-j, headleft
+KeyPress-l, headright
+KeyPress-u, low
+KeyPress-o, high
 
-<KeyPress-z>, call_steady
-<KeyPress-v>, call_smooth
+KeyPress-z, call_steady
+KeyPress-v, call_smooth
 <EOF>
