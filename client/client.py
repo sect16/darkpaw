@@ -5,10 +5,12 @@
 # Date        : 14.01.2020
 # 
 
-import gui
-import yaml
-import os
 import logging.config
+import os
+
+import yaml
+
+import gui
 
 if __name__ == '__main__':
     logging.addLevelName(logging.DEBUG, "\033[0;32m%8s\033[1;0m" % logging.getLevelName(logging.DEBUG))

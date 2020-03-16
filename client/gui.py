@@ -7,10 +7,10 @@
 GUI layout definition
 """
 
+import logging
 import time
 import tkinter as tk
 import traceback
-import logging
 
 import config
 import video
@@ -54,11 +54,17 @@ def loop():  # GUI
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
+        read_config()
+    except:
+        logger.error('Error reading configuration file: %s', traceback.format_exc())
+        terminate()
+    try:
         logo = tk.PhotoImage(file='logo.png')  # Define the picture of logo (Only supports '.png' and '.gif')
         l_logo = tk.Label(root, image=logo, bg=COLOR_BG)  # Set a label to show the logo picture
         l_logo.place(x=60, y=7)  # Place the Label in a right position
     except:
         pass
+    root.title(config.TITLE)  # Main window title
     label_cpu_temp = tk.Label(root, width=18, text='CPU Temp:', fg=COLOR_TEXT, bg='#212121')
     label_cpu_use = tk.Label(root, width=18, text='CPU Usage:', fg=COLOR_TEXT, bg='#212121')
     label_ram_use = tk.Label(root, width=18, text='RAM Usage:', fg=COLOR_TEXT, bg='#212121')
@@ -199,9 +205,15 @@ def loop():  # GUI
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
     btn_sport.bind('<ButtonPress-1>', call_sport_mode)
+    # Read custom gui from config
+    for x in config.guiTuple:
+        eval(x)
+    bind_keys()
+    root.protocol("WM_DELETE_WINDOW", lambda: terminate(0))
+    root.mainloop()  # Run the mainloop()
 
-    exec(open("custom.py").read())
 
+def read_config():
     # Read key binding configuration file
     global keyDict
     initial = 0
@@ -218,11 +230,6 @@ def loop():  # GUI
                 keyDict[thisList[0]] = thisList[1]
         ptr += 1
     f.close()
-    # Initialize key binding
-    bind_keys()
-
-    root.protocol("WM_DELETE_WINDOW", lambda: terminate(0))
-    root.mainloop()  # Run the mainloop()
 
 
 def bind_keys():
