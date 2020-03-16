@@ -9,6 +9,7 @@ This file contains constants and global variables.
 
 import cv2
 
+TITLE = 'DarkPaw'
 COLOR_SWT_ACT = '#4CAF50'
 COLOR_BTN_ACT = '#00E676'
 COLOR_BG = '#000000'  # Set background color
@@ -33,3 +34,9 @@ VIDEO_PORT = 5555
 VIDEO_TIMEOUT = 10000
 
 ultra_data = 0
+
+guiTuple = (
+    "btn_left_side.place(x=30, y=195)", "btn_right_side.place(x=170, y=195)", "btn_low.place(x=330, y=230)",
+    "btn_high.place(x=470, y=230)", "btn_left.place(x=330, y=195)", "btn_right.place(x=470, y=195)",
+    "btn_Switch_1.place(x=30, y=265)", "btn_Switch_2.place(x=100, y=265)", "btn_Switch_3.place(x=170, y=265)",
+    "btn_steady.place(x=30, y=465)", "btn_smooth.place(x=285, y=465)",)
