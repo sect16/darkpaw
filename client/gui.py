@@ -153,7 +153,7 @@ def loop():  # GUI
 
     btn_audio = tk.Button(root, width=10, text='Audio On', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_audio.place(x=370, y=465)
-    btn_audio.bind('<ButtonPress-1>', lambda _: send('stream_audio'))
+    btn_audio.bind('<ButtonPress-1>', call_audio)
 
     btn_quit = tk.Button(root, width=10, text='Quit', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_quit.place(x=455, y=465)
@@ -434,6 +434,14 @@ def call_find_line(event):
         send('func_end')
 
 
+def call_audio(event):
+    global btn_audio
+    if btn_audio.cget("bg") == '#0277BD':
+        send('stream_audio')
+    else:
+        send('stream_audio_end')
+
+
 def all_btn_red():
     """
     Returns all special function buttons to red state
@@ -490,6 +498,13 @@ def button_update(status_data):
                 btn_ultra.config(bg=COLOR_BTN_RED)
             except NameError:
                 pass
+        elif 'Ultrasonic_end' == status_data and config.ULTRA_SENSOR is not None:
+            ultra_event.clear()
+            ultrasonic_mode = 0
+            try:
+                btn_ultra.config(bg=COLOR_BTN)
+            except NameError:
+                pass
         elif 'sport_mode_on' == status_data:
             sport_mode_on = 1
             try:
@@ -500,13 +515,6 @@ def button_update(status_data):
             sport_mode_on = 0
             try:
                 btn_sport.config(bg=COLOR_BTN)
-            except NameError:
-                pass
-        elif 'Ultrasonic_end' == status_data and config.ULTRA_SENSOR is not None:
-            ultra_event.clear()
-            ultrasonic_mode = 0
-            try:
-                btn_ultra.config(bg=COLOR_BTN)
             except NameError:
                 pass
         elif 'Switch_3_on' == status_data:
@@ -535,6 +543,10 @@ def button_update(status_data):
             btn_smooth.config(bg=COLOR_BTN)
         elif 'func_end' == status_data:
             all_btn_normal()
+        elif 'stream_audio' == status_data:
+            btn_audio.config(bg=COLOR_SWT_ACT)
+        elif 'stream_audio_end' == status_data:
+            btn_audio.config(bg=COLOR_BTN)
     except:
         logger.error('Button status update exception: %s', traceback.format_exc())
 

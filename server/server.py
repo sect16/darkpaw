@@ -1,19 +1,25 @@
 #!/usr/bin/env/python
 # File name   : server.py
-# Description : main programe for DarkPaw
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
+
+"""
+
+Smooth mode is a placeholder and has no function behind it.
+
+"""
+
+import logging
 import os
+import signal
 import socket
 import subprocess
 import threading
 import time
 import traceback
-import logging
 
 import psutil
-
 from rpi_ws281x import *
 
 import FPV
@@ -26,13 +32,13 @@ from speak import speak
 
 logger = logging.getLogger(__name__)
 
-'''
+"""
 Initiation number of steps, don't have to change it.
-'''
+"""
 step_set = 1
-'''
+"""
 Initiation commands
-'''
+"""
 direction_command = 'no'
 turn_command = 'no'
 # pwm = Adafruit_PCA9685.PCA9685()
@@ -45,13 +51,13 @@ addr = None
 tcp_server_socket = None
 tcp_server = None
 HOST = ''
-
 BUFFER = 1024  # Define buffer size
 ADDR = (HOST, config.SERVER_PORT)
 wiggle = 100
 kill_event = threading.Event()
 server_address = ''
 stream_audio_started = 0
+p = None
 
 
 def breath_led():
@@ -140,7 +146,7 @@ def move_thread(i, event):
                 pass
             if turn_command == 'no' and direction_command == 'stand':
                 if stand_stu == 0:
-                    move.robot_stand(config.lower_leg_m)
+                    move.robot_height(config.lower_leg_m)
                     step_set = 1
                     stand_stu = 1
                 else:
@@ -148,11 +154,7 @@ def move_thread(i, event):
                     pass
             pass
         else:
-            pass
-            move.robot_X(50)
-            move.steady()
-            logger.debug('steady')
-            # time.sleep(0.2)
+            move.robot_steady()
     logger.debug('Thread stopped')
 
 
@@ -174,7 +176,7 @@ def info_send_client_thread(arg, event):
 
 
 def run():
-    global direction_command, turn_command, smooth_mode, steadyMode
+    global direction_command, turn_command, smooth_mode, steadyMode, p
     # Define a thread for FPV and OpenCV
     moving_threading = threading.Thread(target=move_thread, args=(0, kill_event), daemon=True)
     # 'True' means it is a front thread,it would close when the mainloop() closes
@@ -219,9 +221,9 @@ def run():
             move.ctrl_pitch_roll(0, 0)
             move.ctrl_yaw(config.torso_w, 0)
         elif 'low' == data:
-            move.robot_stand(0)
+            move.robot_height(0)
         elif 'high' == data:
-            move.robot_stand(100)
+            move.robot_height(100)
         elif 'headleft' == data:
             move.ctrl_yaw(config.torso_w, 100)
         elif 'headright' == data:
@@ -268,7 +270,7 @@ def run():
             fpv.FindColor(0)
             fpv.WatchDog(0)
             steadyMode = 0
-            move.init_servos()
+            move.robot_home()
             tcp_server_socket.send('func_end'.encode())
 
         elif 'Smooth_on' == data:
@@ -310,16 +312,23 @@ def run():
         elif 'Ultrasonic_end' == data:
             tcp_server_socket.send('Ultrasonic_end'.encode())
         elif 'stream_audio' == data:
-            global server_address, stream_audio_started
+            global server_address, stream_audio_started, p
             if stream_audio_started == 0:
                 logger.info('Audio streaming server starting...')
-                subprocess.Popen([str(
-                    'cvlc -vvv alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':3030}"')],
+                p = subprocess.Popen([str(
+                    'cvlc alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
+                        config.AUDIO_PORT) + '}"')],
                     shell=True)
+                # p = subprocess.Popen(['/usr/bin/cvlc','-vvv', 'alsa://hw:1,0', ':live-caching=50', '--sout', '\"#standard{access=http,mux=ogg,dst=\'', server_address, '\':3030}\"'], shell=False)
                 stream_audio_started = 1
             else:
                 logger.info('Audio streaming server already started.')
             tcp_server_socket.send('stream_audio'.encode())
+        elif 'stream_audio_end' == data:
+            if p is not None:
+                os.kill(p.pid + 1, signal.SIGHUP)
+            stream_audio_started = 0
+            tcp_server_socket.send('stream_audio_end'.encode())
         else:
             logger.info('Speaking command received')
             speak(data)
@@ -385,9 +394,9 @@ def main():
             logger.info('Connected from %s', addr)
             speak(speak_dict.connect)
             time.sleep(1)
-            move.init_servos()
+            move.servo_init()
             for x in range(99):
-                move.robot_stand(x + 1)
+                move.robot_height(x + 1)
             global fpv
             fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=(addr[0], kill_event),
                                              daemon=True)  # Define a thread for FPV and OpenCV
@@ -417,14 +426,16 @@ def main():
 def disconnect():
     logger.info('Disconnecting and termination threads.')
     speak(speak_dict.disconnect)
-    global tcp_server_socket, tcp_server, kill_event
+    global tcp_server_socket, tcp_server, kill_event, p
+    if p is not None and not p.poll() == 0:
+        os.kill(p.pid + 1, signal.SIGHUP)
     kill_event.set()
     LED.colorWipe(Color(0, 0, 0))
     # 150 - 500
     current_pos = int((config.servo[1] - config.lower_leg_l) / (config.lower_leg_w * 2) * 100)
     for x in range(current_pos):
-        move.robot_stand(current_pos - x)
-    move.release()
+        move.robot_height(current_pos - x)
+    move.servo_release()
     switch.switch(1, 0)
     switch.switch(2, 0)
     switch.switch(3, 0)
@@ -432,4 +443,3 @@ def disconnect():
     tcp_server.close()
     tcp_server_socket.close()
     main()
-

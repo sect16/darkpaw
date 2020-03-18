@@ -51,7 +51,7 @@ class PID:
         return self.Cp + (self.Ki * self.Ci) + (self.Kd * self.Cd)
 
 
-'''
+"""
 pid = PID()
 pid.SetKp(Kp)
 pid.SetKi(Ki)
@@ -71,4 +71,4 @@ while PID_loop:
 
     fb = AnalogIn(fb_input)
     pass
-'''
+"""

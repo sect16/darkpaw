@@ -7,17 +7,18 @@ This script creates the video window, initiates the connection and inserts an ov
 """
 
 import base64
+import logging
 import threading
 import time
 import traceback
-import logging
 
-import config
 import cv2
-import functions
-import gui
 import numpy
 import zmq
+
+import config
+import functions
+import gui
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,10 @@ def open_cv_thread(event):
     """
     logger.debug('Thread started')
     global frame_num, footage_socket_server, fps
+    zoom = 1
+    multiplier = 0.1
     functions.send('start_video')
+    stream = 'FPV Live Video Stream'
     while event.is_set():
         try:
             frame = footage_socket_server.recv_string()
@@ -102,11 +106,27 @@ def open_cv_thread(event):
                 cv2.line(source, (210, 300), (260, 300), (255, 255, 255), 1)
                 cv2.putText(source, ('%sm' % config.ultra_data), (210, 290), config.FONT, 0.5, (255, 255, 255), 1,
                             cv2.LINE_AA)
-                # cv2.putText(source,('%sm'% config.ultra_data),(210,290), config.FONT, 0.5,(255,255,255),1,cv2.LINE_AA)
+            # cv2.putText(source,('%sm'% config.ultra_data),(210,290), config.FONT, 0.5,(255,255,255),1,cv2.LINE_AA)
+            # dsize
+            cv2.namedWindow(stream, cv2.WINDOW_NORMAL)
+            cv2.imshow(stream, source)
 
-            cv2.imshow("Stream", source)
+            # dsize = (config.VIDEO_WIDTH + zoom, config.VIDEO_HEIGHT + zoom)
+            # cv2.imshow(stream, cv2.resize(source, dsize))
+
             frame_num += 1
-            cv2.waitKey(1)
+            c = chr(cv2.waitKey(1) & 255)
+            if 'q' == c or cv2.getWindowProperty(stream, cv2.WND_PROP_VISIBLE) == 0:
+                fpv_event.clear()
+            elif '+' == c:
+                zoom += multiplier
+                cv2.resizeWindow(stream, int(config.VIDEO_WIDTH * zoom), int(config.VIDEO_HEIGHT * zoom))
+            elif '-' == c and config.VIDEO_WIDTH * zoom > 150:
+                zoom -= multiplier
+                cv2.resizeWindow(stream, int(config.VIDEO_WIDTH * zoom), int(config.VIDEO_HEIGHT * zoom))
+            elif '0' == c:
+                zoom = 1
+                cv2.resizeWindow(stream, config.VIDEO_WIDTH, config.VIDEO_HEIGHT)
         except:
             logger.error('Thread exception: %s', traceback.format_exc())
             time.sleep(0.5)
@@ -116,7 +136,7 @@ def open_cv_thread(event):
             functions.send('stop_video')
         except:
             logger.error('Unable to send command.')
-    logger.debug('Destroying all CV2 windows')
+    logger.info('Destroying all CV2 windows')
     cv2.destroyAllWindows()
     footage_socket_server.__exit__()
     gui.btn_FPV.config(bg=config.COLOR_BTN)

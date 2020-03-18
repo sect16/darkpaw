@@ -32,6 +32,8 @@ ULTRA_PORT = 2257  # Define port serial
 ULTRA_SENSOR = None
 VIDEO_PORT = 5555
 VIDEO_TIMEOUT = 10000
+VIDEO_WIDTH = 640
+VIDEO_HEIGHT = 480
 
 ultra_data = 0
 
