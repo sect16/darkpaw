@@ -5,6 +5,8 @@
 # Author      : Chin Pin Hon
 # Date        : 2019/11/20
 
+import time
+
 import cv2
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
@@ -12,19 +14,21 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 SPEAK_SPEED = 150
 allow_speak = 1
 VIDEO_OUT = 0
-last_text = ''
+last_text = list([int(time.time()), ""])
 
+SPEAK_DELAY = 2
 INFO_PORT = 2256  # Define port serial
 SERVER_PORT = 10223  # Define port serial
 BUFFER_SIZE = 1024  # Define buffer size
 MAX_CONTOUR_AREA = 5000
 FPV_PORT = 5555
 RESOLUTION = [640, 480]
+AUDIO_PORT = 3030
 
-'''
+"""
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
 DO NOT increase or it may cause mechanical collisions.
-'''
+"""
 default_X = 50
 speed_set = 100  # Maximum radius of servo motors
 

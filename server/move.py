@@ -4,18 +4,19 @@
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
-import Adafruit_PCA9685
+import logging
 import time
+
+import Adafruit_PCA9685
 
 import Kalman_filter
 import PID
 import config
-import logging
 
 logger = logging.getLogger(__name__)
 pca = Adafruit_PCA9685.PCA9685()
 pca.set_pwm_freq(50)
-'''
+"""
 # Configure min and max servo pulse lengths
 i=0
 for i in range(0,12):
@@ -49,31 +50,31 @@ for i in range(0,12):
         exec('pwm%d=config.upper_leg_m2'%i)
         exec('pwm%d_max=config.upper_leg_h2'%i)
         exec('pwm%d_min=config.upper_leg_l2'%i)
-'''
-'''
+"""
+"""
 Leg_I   --- forward --- Leg_III
                |
            robotbody
                |
 Leg_II  -- backward --- Leg_IV 
-'''
+"""
 Set_Direction = 1
 
-'''
+"""
 the bigger pixel is, the slower the servos will run.
-'''
+"""
 pixel = 50
 
-'''
+"""
 Set PID
-'''
+"""
 P = 3
 I = 0.1
 D = 0
 
-'''
+"""
 >>> instantiation <<<
-'''
+"""
 X_fix_output = 0
 Y_fix_output = 0
 X_steady = 0
@@ -89,7 +90,6 @@ Y_pid.SetKi(D)
 
 try:
     from mpu6050 import mpu6050
-
     sensor = mpu6050(0x68)
 except:
     pass
@@ -97,13 +97,22 @@ except:
 kalman_filter_X = Kalman_filter.Kalman_filter(0.001, 0.1)
 kalman_filter_Y = Kalman_filter.Kalman_filter(0.001, 0.1)
 
-'''
+"""
 if the robot roll over when turning, decrease this value below.
-'''
+"""
 turn_steady = 4 / 5  # 2/3 4/5 5/6 ...
+step_input = 1
+move_stu = 1
 
 
 def set_pwm(servo, pos):
+    """
+    Controls an individual servo. This function also updates the config variable servo list.
+
+    :param servo: Servo number ranging from 0 to 15.
+    :param pos: Position range 100 to 500.
+    :return: void
+    """
     logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
     pca.set_pwm(servo, 0, pos)
     config.servo[servo] = pos
@@ -139,12 +148,13 @@ def leg_IV(x, y, z):
 def mpu6050Test():
     while 1:
         accelerometer_data = sensor.get_accel_data()
-        logger.debug('X=%f, Y=%f, Z=%f', accelerometer_data['x'], accelerometer_data['y'], accelerometer_data['x'])
+        logger.debug('Accelerometer output (X=%f, Y=%f, Z=%f)', accelerometer_data['x'], accelerometer_data['y'],
+                     accelerometer_data['x'])
         time.sleep(0.3)
         break
 
 
-'''
+"""
 def move_diagonal(step):
     if step == 1:
         leg_move_diagonal('I', 1, config.speed_set)
@@ -323,14 +333,19 @@ def dove_move_diagonal(step, speed, command):
 
             leg_tripod('III', step_III, i, -speed)
             leg_tripod('IV', step_IV, i, -speed)
-'''
+"""
 
 
 def robot_X(amp):
-    '''
-    when amp is 0, robot <body>
-    when amp is 100, robot >body<
-    '''
+    """
+    Legs are further apart when amp is 0, robot <body>
+    When amp is 100, robot >body<
+
+    Warning: Robot will loose balance if value is too high!
+
+    :param amp: range(100,0)
+    :return: void
+    """
     wiggle = config.torso_w
     set_pwm(0, int(config.torso_m - wiggle + 2 * wiggle * amp / 100))
     set_pwm(3, int(config.torso_m - wiggle + 2 * wiggle * amp / 100))
@@ -338,41 +353,51 @@ def robot_X(amp):
     set_pwm(9, int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100))
 
 
-def look_home():
-    robot_stand(50)
-
-
-def robot_stand(height):
-    '''
-    highest point 100
-    mid point 50
+def robot_height(height):
+    """
+    Highest point 100
+    Mid point 50
     lowest point 0
-    range(100,0)
-    '''
+
+    :param height: range(100,0)
+    :return: void
+    """
     set_pwm(1, int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height)))
-    set_pwm(4, int(config.lower_leg_h - (config.lower_leg_w * 2 / 100 * height)))
-    set_pwm(7, int(config.lower_leg_h - (config.lower_leg_w * 2 / 100 * height)))
+    set_pwm(4, int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height)))
+    set_pwm(7, int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height)))
     set_pwm(10, int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height)))
 
 
-def ctrl_range(raw, max_genout, min_genout):
-    if raw > max_genout:
-        raw_output = max_genout
-    elif raw < min_genout:
-        raw_output = min_genout
+def ctrl_range(input_value, max_genout, min_genout):
+    """
+    Normalize the input value between Max and Min.
+
+    :param input_value: Any integer
+    :param max_genout: Max value
+    :param min_genout: Mix value
+    :return: Returns a value between Max and Min
+    """
+    if input_value > max_genout:
+        output_value = max_genout
+    elif input_value < min_genout:
+        output_value = min_genout
     else:
-        raw_output = raw
-    return int(raw_output)
+        output_value = input_value
+    return int(output_value)
 
 
 def ctrl_pitch_roll(pitch, roll):  # Percentage wiggle
-    wiggle = config.lower_leg_w
-    '''
+    """
     look up <- pitch -> look down.
     lean right <- roll -> lean left.
+
     default values are 0.
-    range(-100, 100)
-    '''
+
+    :param pitch: range(-100, 100)
+    :param roll: range(-100, 100)
+    :return: void
+    """
+    wiggle = config.lower_leg_w
     set_pwm(1, ctrl_range((config.lower_leg_m - wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h,
                           config.lower_leg_l))
     set_pwm(4, ctrl_range((config.lower_leg_m2 - wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h2,
@@ -384,10 +409,17 @@ def ctrl_pitch_roll(pitch, roll):  # Percentage wiggle
 
 
 def ctrl_yaw(wiggle, yaw):  # Percentage wiggle
-    '''
+    """
     look left <- yaw -> look right
     default value is 0
-    '''
+
+    Left = 100
+    Right = -100
+
+    :param wiggle: Constant servo range
+    :param yaw: range (100, -100)
+    :return: void
+    """
     # robot_X(config.default_X)
     set_pwm(0, int(config.torso_m + wiggle * yaw / 100))
     set_pwm(3, int(config.torso_m - wiggle * yaw / 100))
@@ -395,27 +427,45 @@ def ctrl_yaw(wiggle, yaw):  # Percentage wiggle
     set_pwm(9, int(config.torso_m2 - wiggle * yaw / 100))
 
 
-def steady():
+def robot_steady():
+    """
+    Reads accelerometer sensor data and send output to servos to level the robot
+
+    :return: void
+    """
     global X_fix_output, Y_fix_output
     accelerometer_data = sensor.get_accel_data()
     X = accelerometer_data['x']
-    X = kalman_filter_X.kalman(X)
     Y = accelerometer_data['y']
+    logger.debug('Accelerometer raw data [X,Y] = %s, %s', X, Y)
+    X = kalman_filter_X.kalman(X)
     Y = kalman_filter_Y.kalman(Y)
+    logger.debug('Kalman filter output [X,Y] = %s, %s', X, Y)
     X_fix_output -= X_pid.GenOut(X - X_steady)
     Y_fix_output += Y_pid.GenOut(Y - Y_steady)
     X_fix_output = ctrl_range(X_fix_output, 100, -100)
     Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
-    logger.debug('Accelerometer [X,Y] = %s, %s', -X_fix_output, Y_fix_output)
+    logger.debug('Steady output = %s, %s', -X_fix_output, Y_fix_output)
     ctrl_pitch_roll(-X_fix_output, Y_fix_output)
 
 
-def release():
+def servo_release():
+    """
+    Release all servos.
+    :return: void
+    """
     logger.info('Releasing servos...')
     pca.set_all_pwm(0, 0)
 
 
-def init_servos():
+def servo_init():
+    """
+    Initialize all servos.
+
+    A small twitch is required to command servos after release.
+
+    :return: void
+    """
     logger.info('Initializing all servos... ')
     for i in range(0, 12):
         if i == 1 or i == 10:
@@ -440,14 +490,23 @@ def init_servos():
     logger.debug('Servo status: %s', config.servo)
 
 
-step_input = 1
-move_stu = 1
+def robot_home():
+    """
+    Set robot into home position
+    :return: void
+    """
+    logger.info('Servos to home position...')
+    robot_X(config.default_X)
+    ctrl_pitch_roll(0, 0)
+    robot_height(50)
+
+
 if __name__ == '__main__':
-    init_servos()
+    servo_init()
     time.sleep(1)
     try:
         while 1:
-            steady()
+            robot_steady()
             time.sleep(0.1)
             break
             pass
@@ -455,4 +514,4 @@ if __name__ == '__main__':
         mpu6050Test()
     except KeyboardInterrupt:
         time.sleep(1)
-        release()
+        servo_release()

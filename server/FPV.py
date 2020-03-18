@@ -23,8 +23,8 @@ import PID
 import config
 # from rpi_ws281x import *
 import move
-import speak as speak
 import speak_dict
+from speak import speak
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class FPV:
         global FindColorMode
         FindColorMode = invar
         if not FindColorMode:
-            move.look_home()
+            move.robot_home()
 
     def WatchDog(self, invar):
         global WatchDogMode

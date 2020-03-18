@@ -24,11 +24,13 @@ class Kalman_filter:
 
         self.Z_k = ADC_Value
 
-        if (abs(self.kalman_adc_old - ADC_Value) >= 60):
+        """
+        if abs(self.kalman_adc_old - ADC_Value) >= 60:
             self.x_k1_k1 = ADC_Value * 0.382 + self.kalman_adc_old * 0.618
         else:
-            self.x_k1_k1 = self.kalman_adc_old;
-
+            self.x_k1_k1 = self.kalman_adc_old
+        """
+        self.x_k1_k1 = self.kalman_adc_old
         self.x_k_k1 = self.x_k1_k1
         self.P_k_k1 = self.P_k1_k1 + self.Q
 
