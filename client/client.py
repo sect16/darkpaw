@@ -3,7 +3,7 @@
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020
-# 
+#
 
 import logging.config
 import os
