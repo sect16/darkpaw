@@ -41,4 +41,6 @@ def speak_thread(input_text):
 def speak_command(text):
     logger.debug('Speaking "%s"', text)
     # subprocess.Popen([str('espeak-ng "%s" -s %d' % (text, config.SPEAK_SPEED))], shell=True)
+    # TO-DO test is below subprocess call works
+    # subprocess.call(['espeak-ng', '-s' + config.SPEAK_SPEED, test])
     os.system(str('espeak-ng "%s" -s %d' % (text, config.SPEAK_SPEED)))

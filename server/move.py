@@ -5,6 +5,7 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 import logging
+import threading
 import time
 
 import Adafruit_PCA9685
@@ -87,9 +88,12 @@ Y_pid = PID.PID()
 Y_pid.SetKp(P)
 Y_pid.SetKd(I)
 Y_pid.SetKi(D)
+torso_wiggle = config.servo_init[0] - config.torso_l
+toe_wiggle = config.servo_init[2] - config.upper_leg_l
 
 try:
     from mpu6050 import mpu6050
+
     sensor = mpu6050(0x68)
 except:
     pass
@@ -105,6 +109,26 @@ step_input = 1
 move_stu = 1
 
 
+def servo_thread(servo, pos):
+    if config.servo_motion[servo] == 0:
+        config.servo_motion[servo] = 1
+        logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
+        if config.servo[servo] - pos < 0:
+            while config.servo[servo] < pos:
+                pca.set_pwm(servo, 0, config.servo[servo])
+                config.servo[servo] += config.resolution
+        elif config.servo[servo] - pos > 0:
+            while config.servo[servo] > pos:
+                pca.set_pwm(servo, 0, config.servo[servo])
+                config.servo[servo] -= config.resolution
+        pca.set_pwm(servo, 0, pos)
+        config.servo[servo] = pos
+        # time.sleep(0)
+        config.servo_motion[servo] = 0
+    else:
+        logger.debug("Servo [%s] still in motion", servo)
+
+
 def set_pwm(servo, pos):
     """
     Controls an individual servo. This function also updates the config variable servo list.
@@ -113,12 +137,23 @@ def set_pwm(servo, pos):
     :param pos: Position range 100 to 500.
     :return: void
     """
-    logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
+    threading.Thread(target=servo_thread, args=([servo, pos]), daemon=True).start()
+    # pca.set_pwm(servo, 0, pos)
+    # config.servo[servo] = pos
+
+
+def set_pwm_init(servo, pos):
+    logger.debug("Initialize PWM on servo [%s], position [%s])", servo, pos)
     pca.set_pwm(servo, 0, pos)
     config.servo[servo] = pos
+    config.servo_init[servo] = pos
+
+
+'''
     if config.servo_init.count(0) == 12:
         if config.servo.count(0) == 0:
             config.servo_init = list(config.servo)
+'''
 
 
 def leg_I(x, y, z):
@@ -466,27 +501,36 @@ def servo_init():
 
     :return: void
     """
+    global torso_wiggle
     logger.info('Initializing all servos... ')
+    wiggle = config.torso_w
     for i in range(0, 12):
         if i == 1 or i == 10:
-            set_pwm(i, config.lower_leg_l - 2)
+            set_pwm_init(i, config.lower_leg_l - 2)
         if i == 4 or i == 7:
-            set_pwm(i, config.lower_leg_h2 - 2)
+            set_pwm_init(i, config.lower_leg_h2 - 2)
         if i == 2 or i == 11:
-            set_pwm(i, config.upper_leg_m - 2)
+            set_pwm_init(i, config.upper_leg_m - 2)
         if i == 5 or i == 8:
-            set_pwm(i, config.upper_leg_m2 - 2)
-    robot_X(config.default_X - 2)
+            set_pwm_init(i, config.upper_leg_m2 - 2)
+        if i == 0 or i == 3:
+            set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * (config.default_X - 2) / 100))
+        if i == 6 or i == 9:
+            set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * (config.default_X - 2) / 100))
     for i in range(0, 12):
         if i == 1 or i == 10:
-            set_pwm(i, config.lower_leg_l)
+            set_pwm_init(i, config.lower_leg_l)
         if i == 4 or i == 7:
-            set_pwm(i, config.lower_leg_h2)
+            set_pwm_init(i, config.lower_leg_h2)
         if i == 2 or i == 11:
-            set_pwm(i, config.upper_leg_m)
+            set_pwm_init(i, config.upper_leg_m)
         if i == 5 or i == 8:
-            set_pwm(i, config.upper_leg_m2)
-    robot_X(config.default_X)
+            set_pwm_init(i, config.upper_leg_m2)
+        if i == 0 or i == 3:
+            set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * config.default_X / 100))
+        if i == 6 or i == 9:
+            set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * config.default_X / 100))
+    logger.debug('Servo init: %s', config.servo_init)
     logger.debug('Servo status: %s', config.servo)
 
 
@@ -501,7 +545,131 @@ def robot_home():
     robot_height(50)
 
 
+def robot_balance(balance):
+    logger.debug('Check servo for motion: %s', config.servo_motion)
+    logger.debug('Servo status: %s', config.servo)
+    if config.servo_motion == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        if balance == 'back':
+            balance_center('side')
+            balance_back()
+        elif balance == 'front':
+            balance_center('side')
+            balance_front()
+        elif balance == 'left':
+            balance_center('y')
+            balance_left()
+        elif balance == 'right':
+            balance_center('y')
+            balance_right()
+        elif balance == 'front_left':
+            balance_front()
+            balance_left()
+        elif balance == 'front_right':
+            balance_front()
+            balance_right()
+        elif balance == 'back_left':
+            balance_back()
+            balance_left()
+        elif balance == 'back_right':
+            balance_back()
+            balance_right()
+        else:
+            balance_all()
+
+
+def balance_center(direction):
+    if direction == 'side':
+        if config.servo[2] != config.servo_init[2]:
+            set_pwm(2, config.servo_init[2])
+            set_pwm(5, config.servo_init[5])
+            set_pwm(8, config.servo_init[8])
+            set_pwm(11, config.servo_init[11])
+    if direction == 'y':
+        if config.servo[0] != config.servo_init[0]:
+            set_pwm(0, config.servo_init[0])
+            set_pwm(3, config.servo_init[3])
+            set_pwm(6, config.servo_init[6])
+            set_pwm(9, config.servo_init[9])
+
+
+def balance_all():
+    for i in range(0, 12):
+        if i != 1 or i != 4 or i != 7 or i != 10:
+            set_pwm(i, config.servo_init[i])
+
+
+def balance_back():
+    global torso_wiggle
+    set_pwm(0, config.servo_init[0] - torso_wiggle)
+    set_pwm(3, config.servo_init[3] + torso_wiggle)
+    set_pwm(6, config.servo_init[6] + torso_wiggle)
+    set_pwm(9, config.servo_init[9] - torso_wiggle)
+
+
+def balance_front():
+    global torso_wiggle
+    set_pwm(0, config.servo_init[0] + torso_wiggle)
+    set_pwm(3, config.servo_init[3] - torso_wiggle)
+    set_pwm(6, config.servo_init[6] - torso_wiggle)
+    set_pwm(9, config.servo_init[9] + torso_wiggle)
+
+
+def balance_right():
+    global toe_wiggle
+    set_pwm(2, config.servo_init[2] + toe_wiggle)
+    set_pwm(5, config.servo_init[5] - toe_wiggle)
+    set_pwm(8, config.servo_init[8] + toe_wiggle)
+    set_pwm(11, config.servo_init[11] - toe_wiggle)
+
+
+def balance_left():
+    global toe_wiggle
+    set_pwm(2, config.servo_init[2] - toe_wiggle)
+    set_pwm(5, config.servo_init[5] + toe_wiggle)
+    set_pwm(8, config.servo_init[8] - toe_wiggle)
+    set_pwm(11, config.servo_init[11] + toe_wiggle)
+
+
+def move_direction(direction):
+    if direction == 'forward':
+        leg_up(4)
+        pass
+
+
+def leg_up(id):
+    if id == 1:
+        # UP
+        set_pwm(1, config.lower_leg_h)
+        # OUT
+        set_pwm(2, config.upper_leg_h)
+        # FORWARD
+        set_pwm(0, config.servo_init[0])
+        # DOWN
+        set_pwm(1, servo_init[1])
+
+    if id == 2:
+        # UP OUT FORWARD MIDDLE
+        set_pwm(4, config.lower_leg_h2)
+        set_pwm(5, config.upper_leg_h2)
+        set_pwm(3, config.servo_init[3] - (config.torso_w / 2))
+        while config.servo_motion != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+            pass
+        # DOWN IN
+        set_pwm(3, config.servo_init[3] - config.torso_w)
+        set_pwm(5, config.servo_init[5])
+        set_pwm(4, int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * 50)))
+    if id == 3:
+        set_pwm(6, config.servo_init[6])
+        set_pwm(7, config.lower_leg_h)
+        set_pwm(8, config.upper_leg_h)
+    if id == 4:
+        set_pwm(9, config.servo_init[9])
+        set_pwm(10, config.lower_leg_h2)
+        set_pwm(11, config.upper_leg_h)
+
+
 if __name__ == '__main__':
+    logger.info("Starting move...")
     servo_init()
     time.sleep(1)
     try:

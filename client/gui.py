@@ -205,6 +205,43 @@ def loop():  # GUI
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
     btn_sport.bind('<ButtonPress-1>', call_sport_mode)
+
+    btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_center = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_front = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_back = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_front_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_front_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_back_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_balance_back_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+
+    '''
+    123
+    456
+    789
+    '''
+
+    btn_balance_front_left.place(x=237, y=195)
+    btn_balance_front.place(x=267, y=195)
+    btn_balance_front_right.place(x=297, y=195)
+    btn_balance_left.place(x=237, y=230)
+    btn_balance_center.place(x=267, y=230)
+    btn_balance_right.place(x=297, y=230)
+    btn_balance_back_left.place(x=237, y=265)
+    btn_balance_back.place(x=267, y=265)
+    btn_balance_back_right.place(x=297, y=265)
+
+    btn_balance_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_left'))
+    btn_balance_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_right'))
+    btn_balance_center.bind('<ButtonPress-1>', lambda _: send('btn_balance_center'))
+    btn_balance_front.bind('<ButtonPress-1>', lambda _: send('btn_balance_front'))
+    btn_balance_back.bind('<ButtonPress-1>', lambda _: send('btn_balance_back'))
+    btn_balance_front_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_front_left'))
+    btn_balance_front_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_front_right'))
+    btn_balance_back_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_back_left'))
+    btn_balance_back_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_back_right'))
+
     # Read custom gui from config
     for x in config.guiTuple:
         eval(x)
