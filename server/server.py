@@ -116,13 +116,15 @@ def info_get():
 def move_thread(i, event):
     logger.debug('Thread started')
     global step_set
-    stand_stu = 1
+    center = 1
+    step = 1
+    move.robot_height(50)
     while not event.is_set():
         if not steadyMode:
             if direction_command == 'forward' and turn_command == 'no':
-                stand_stu = 0
-                move.dove_move_tripod(step_set, wiggle, 'forward')
-                step_set += 1
+                if center == 1:
+                    move.robot_balance('forward')
+                move.move_direction('forward')
                 if step_set == 9:
                     step_set = 1
                 continue
@@ -329,6 +331,24 @@ def run():
                 os.kill(p.pid + 1, signal.SIGHUP)
             stream_audio_started = 0
             tcp_server_socket.send('stream_audio_end'.encode())
+        elif 'btn_balance_front' == data:
+            move.robot_balance('front')
+        elif 'btn_balance_back' == data:
+            move.robot_balance('back')
+        elif 'btn_balance_left' == data:
+            move.robot_balance('left')
+        elif 'btn_balance_right' == data:
+            move.robot_balance('right')
+        elif 'btn_balance_front_left' == data:
+            move.robot_balance('front_left')
+        elif 'btn_balance_front_right' == data:
+            move.robot_balance('front_right')
+        elif 'btn_balance_center' == data:
+            move.robot_balance('center')
+        elif 'btn_balance_back_left' == data:
+            move.robot_balance('back_left')
+        elif 'btn_balance_back_right' == data:
+            move.robot_balance('back_right')
         else:
             logger.info('Speaking command received')
             speak(data)
@@ -390,13 +410,15 @@ def main():
             # Start server,waiting for client
             tcp_server.listen(5)
             logger.info('Waiting for connection...')
+            LED.breath_status_set(1)
             tcp_server_socket, addr = tcp_server.accept()
             logger.info('Connected from %s', addr)
             speak(speak_dict.connect)
             time.sleep(1)
             move.servo_init()
-            for x in range(99):
-                move.robot_height(x + 1)
+            # for x in range(99):
+            #    move.robot_height(x + 1)
+            # move.robot_height(100)
             global fpv
             fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=(addr[0], kill_event),
                                              daemon=True)  # Define a thread for FPV and OpenCV
@@ -410,7 +432,7 @@ def main():
 
     try:
         LED.breath_status_set(0)
-        LED.colorWipe(Color(64, 128, 255))
+        LED.colorWipe(Color(255, 255, 255))
     except:
         logger.error('Exception LED breath: %s', traceback.format_exc())
         pass
@@ -432,9 +454,10 @@ def disconnect():
     kill_event.set()
     LED.colorWipe(Color(0, 0, 0))
     # 150 - 500
-    current_pos = int((config.servo[1] - config.lower_leg_l) / (config.lower_leg_w * 2) * 100)
-    for x in range(current_pos):
-        move.robot_height(current_pos - x)
+    # current_pos = int((config.servo[1] - config.lower_leg_l) / (config.lower_leg_w * 2) * 100)
+    # for x in range(current_pos):
+    #    move.robot_height(current_pos - x)
+    # move.robot_height(0)
     move.servo_release()
     switch.switch(1, 0)
     switch.switch(2, 0)

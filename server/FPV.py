@@ -143,7 +143,7 @@ class FPV:
                         X_lock = 0
                     else:
                         X_lock = 1
-                    logger.debug('Find color position output (X,Y) = (%s,%s)', outv_X, outv_Y)
+                    # logger.debug('Find color position output (X,Y) = (%s,%s)', outv_X, outv_Y)
                     # if X_lock == 1 and Y_lock == 1:
                     LED.breath_color_set('red')
 

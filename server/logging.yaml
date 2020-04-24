@@ -26,12 +26,12 @@ loggers:
     propogate: no
 
   speak:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 
   move:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 
