@@ -20,7 +20,6 @@ import time
 import traceback
 
 import psutil
-from rpi_ws281x import *
 
 import FPV
 import LED
@@ -43,7 +42,7 @@ direction_command = 'no'
 turn_command = 'no'
 # pwm = Adafruit_PCA9685.PCA9685()
 # pwm.set_pwm_freq(50)
-LED = LED.LED()
+led = LED.LED()
 fpv = FPV.FPV()
 smooth_mode = 0
 steadyMode = 0
@@ -60,8 +59,9 @@ stream_audio_started = 0
 p = None
 
 
-def breath_led():
-    LED.breath(255)
+def breathe_thread():
+    logger.debug('Thread started')
+    led.led_thread()
 
 
 def ap_thread():
@@ -234,7 +234,7 @@ def run():
             try:
                 set_R = data.split()
                 ws_R = int(set_R[1])
-                LED.colorWipe(Color(ws_R, ws_G, ws_B))
+                led.colorWipe([ws_R, ws_G, ws_B])
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
@@ -242,7 +242,7 @@ def run():
             try:
                 set_G = data.split()
                 ws_G = int(set_G[1])
-                LED.colorWipe(Color(ws_R, ws_G, ws_B))
+                led.colorWipe([ws_R, ws_G, ws_B])
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
@@ -250,25 +250,25 @@ def run():
             try:
                 set_B = data.split()
                 ws_B = int(set_B[1])
-                LED.colorWipe(Color(ws_R, ws_G, ws_B))
+                led.colorWipe([ws_R, ws_G, ws_B])
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'FindColor' == data:
-            LED.breath_status_set(1)
+            led.mode_set(1)
             fpv.FindColor(1)
             tcp_server_socket.send('FindColor'.encode())
         elif 'WatchDog' == data:
-            LED.breath_status_set(1)
+            led.mode_set(1)
             fpv.WatchDog(1)
             tcp_server_socket.send('WatchDog'.encode())
         elif 'steady' == data:
-            LED.breath_status_set(1)
-            LED.breath_color_set('blue')
+            led.mode_set(1)
+            led.color_set('blue')
             steadyMode = 1
             tcp_server_socket.send('steady'.encode())
         elif 'func_end' == data:
-            LED.breath_status_set(0)
+            led.mode_set(0)
             fpv.FindColor(0)
             fpv.WatchDog(0)
             steadyMode = 0
@@ -364,10 +364,10 @@ def main():
     kill_event.clear()
 
     try:
-        led_threading = threading.Thread(target=breath_led)  # Define a thread for LED breathing
+        led_threading = threading.Thread(target=breathe_thread)  # Define a thread for LED breatheing
         led_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
         led_threading.start()  # Thread starts
-        LED.breath_color_set('blue')
+        led.color_set('blue')
     except:
         logger.error('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
         pass
@@ -389,17 +389,17 @@ def main():
             # Thread starts
             ap_threading.start()
 
-            LED.colorWipe(Color(0, 16, 50))
+            led.colorWipe([0, 16, 50])
             time.sleep(1)
-            LED.colorWipe(Color(0, 16, 100))
+            led.colorWipe([0, 16, 100])
             time.sleep(1)
-            LED.colorWipe(Color(0, 16, 150))
+            led.colorWipe([0, 16, 150])
             time.sleep(1)
-            LED.colorWipe(Color(0, 16, 200))
+            led.colorWipe([0, 16, 200])
             time.sleep(1)
-            LED.colorWipe(Color(0, 16, 255))
+            led.colorWipe([0, 16, 255])
             time.sleep(1)
-            LED.colorWipe(Color(35, 255, 35))
+            led.colorWipe([35, 255, 35])
 
         try:
             global tcp_server_socket, tcp_server
@@ -410,7 +410,8 @@ def main():
             # Start server,waiting for client
             tcp_server.listen(5)
             logger.info('Waiting for connection...')
-            LED.breath_status_set(1)
+            led.color_set('cyan')
+            led.mode_set(1)
             tcp_server_socket, addr = tcp_server.accept()
             logger.info('Connected from %s', addr)
             speak(speak_dict.connect)
@@ -427,14 +428,14 @@ def main():
         except:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
             kill_event.set()
-            LED.colorWipe(Color(0, 0, 0))
+            led.colorWipe([0, 0, 0])
             pass
 
     try:
-        LED.breath_status_set(0)
-        LED.colorWipe(Color(255, 255, 255))
+        led.mode_set(0)
+        led.colorWipe([255, 255, 255])
     except:
-        logger.error('Exception LED breath: %s', traceback.format_exc())
+        logger.error('Exception LED breathe: %s', traceback.format_exc())
         pass
 
     try:
@@ -452,7 +453,7 @@ def disconnect():
     if p is not None and not p.poll() == 0:
         os.kill(p.pid + 1, signal.SIGHUP)
     kill_event.set()
-    LED.colorWipe(Color(0, 0, 0))
+    led.colorWipe([0, 0, 0])
     # 150 - 500
     # current_pos = int((config.servo[1] - config.lower_leg_l) / (config.lower_leg_w * 2) * 100)
     # for x in range(current_pos):

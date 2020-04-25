@@ -1,128 +1,213 @@
 #!/usr/bin/python3
 # File name   : LED.py
-# Description : WS_2812
-# Website     : based on the code from https://github.com/rpi-ws281x/rpi-ws281x-python/blob/master/examples/strandtest.py
-# E-mail      : support@adeept.com
-# Author      : original code by Tony DiCola (tony@tonydicola.com)
-# Date        : 2018/10/12
-import argparse
+# Description : WS2812
+# E-mail      : sect16@gmail.com
+# Author      : Chin Pin Hon
+# Date        : 25/04/2020
+import logging
 import time
 
-from rpi_ws281x import *
+import spidev
 
-# LED strip configuration:
+import ws2812
+
+logger = logging.getLogger(__name__)
+mode = 1
+color = 'cyan'
+frequency = 50
+delay = 0.1
+step = 0
 LED_COUNT = 6  # Number of LED pixels.
-# LED_PIN        = 12      # GPIO pin connected to the pixels (18 uses PWM!).
-LED_PIN = 10  # GPIO pin connected to the pixels (10 uses SPI /dev/spidev0.0).
-LED_FREQ_HZ = 800000  # LED signal frequency in hertz (usually 800khz)
-LED_DMA = 10  # DMA channel to use for generating signal (try 10)
-LED_BRIGHTNESS = 255  # Set to 0 for darkest and 255 for brightest
-LED_INVERT = False  # True to invert the signal (when using NPN transistor level shift)
-LED_CHANNEL = 0  # set to '1' for GPIOs 13, 19, 41, 45 or 53
+brightness = 255  # Set to 0 for darkest and 255 for brightest
+SPI = spidev.SpiDev()
+SPI.open(0, 0)
+THREAD_REFRESH = 0.2
+COLORS = ['green', 'red', 'blue', 'cyan', 'yellow', 'magenta']
 
-BREATH = 1
-color = 'yellow'
-FRE_TIME = 50
-DELY = 0.1
+
+def color_convert(var, i):
+    """
+    This function takes a color text and brightness
+    :param var: Color text value ('green', 'red', 'blue', 'cyan', 'yellow', 'magenta')
+    :param i: Brightness value between 0 - 255
+    :returns List of LED values
+    """
+    if color_check(var):
+        if var == 'green':
+            return [i, 0, 0]
+        elif var == 'red':
+            return [0, i, 0]
+        elif var == 'magenta':
+            return [0, i, i]
+        elif var == 'cyan':
+            return [i, 0, i]
+        elif var == 'blue':
+            return [0, 0, i]
+        elif var == 'yellow':
+            return [i, i, 0]
+
+
+def color_check(var):
+    """
+    This function performs a sanity check on the input color string value.
+    :param var: Color string value
+    :return: boolean
+    """
+    global COLORS
+    if COLORS.count(var) == 1:
+        return True
+    else:
+        logger.error('Invalid input variable: ', var)
+        return False
 
 
 class LED:
-    def __init__(self):
-        self.LED_COUNT = 6  # Number of LED pixels.
-        self.LED_PIN = 10  # GPIO pin connected to the pixels (18 uses PWM!).
-        self.LED_FREQ_HZ = 800000  # LED signal frequency in hertz (usually 800khz)
-        self.LED_DMA = 10  # DMA channel to use for generating signal (try 10)
-        self.LED_BRIGHTNESS = 255  # Set to 0 for darkest and 255 for brightest
-        self.LED_INVERT = False  # True to invert the signal (when using NPN transistor level shift)
-        self.LED_CHANNEL = 0  # set to '1' for GPIOs 13, 19, 41, 45 or 53
-        parser = argparse.ArgumentParser()
-        parser.add_argument('-c', '--clear', action='store_true', help='clear the display on exit')
-        args = parser.parse_args()
 
-        # Create NeoPixel object with appropriate configuration.
-        self.strip = Adafruit_NeoPixel(self.LED_COUNT, self.LED_PIN, self.LED_FREQ_HZ, self.LED_DMA, self.LED_INVERT,
-                                       self.LED_BRIGHTNESS, self.LED_CHANNEL)
-        # Intialize the library (must be called once before other functions).
-        self.strip.begin()
+    def mode_set(self, var):
+        """
+        Sets LED light effect.
+        0 = Turn off all effects.
+        1 = Breathing effect.
+        2 = Color loop effect.
+        3 = Running effect.
+        :param var: integer value 0 - 3.
+        :return: void
+        """
+        if var == 0:
+            status = 'OFF'
+        elif var == 1:
+            status = 'Breathing effect'
+        elif var == 2:
+            status = 'Color loop effect'
+        elif var == 3:
+            status = 'Running effect'
+        logger.debug('Setting effect mode: ' + status)
+        global mode
+        mode = var
+
+    def color_set(self, var):
+        """
+        Sets color of the breathing LED light effect.
+        :param status: 1 for enable, 0 for disable
+        :return: void
+        """
+        logger.debug('Setting thread color = %s', var)
+        if color_check(var):
+            global color
+            color = var
+
+    def brightness(self, var):
+        """
+        Sets LED brightness.
+        :param var: integer range 0 - 255
+        :return: void
+        """
+        logger.debug('Setting thread color = %s', var)
+        if color_check(var):
+            global color
+            color = var
+
+    def breathe_frequency_set(self, var):
+        """
+        Sets speed of the breathing LED light effect.
+        :param var: Nominal value is 50. Any value between 1 and 255.
+        :return: void
+        """
+        if 0 < var < 255:
+            global frequency
+            frequency = var
+        else:
+            logger.error('Invalid breathe speed: ' + var)
+
+    def update_frequency_set(self, var):
+        """
+        Sets speed LED light changes.
+        :param var: Nominal value is 0.1.
+        :return: void
+        """
+        global delay
+        delay = var
 
     # Define functions which animate LEDs in various ways.
-    def colorWipe(self, color):
-        """Wipe color across display a pixel at a time."""
-        for i in range(self.strip.numPixels()):
-            self.strip.setPixelColor(i, color)
-            self.strip.show()
-            # time.sleep(wait_ms/1000.0)
+    def colorWipe(self, var):
+        """
+        Changes all LED color output. For example:
 
-    def breath_status_set(self, status):
-        global BREATH
-        BREATH = status
+        Green = [255, 0, 0]
+        Red = [0, 255, 0]
+        Blue = [0, 0, 255]
+        Cyan = [255, 0, 255]
+        Yellow = [255, 255, 0]
+        Magenta = [0, 255, 255]
 
-    def breath_color_set(self, invar):
-        global color
-        color = invar
+        :param var: A list containing 3 records containing Green, Red, Blue values
+        :return void
+        """
+        if len(var) == 3 and isinstance(var[0], int) and isinstance(var[1], int) and isinstance(var[2], int):
+            data = []
+            for x in range(LED_COUNT):
+                data.append(var)
+            ws2812.write2812(SPI, data)
+        else:
+            logger.error('Error invalid input value: %s', var)
 
-    def breath_frequency_set(self, frequency_input):
-        global FRE_TIME
-        FRE_TIME = frequency_input
-
-    def breath(self, brightness):
-        while 1:
-            if BREATH:
-                if color == 'red':
-                    for a in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(a, 0, 0))
-                            time.sleep(DELY)
-                    for b in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(((brightness - 1) - b), 0, 0))
-                            time.sleep(DELY)
-                elif color == 'green':
-                    for a in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(0, a, 0))
-                            time.sleep(DELY)
-                    for b in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(0, ((brightness - 1) - b), 0))
-                            time.sleep(DELY)
-                elif color == 'yellow':
-                    for a in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(a, a, 0))
-                            time.sleep(DELY)
-                    for b in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(((brightness - 1) - b), ((brightness - 1) - b), 0))
-                            time.sleep(DELY)
-                elif color == 'blue':
-                    for a in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(0, a, a))
-                            time.sleep(DELY)
-                    for b in range(0, brightness, FRE_TIME):
-                        if not BREATH:
-                            break
-                        else:
-                            self.colorWipe(Color(0, ((brightness - 1) - b), ((brightness - 1) - b)))
-                            time.sleep(DELY)
+    def led_thread(self):
+        """
+        This function runs as a thread to animate LED light effects.
+        """
+        while True:
+            if mode == 1:
+                self.breathe_effect()
+            elif mode == 2:
+                self.loop_effect()
+                pass
+            elif mode == 3:
+                self.running_effect()
+                pass
             else:
-                time.sleep(0.2)
+                time.sleep(THREAD_REFRESH)
 
-# led=LED()
-# led.breath(255)
-# led.colorWipe(Color(0,0,0))
+    def breathe_effect(self):
+        for a in range(0, brightness, frequency):
+            if not mode:
+                break
+            else:
+                self.colorWipe(color_convert(color, a))
+                time.sleep(delay)
+        for b in range(0, brightness, frequency):
+            if not mode:
+                break
+            else:
+                self.colorWipe(color_convert(color, int((brightness - 1) - b)))
+                time.sleep(delay)
+
+    def loop_effect(self):
+        """
+        Loop through all possible colors using all LED
+        """
+        global brightness, COLORS
+        for i in COLORS:
+            self.colorWipe(color_convert(i, brightness))
+            time.sleep(delay)
+
+    def running_effect(self):
+        """
+        Loop through all possible LED one at a time
+        """
+        global delay, step, LED_COUNT, brightness
+        d = [[0, 0, 0]] * LED_COUNT
+        d[step % LED_COUNT] = color_convert(color, brightness)
+        ws2812.write2812(SPI, d)
+        step = (step + 1) % LED_COUNT
+        time.sleep(delay)
+
+
+if __name__ == '__main__':
+    led = LED()
+    # led.test(255)
+    # LED()
+    mode = 3
+    led.led_thread()
+    # led.loop(255)
+    # led.colorWipe(Color(0, 0, 0))
+    pass

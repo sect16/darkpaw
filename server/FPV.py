@@ -28,7 +28,7 @@ from speak import speak
 
 logger = logging.getLogger(__name__)
 
-LED = LED.LED()
+LED = LED
 pid = PID.PID()
 pid.SetKp(10)
 pid.SetKd(0)
@@ -145,12 +145,12 @@ class FPV:
                         X_lock = 1
                     # logger.debug('Find color position output (X,Y) = (%s,%s)', outv_X, outv_Y)
                     # if X_lock == 1 and Y_lock == 1:
-                    LED.breath_color_set('red')
+                    LED.breathe_color_set('red')
 
                 else:
                     cv2.putText(frame_image, 'Target Detecting', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
                                 cv2.LINE_AA)
-                    LED.breath_color_set('yellow')
+                    LED.breathe_color_set('yellow')
 
                 for i in range(1, len(pts)):
                     if pts[i - 1] is None or pts[i] is None:
@@ -195,12 +195,12 @@ class FPV:
                     cv2.rectangle(frame_image, (x, y), (x + w, y + h), (128, 255, 0), 1)
                     motionCounter += 1
                     logger.info('Motion frame counter: %s', motionCounter)
-                    LED.breath_color_set('red')
+                    LED.breathe_color_set('red')
                     last_motion_captured = timestamp
 
                 if (timestamp - last_motion_captured).seconds >= 0.5:
                     logger.debug('No motion detected.')
-                    LED.breath_color_set('blue')
+                    LED.breathe_color_set('blue')
 
             if config.VIDEO_OUT == 1:
                 if footage_socket_client is None:

@@ -45,3 +45,8 @@ loggers:
     level: DEBUG
     handlers: [console]
     propogate: no
+
+  LED:
+    level: DEBUG
+    handlers: [console]
+    propogate: no
