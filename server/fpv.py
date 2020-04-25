@@ -1,6 +1,6 @@
 #!/usr/bin/env/python3
-# File name   : server.py
-# Description : for FPV video and OpenCV functions
+# File name   : fpv.py
+# Description : FPV video and OpenCV functions
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon(Based on Adrian Rosebrock's OpenCV code on pyimagesearch.com)
 # Date        : 30/12/2019
@@ -18,18 +18,18 @@ import picamera
 import zmq
 from picamera.array import PiRGBArray
 
-import LED
-import PID
 import config
+import led
 # from rpi_ws281x import *
 import move
+import pid
 import speak_dict
 from speak import speak
 
 logger = logging.getLogger(__name__)
 
-LED = LED
-pid = PID.PID()
+led = led.Led()
+pid = pid.Pid()
 pid.SetKp(10)
 pid.SetKd(0)
 pid.SetKi(0)
@@ -44,10 +44,7 @@ FindColorMode = 0
 WatchDogMode = 0
 
 
-# LED = LED.LED()
-
-
-class FPV:
+class Fpv:
     def __init__(self):
         self.frame_num = 0
         self.fps = 0
@@ -145,12 +142,12 @@ class FPV:
                         X_lock = 1
                     # logger.debug('Find color position output (X,Y) = (%s,%s)', outv_X, outv_Y)
                     # if X_lock == 1 and Y_lock == 1:
-                    LED.breathe_color_set('red')
+                    led.breathe_color_set('red')
 
                 else:
                     cv2.putText(frame_image, 'Target Detecting', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
                                 cv2.LINE_AA)
-                    LED.breathe_color_set('yellow')
+                    led.breathe_color_set('yellow')
 
                 for i in range(1, len(pts)):
                     if pts[i - 1] is None or pts[i] is None:
@@ -195,12 +192,12 @@ class FPV:
                     cv2.rectangle(frame_image, (x, y), (x + w, y + h), (128, 255, 0), 1)
                     motionCounter += 1
                     logger.info('Motion frame counter: %s', motionCounter)
-                    LED.breathe_color_set('red')
+                    led.breathe_color_set('red')
                     last_motion_captured = timestamp
 
                 if (timestamp - last_motion_captured).seconds >= 0.5:
                     logger.debug('No motion detected.')
-                    LED.breathe_color_set('blue')
+                    led.breathe_color_set('blue')
 
             if config.VIDEO_OUT == 1:
                 if footage_socket_client is None:
@@ -229,7 +226,7 @@ def init_client(client_ip_address):
 
 
 if __name__ == '__main__':
-    fpv = FPV()
+    fpv = Fpv()
     while 1:
         fpv.fpv_capture_thread('127.0.0.1')
         pass

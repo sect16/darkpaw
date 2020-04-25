@@ -14,7 +14,7 @@ import traceback
 
 import config
 import video
-from functions import send, connect, terminate, ultra_event, start_ultra, connect_event
+from functions import send, connect, terminate, ultra_event, start_ultra, connect_event, config_import
 
 logger = logging.getLogger(__name__)
 root = tk.Tk()  # Define a window named root
@@ -33,6 +33,7 @@ yaw_right_status = 0
 smooth_mode = 0
 sport_mode_on = 0
 ultrasonic_mode = 0
+led_sleep = 0
 
 COLOR_SWT_ACT = config.COLOR_SWT_ACT
 COLOR_BTN_ACT = config.COLOR_BTN_ACT
@@ -205,6 +206,15 @@ def loop():  # GUI
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
     btn_sport.bind('<ButtonPress-1>', call_sport_mode)
+
+    # Import last scale parameters
+    try:
+        label_ip_2.config(text='Default: ' + str(config_import('IP:')))
+        var_R.set(int(config_import('SCALE_R:')))
+        var_G.set(int(config_import('SCALE_G:')))
+        var_B.set(int(config_import('SCALE_B:')))
+    except:
+        pass
 
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -613,18 +623,26 @@ def stat_update(cpu_temp, cpu_use, ram_use):
 
 
 def set_R(event):
-    time.sleep(0.03)
-    send('wsR %s' % var_R.get())
+    send_led('wsR', var_R.get())
 
 
 def set_G(event):
-    time.sleep(0.03)
-    send('wsG %s' % var_G.get())
+    send_led('wsG', var_G.get())
 
 
 def set_B(event):
-    time.sleep(0.03)
-    send('wsB %s' % var_B.get())
+    send_led('wsB', var_B.get())
+
+
+def send_led(index, value):
+    global led_sleep
+    if led_sleep == 0:
+        led_sleep = value
+        send(index + ' %s ' % led_sleep)
+        time.sleep(0.1)
+        led_sleep = 0
+    else:
+        pass
 
 
 def send_command(event):

@@ -49,9 +49,9 @@ def write2812_numpy4(spi, data):
     # spi.xfer(tx.tolist(), int(4/.85e-6))  #doesn't work (first 4 LEDS work, others have flashing colors)
     # # spi.xfer(tx.tolist(), int(4/.65e-6))  #doesn't work on Zero; Works on Raspberry 3
     # # spi.xfer(tx.tolist(), int(4/.55e-6))  #doesn't work on Zero; Works on Raspberry 3
-    # # spi.xfer(tx.tolist(), int(4/.50e-6))  #doesn't work on Zero; Doesn't work on Raspberry 3 (bright colors)
+    spi.xfer(tx.tolist(), int(4 / .50e-6))  # doesn't work on Zero; Doesn't work on Raspberry 3 (bright colors)
     # # spi.xfer(tx.tolist(), int(4/.45e-6))  #doesn't work on Zero; Doesn't work on Raspberry 3
-    spi.xfer(tx.tolist(), int(8e6))
+    # # spi.xfer(tx.tolist(), int(8e6))
 
 
 def write2812_pylist8(spi, data):

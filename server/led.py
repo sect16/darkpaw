@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# File name   : LED.py
+# File name   : led.py
 # Description : WS2812
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
@@ -61,7 +61,7 @@ def color_check(var):
         return False
 
 
-class LED:
+class Led:
 
     def mode_set(self, var):
         """
@@ -203,7 +203,7 @@ class LED:
 
 
 if __name__ == '__main__':
-    led = LED()
+    led = Led()
     # led.test(255)
     # LED()
     mode = 3
