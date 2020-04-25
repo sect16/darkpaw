@@ -21,9 +21,9 @@ import traceback
 
 import psutil
 
-import FPV
-import LED
 import config
+import fpv
+import led
 import move
 import speak_dict
 import switch
@@ -42,8 +42,8 @@ direction_command = 'no'
 turn_command = 'no'
 # pwm = Adafruit_PCA9685.PCA9685()
 # pwm.set_pwm_freq(50)
-led = LED.LED()
-fpv = FPV.FPV()
+led = led.Led()
+fpv = fpv.Fpv()
 smooth_mode = 0
 steadyMode = 0
 addr = None
@@ -234,7 +234,7 @@ def run():
             try:
                 set_R = data.split()
                 ws_R = int(set_R[1])
-                led.colorWipe([ws_R, ws_G, ws_B])
+                led.colorWipe([ws_G, ws_R, ws_B])
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
@@ -242,7 +242,7 @@ def run():
             try:
                 set_G = data.split()
                 ws_G = int(set_G[1])
-                led.colorWipe([ws_R, ws_G, ws_B])
+                led.colorWipe([ws_G, ws_R, ws_B])
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
@@ -250,7 +250,7 @@ def run():
             try:
                 set_B = data.split()
                 ws_B = int(set_B[1])
-                led.colorWipe([ws_R, ws_G, ws_B])
+                led.colorWipe([ws_G, ws_R, ws_B])
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass

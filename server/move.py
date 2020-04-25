@@ -11,8 +11,8 @@ import time
 import Adafruit_PCA9685
 
 import Kalman_filter
-import PID
 import config
+import pid
 
 logger = logging.getLogger(__name__)
 pca = Adafruit_PCA9685.PCA9685()
@@ -80,11 +80,11 @@ X_fix_output = 0
 Y_fix_output = 0
 X_steady = 0
 Y_steady = 0
-X_pid = PID.PID()
+X_pid = pid.Pid()
 X_pid.SetKp(P)
 X_pid.SetKd(I)
 X_pid.SetKi(D)
-Y_pid = PID.PID()
+Y_pid = pid.Pid()
 Y_pid.SetKp(P)
 Y_pid.SetKd(I)
 Y_pid.SetKi(D)

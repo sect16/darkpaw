@@ -1,10 +1,10 @@
 #! /usr/bin/python
-# File name   : PID.py
+# File name   : pid.py
 
 import time
 
 
-class PID:
+class Pid:
     def __init__(self):
         self.Kp = 0
         self.Ki = 0

@@ -25,7 +25,7 @@ loggers:
     propogate: no
 
   functions:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 

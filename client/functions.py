@@ -7,10 +7,10 @@
 Functions for starting threads
 """
 
+import logging
 import threading
 import time
 import traceback
-import logging
 from socket import *
 
 import config
@@ -25,35 +25,42 @@ cpu_use = 0
 ram_use = 0
 
 
-def replace_num(initial, new_num):
+def config_export(initial, new_num):
     """
     This function to replace data in '.txt' file
     :param initial:
     :param new_num:
     """
-    newline = ""
+    logger.debug('Writing configuration to file: ' + initial + new_num)
+    ptr = 0
     str_num = str(new_num)
-    with open("ip.txt", "r") as f:
+    contents = []
+    exist = 0
+    with open("config.txt", "r") as f:
         for line in f.readlines():
-            if line.find(initial) == 0:
-                line = initial + "%s" % str_num
-            newline += line
-    with open("ip.txt", "w") as f:
-        f.writelines(newline)  # Call this function to replace data in '.txt' file
+            if line.find(initial) >= 0:
+                exist = 1
+                contents.append(initial + str_num)
+            elif line != '\n':
+                contents.append(line.strip('\n'))
+    with open("config.txt", "w") as f:
+        if exist == 0:
+            contents.append(initial + str_num)
+        for newline in contents:
+            f.writelines(newline + '\n')  # Call this function to replace data in '.txt' file
 
 
-def num_import(initial):
+def config_import(initial):
     """
-    This function to import data from '.txt' file
-    :param initial:
-    :return:
+    This function imports IP address data from 'config.txt' file
+    :param initial: Initial IP value.
+    :return: IP value in IP.txt file.
     """
-    with open("ip.txt") as f:
-        for line in f.readlines():
-            if line.find(initial) == 0:
-                r = line
-    begin = len(list(initial))
-    return r[begin:]
+    f = open("config.txt", "r")
+    for line in f:
+        if line.find(initial) == 0:
+            thisList = line.replace(" ", "").replace("\n", "").split(':', 2)
+            return thisList[1]
 
 
 def status_client_thread(event):
@@ -125,9 +132,11 @@ def connect():  # Call this function to connect with the server
         gui.label_ip_1.config(bg='#FF8F00')
         gui.e1.config(state='disabled')
         if ip_address == '':  # If no input IP address in Entry,import a default IP
-            ip_address = num_import('IP:')
-            gui.label_ip_2.config(text='Default: %s' % ip_address)
-            pass
+            try:
+                ip_address = str(config_import('IP:'))
+                gui.label_ip_2.config(text='Default: %s' % ip_address)
+            except:
+                pass
         gui.label_ip_1.config(text='Connecting')
         gui.label_ip_1.config(bg='#FF8F00')
         server_ip = ip_address
@@ -140,7 +149,7 @@ def connect():  # Call this function to connect with the server
             gui.label_ip_2.config(text='IP: %s' % ip_address)
             gui.label_ip_1.config(text='Connected')
             gui.label_ip_1.config(bg='#558B2F')
-            replace_num('IP:', ip_address)
+            config_export('IP:', ip_address)
             gui.e2.config(state='normal')
             gui.btn_connect.config(state='normal')
             gui.btn_connect.config(text='Disconnect')
@@ -169,6 +178,10 @@ def disconnect():
     fpv_event.clear()  # Clear to kill threads
     ultra_event.clear()
     time.sleep(0.5)
+    # Export scale values to file
+    config_export('SCALE_R:', gui.var_R.get())
+    config_export('SCALE_B:', gui.var_G.get())
+    config_export('SCALE_G:', gui.var_B.get())
     if connect_event.is_set():
         try:
             send('disconnect')
