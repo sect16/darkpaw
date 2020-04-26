@@ -593,9 +593,8 @@ def balance_center(direction):
 
 
 def balance_all():
-    for i in range(0, 12):
-        if i != 1 or i != 4 or i != 7 or i != 10:
-            set_pwm(i, config.servo_init[i])
+    balance_center('side')
+    balance_center('y')
 
 
 def balance_back():

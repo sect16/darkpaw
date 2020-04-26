@@ -216,6 +216,7 @@ def loop():  # GUI
     except:
         pass
 
+    # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_center = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -225,22 +226,6 @@ def loop():  # GUI
     btn_balance_front_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_back_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_back_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-
-    '''
-    123
-    456
-    789
-    '''
-
-    btn_balance_front_left.place(x=237, y=195)
-    btn_balance_front.place(x=267, y=195)
-    btn_balance_front_right.place(x=297, y=195)
-    btn_balance_left.place(x=237, y=230)
-    btn_balance_center.place(x=267, y=230)
-    btn_balance_right.place(x=297, y=230)
-    btn_balance_back_left.place(x=237, y=265)
-    btn_balance_back.place(x=267, y=265)
-    btn_balance_back_right.place(x=297, y=265)
 
     btn_balance_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_left'))
     btn_balance_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_right'))
