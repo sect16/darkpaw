@@ -157,6 +157,7 @@ def move_thread(i, event):
             pass
         else:
             move.robot_steady()
+        time.sleep(0.5)
     logger.debug('Thread stopped')
 
 
@@ -466,4 +467,8 @@ def disconnect():
     time.sleep(2)
     tcp_server.close()
     tcp_server_socket.close()
+    main()
+
+
+if __name__ == "__main__":
     main()
