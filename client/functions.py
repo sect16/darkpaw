@@ -50,17 +50,17 @@ def config_export(initial, new_num):
             f.writelines(newline + '\n')  # Call this function to replace data in '.txt' file
 
 
-def config_import(initial):
+def config_import(label):
     """
     This function imports IP address data from 'config.txt' file
-    :param initial: Initial IP value.
+    :param label: Label of value to be imported.
     :return: IP value in config.txt file.
     """
     f = open("config.txt", "r")
     for line in f:
-        if line.find(initial) == 0:
-            thisList = line.replace(" ", "").replace("\n", "").split(':', 2)
-            return thisList[1]
+        if line.find(label) == 0:
+            this_list = line.replace(" ", "").replace("\n", "").split(':', 2)
+            return this_list[1]
 
 
 def status_client_thread(event):
@@ -96,6 +96,7 @@ def stat_server_thread(event):
     stat_sock.listen(5)  # Start server,waiting for client
     stat_sock, addr = stat_sock.accept()
     logger.info('Info port connected')
+    retries = 0
     while event.is_set():
         try:
             info_data = str(stat_sock.recv(config.BUFFER_SIZE).decode())
@@ -136,6 +137,7 @@ def connect():  # Call this function to connect with the server
                 ip_address = str(config_import('IP:'))
                 gui.label_ip_2.config(text='Default: %s' % ip_address)
             except:
+                logger.error('Error setting IP')
                 pass
         gui.label_ip_1.config(text='Connecting')
         gui.label_ip_1.config(bg='#FF8F00')
@@ -199,9 +201,10 @@ def disconnect():
     gui.unbind_keys()
     gui.e1.config(state='normal')
     gui.e2.config(state='disabled')
+    gui.btn_audio.config(bg=config.COLOR_BTN)
 
 
-def terminate(event):
+def terminate(event=None):
     """
     Close GUI application.
     :param event: Tkinter event

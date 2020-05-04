@@ -209,7 +209,9 @@ def loop():  # GUI
 
     # Import last scale parameters
     try:
-        label_ip_2.config(text='Default: ' + str(config_import('IP:')))
+        ip = str(config_import('IP:'))
+        label_ip_2.config(text='Default: ' + ip)
+        e1.insert(0, ip)
         var_R.set(int(config_import('SCALE_R:')))
         var_G.set(int(config_import('SCALE_G:')))
         var_B.set(int(config_import('SCALE_B:')))
@@ -468,7 +470,7 @@ def call_find_line(event):
 
 def call_audio(event):
     global btn_audio
-    if btn_audio.cget("bg") == '#0277BD':
+    if btn_audio.cget("bg") == config.COLOR_BTN:
         send('stream_audio')
     else:
         send('stream_audio_end')
