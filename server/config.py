@@ -61,4 +61,4 @@ torso_w = int((torso_h - torso_l) / 2)
 servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-resolution = 5
+resolution = 3

@@ -151,11 +151,11 @@ class Led:
         else:
             logger.error('Error invalid input value: %s', var)
 
-    def led_thread(self):
+    def led_thread(self, event):
         """
         This function runs as a thread to animate LED light effects.
         """
-        while True:
+        while not event.is_set():
             if mode == 1:
                 self.breathe_effect()
             elif mode == 2:
@@ -166,6 +166,7 @@ class Led:
                 pass
             else:
                 time.sleep(THREAD_REFRESH)
+        logger.debug('Thread stopped')
 
     def breathe_effect(self):
         for a in range(0, brightness, frequency):

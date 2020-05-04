@@ -5,10 +5,12 @@
 # Date        : 14.01.2020
 # 
 
-import server
-import yaml
-import os
 import logging.config
+import os
+
+import yaml
+
+import server
 
 if __name__ == '__main__':
     logging.addLevelName(logging.DEBUG, "\033[0;32m%8s\033[1;0m" % logging.getLevelName(logging.DEBUG))
@@ -20,4 +22,5 @@ if __name__ == '__main__':
     logConfig = yaml.safe_load(f.read())
     f.close()
     logging.config.dictConfig(logConfig)
-    server.main()
+    while True:
+        server.main()

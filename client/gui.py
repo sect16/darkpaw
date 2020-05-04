@@ -48,10 +48,10 @@ def loop():  # GUI
     """
     Main GUI layout
     """
-    global root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+    global root, e1, e2, e3, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
-        btn_ultra, btn_find_line, btn_sport, canvas_ultra
+        btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -90,8 +90,7 @@ def loop():  # GUI
     e1.place(x=180, y=40)  # Define a Entry and put it in position
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
-    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN,
-                            command=connect,
+    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN, command=connect,
                             relief='ridge')
     btn0 = tk.Button(root, width=8, text='Forward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn1 = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -212,12 +211,27 @@ def loop():  # GUI
         ip = str(config_import('IP:'))
         label_ip_2.config(text='Default: ' + ip)
         e1.insert(0, ip)
+    except:
+        logger.warning('Exception reading IP address from file: %s', traceback.format_exc())
+        pass
+    try:
         var_R.set(int(config_import('SCALE_R:')))
         var_G.set(int(config_import('SCALE_G:')))
         var_B.set(int(config_import('SCALE_B:')))
     except:
+        logger.warning('Exception reading LED values from file: %s', traceback.format_exc())
         pass
 
+    # Darkpaw speed_set
+    e3 = tk.Entry(root, show=None, width=8, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+                  state='normal')
+    try:
+        e3.insert(0, int(config_import('SPEED:')))
+    except:
+        pass
+    label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT, bg='#000000')
+    btn_e3 = tk.Button(root, width=5, text='SET', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_e3.bind('<ButtonPress-1>', lambda _: send('speed:' + e3.get()))
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -644,3 +658,23 @@ def send_command(event):
     else:
         logger.warning('Unable to send, not connected')
     bind_keys()
+
+
+def connect_init(ip_address):
+    label_ip_2.config(text='IP: %s' % ip_address)
+    label_ip_1.config(text='Connected')
+    label_ip_1.config(bg='#558B2F')
+    e2.config(state='normal')
+    btn_connect.config(state='normal')
+    btn_connect.config(text='Disconnect')
+    # Send initial values
+    '''
+    send('wsR %s' + str(var_R.get()))
+    time.sleep(1)
+    send('wsG %s' + str(var_G.get()))
+    time.sleep(1)
+    send('wsB %s' + str(var_B.get()))
+    time.sleep(1)
+    '''
+    send('speed:' + e3.get())
+    return None

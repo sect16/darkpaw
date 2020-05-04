@@ -45,7 +45,6 @@ guiTuple = (
     "btn_balance_front.place(x=267, y=195)", "btn_balance_front_right.place(x=297, y=195)",
     "btn_balance_left.place(x=237, y=230)", "btn_balance_center.place(x=267, y=230)",
     "btn_balance_right.place(x=297, y=230)", "btn_balance_back_left.place(x=237, y=265)",
-    "btn_balance_back.place(x=267, y=265)", "btn_balance_back_right.place(x=297, y=265)"
-    # Place holder for future implementation
-    # "btn_smooth.place(x=285, y=465)"
+    "btn_balance_back.place(x=267, y=265)", "btn_balance_back_right.place(x=297, y=265)",
+    "label_e3.place(x=30, y=160)", "e3.place(x=70, y=160)", "btn_e3.place(x=130, y=160)"
 )

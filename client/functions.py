@@ -25,42 +25,42 @@ cpu_use = 0
 ram_use = 0
 
 
-def config_export(initial, new_num):
+def config_export(label, new_num):
     """
     This function to replace data in 'config.txt' file
-    :param initial:
+    :param label:
     :param new_num:
     """
-    logger.debug('Writing configuration to file: ' + initial + new_num)
+    logger.debug('Writing configuration to file: ' + label + new_num)
     ptr = 0
     str_num = str(new_num)
     contents = []
     exist = 0
     with open("config.txt", "r") as f:
         for line in f.readlines():
-            if line.find(initial) >= 0:
+            if line.find(label) >= 0:
                 exist = 1
-                contents.append(initial + str_num)
+                contents.append(label + str_num)
             elif line != '\n':
                 contents.append(line.strip('\n'))
     with open("config.txt", "w") as f:
         if exist == 0:
-            contents.append(initial + str_num)
+            contents.append(label + str_num)
         for newline in contents:
             f.writelines(newline + '\n')  # Call this function to replace data in '.txt' file
 
 
 def config_import(label):
     """
-    This function imports IP address data from 'config.txt' file
+    This function imports data from 'config.txt' file
     :param label: Label of value to be imported.
     :return: IP value in config.txt file.
     """
     f = open("config.txt", "r")
     for line in f:
         if line.find(label) == 0:
-            this_list = line.replace(" ", "").replace("\n", "").split(':', 2)
-            return this_list[1]
+            return line.replace(" ", "").replace("\n", "").split(':', 2)[1]
+    logger.error('Unable read value label \"%s\" from configuration file.', label)
 
 
 def status_client_thread(event):
@@ -120,47 +120,49 @@ def stat_server_thread(event):
     logger.debug('Thread stopped')
 
 
+def ip_check(ip_address):
+    try:
+        list_n = str(ip_address).split('.')
+        count = 0
+        for n in list_n:
+            if 255 > int(n) >= 0:
+                count += 1
+        if count == 4:
+            return True
+    except:
+        logger.error('Unable to validate IP address: %s', traceback.format_exc())
+        pass
+    logger.error('Invalid IP address input: %s', ip_address)
+    gui.label_ip_1.config(text='Invalid IP Address!')
+    return False
+
+
 def connect():  # Call this function to connect with the server
     """
     Initialize and begin connection
     """
     global connect_event, tcp_client_socket
-    if str(gui.btn_connect['state']) == 'normal':
+    ip_address = gui.e1.get()  # Get the IP address from Entry
+    if not connect_event.is_set() and ip_check(ip_address):
         gui.btn_connect['state'] = 'disabled'
-    if not connect_event.is_set():
-        # logger.info('Connecting to server')
-        ip_address = gui.e1.get()  # Get the IP address from Entry
         gui.label_ip_1.config(bg='#FF8F00')
         gui.e1.config(state='disabled')
-        if ip_address == '':  # If no input IP address in Entry,import a default IP
-            try:
-                ip_address = str(config_import('IP:'))
-                gui.label_ip_2.config(text='Default: %s' % ip_address)
-            except:
-                logger.error('Error setting IP')
-                pass
         gui.label_ip_1.config(text='Connecting')
         gui.label_ip_1.config(bg='#FF8F00')
-        server_ip = ip_address
-        addr = (server_ip, config.SERVER_PORT)
         tcp_client_socket = socket(AF_INET, SOCK_STREAM)  # Set connection value for socket
+        addr = (ip_address, config.SERVER_PORT)
         try:
-            logger.info("Connecting to server @ %s:%d..." % (server_ip, config.SERVER_PORT))
+            logger.info("Connecting to server @ %s:%d..." % (ip_address, config.SERVER_PORT))
             tcp_client_socket.connect(addr)  # Connection with the server
             logger.info("Connected successfully")
-            gui.label_ip_2.config(text='IP: %s' % ip_address)
-            gui.label_ip_1.config(text='Connected')
-            gui.label_ip_1.config(bg='#558B2F')
             config_export('IP:', ip_address)
-            gui.e2.config(state='normal')
-            gui.btn_connect.config(state='normal')
-            gui.btn_connect.config(text='Disconnect')
             connect_event.set()  # Set to start threads
             status_threading = threading.Thread(target=status_client_thread, args=([connect_event]),
                                                 daemon=True)
             status_threading.start()
             info_threading = threading.Thread(target=stat_server_thread, args=([connect_event]), daemon=True)
             info_threading.start()
+            gui.connect_init(ip_address)
         except:
             logger.error('Unable to connect: %s', traceback.format_exc())
         if not connect_event.is_set():
@@ -180,10 +182,6 @@ def disconnect():
     fpv_event.clear()  # Clear to kill threads
     ultra_event.clear()
     time.sleep(0.5)
-    # Export scale values to file
-    config_export('SCALE_R:', gui.var_R.get())
-    config_export('SCALE_B:', gui.var_G.get())
-    config_export('SCALE_G:', gui.var_B.get())
     if connect_event.is_set():
         try:
             send('disconnect')
@@ -211,6 +209,11 @@ def terminate(event=None):
     """
     logger.info('Exiting application...')
     disconnect()
+    # Export scale values to file
+    config_export('SCALE_R:', gui.var_R.get())
+    config_export('SCALE_B:', gui.var_G.get())
+    config_export('SCALE_G:', gui.var_B.get())
+    config_export('SPEED:', gui.e3.get())
     time.sleep(0.5)
     gui.root.destroy()
 
@@ -221,7 +224,7 @@ def send(value):
     :param value: command or text
     """
     if not connect_event.is_set():
-        logger.warning('Unable to send command, no connection.')
+        logger.error('Unable to send command, no connection.')
     elif connect_event.is_set():
         logger.info('Sending data: %s', value)
         tcp_client_socket.send(value.encode())
