@@ -154,10 +154,10 @@ def move_thread(i, event):
                 else:
                     time.sleep(0.01)
                     pass
+            time.sleep(0.5)
             pass
         else:
             move.robot_steady()
-        time.sleep(0.5)
     logger.debug('Thread stopped')
 
 

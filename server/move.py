@@ -143,10 +143,16 @@ def set_pwm(servo, pos):
 
 
 def set_pwm_init(servo, pos):
+    """
+    Controls an individual servo. This function also updates the config variable servo list.
+
+    :param servo: Servo number ranging from 0 to 15.
+    :param pos: Position range 100 to 500.
+    :return: void
+    """
     logger.debug("Initialize PWM on servo [%s], position [%s])", servo, pos)
     pca.set_pwm(servo, 0, pos)
     config.servo[servo] = pos
-    config.servo_init[servo] = pos
 
 
 '''
@@ -388,7 +394,7 @@ def robot_X(amp):
     set_pwm(9, int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100))
 
 
-def robot_height(height):
+def robot_height(height, instant=0):
     """
     Highest point 100
     Mid point 50
@@ -397,10 +403,20 @@ def robot_height(height):
     :param height: range(100,0)
     :return: void
     """
-    set_pwm(1, int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height)))
-    set_pwm(4, int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height)))
-    set_pwm(7, int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height)))
-    set_pwm(10, int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height)))
+    pos1 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
+    pos2 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
+    pos3 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
+    pos4 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
+    if instant:
+        set_pwm_init(1, pos1)
+        set_pwm_init(4, pos2)
+        set_pwm_init(7, pos3)
+        set_pwm_init(10, pos4)
+    else:
+        set_pwm(1, pos1)
+        set_pwm(4, pos2)
+        set_pwm(7, pos3)
+        set_pwm(10, pos4)
 
 
 def ctrl_range(input_value, max_genout, min_genout):
@@ -421,29 +437,40 @@ def ctrl_range(input_value, max_genout, min_genout):
     return int(output_value)
 
 
-def ctrl_pitch_roll(pitch, roll):  # Percentage wiggle
+def ctrl_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
     """
     look up <- pitch -> look down.
     lean right <- roll -> lean left.
 
     default values are 0.
 
+    :param instant: 1 = move instantly, 0 = animate movement
     :param pitch: range(-100, 100)
     :param roll: range(-100, 100)
     :return: void
     """
     wiggle = config.lower_leg_w
-    set_pwm(1, ctrl_range((config.lower_leg_m - wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h,
-                          config.lower_leg_l))
-    set_pwm(4, ctrl_range((config.lower_leg_m2 - wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h2,
-                          config.lower_leg_l2))
-    set_pwm(7, ctrl_range((config.lower_leg_m2 + wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h2,
-                          config.lower_leg_l2))
-    set_pwm(10, ctrl_range((config.lower_leg_m + wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h,
-                           config.lower_leg_l))
+    pos1 = ctrl_range((config.lower_leg_m - wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h,
+                      config.lower_leg_l)
+    pos2 = ctrl_range((config.lower_leg_m2 - wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h2,
+                      config.lower_leg_l2)
+    pos3 = ctrl_range((config.lower_leg_m2 + wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h2,
+                      config.lower_leg_l2)
+    pos4 = ctrl_range((config.lower_leg_m + wiggle * pitch / 100 + wiggle * roll / 100), config.lower_leg_h,
+                      config.lower_leg_l)
+    if instant:
+        set_pwm_init(1, pos1)
+        set_pwm_init(4, pos2)
+        set_pwm_init(7, pos3)
+        set_pwm_init(10, pos4)
+    else:
+        set_pwm(1, pos1)
+        set_pwm(4, pos2)
+        set_pwm(7, pos3)
+        set_pwm(10, pos4)
 
 
-def ctrl_yaw(wiggle, yaw):  # Percentage wiggle
+def ctrl_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
     """
     look left <- yaw -> look right
     default value is 0
@@ -451,15 +478,26 @@ def ctrl_yaw(wiggle, yaw):  # Percentage wiggle
     Left = 100
     Right = -100
 
+    :param instant: 1 = move instantly, 0 = animate movement
     :param wiggle: Constant servo range
     :param yaw: range (100, -100)
     :return: void
     """
+    pos1 = int(config.torso_m + wiggle * yaw / 100)
+    pos2 = int(config.torso_m - wiggle * yaw / 100)
+    pos3 = int(config.torso_m2 + wiggle * yaw / 100)
+    pos4 = int(config.torso_m2 - wiggle * yaw / 100)
     # robot_X(config.default_X)
-    set_pwm(0, int(config.torso_m + wiggle * yaw / 100))
-    set_pwm(3, int(config.torso_m - wiggle * yaw / 100))
-    set_pwm(6, int(config.torso_m2 + wiggle * yaw / 100))
-    set_pwm(9, int(config.torso_m2 - wiggle * yaw / 100))
+    if instant:
+        set_pwm_init(0, pos1)
+        set_pwm_init(3, pos2)
+        set_pwm_init(6, pos3)
+        set_pwm_init(9, pos4)
+    else:
+        set_pwm(0, pos1)
+        set_pwm(3, pos2)
+        set_pwm(6, pos3)
+        set_pwm(9, pos4)
 
 
 def robot_steady():
@@ -481,7 +519,7 @@ def robot_steady():
     X_fix_output = ctrl_range(X_fix_output, 100, -100)
     Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
     logger.debug('Steady output = %s, %s', -X_fix_output, Y_fix_output)
-    ctrl_pitch_roll(-X_fix_output, Y_fix_output)
+    ctrl_pitch_roll(-X_fix_output, Y_fix_output, 1)
 
 
 def servo_release():
@@ -530,6 +568,8 @@ def servo_init():
             set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * config.default_X / 100))
         if i == 6 or i == 9:
             set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * config.default_X / 100))
+
+    config.servo_init = config.servo.copy()
     logger.debug('Servo init: %s', config.servo_init)
     logger.debug('Servo status: %s', config.servo)
 
@@ -674,8 +714,8 @@ if __name__ == '__main__':
     try:
         while 1:
             robot_steady()
-            time.sleep(0.1)
-            break
+            # time.sleep(0.1)
+            # break
             pass
 
         mpu6050Test()

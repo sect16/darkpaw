@@ -118,12 +118,12 @@ class Fpv:
                     if Y < (240 - tor):
                         error = (240 - Y) / 1.2
                         outv_Y = int(round((pid.GenOut(error)), 0))
-                        move.ctrl_pitch_roll(-outv_Y, 0)
+                        move.ctrl_pitch_roll(-outv_Y, 0, 1)
                         Y_lock = 0
                     elif Y > (240 + tor):
                         error = (Y - 240) / 1.2
                         outv_Y = int(round((pid.GenOut(error)), 0))
-                        move.ctrl_pitch_roll(outv_Y, 0)
+                        move.ctrl_pitch_roll(outv_Y, 0, 1)
                         Y_lock = 0
                     else:
                         Y_lock = 1
