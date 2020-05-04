@@ -684,7 +684,7 @@ def leg_up(id):
         # FORWARD
         set_pwm(0, config.servo_init[0])
         # DOWN
-        set_pwm(1, servo_init[1])
+        set_pwm(1, config.servo_init[1])
 
     if id == 2:
         # UP OUT FORWARD MIDDLE

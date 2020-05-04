@@ -4,17 +4,12 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 
-"""
-
-Smooth mode is a placeholder and has no function behind it.
-
-"""
-
 import logging
 import os
 import signal
 import socket
 import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -40,11 +35,8 @@ Initiation commands
 """
 direction_command = 'no'
 turn_command = 'no'
-# pwm = Adafruit_PCA9685.PCA9685()
-# pwm.set_pwm_freq(50)
 led = led.Led()
 fpv = fpv.Fpv()
-smooth_mode = 0
 steadyMode = 0
 addr = None
 tcp_server_socket = None
@@ -57,11 +49,6 @@ kill_event = threading.Event()
 server_address = ''
 stream_audio_started = 0
 p = None
-
-
-def breathe_thread():
-    logger.debug('Thread started')
-    led.led_thread()
 
 
 def ap_thread():
@@ -113,12 +100,12 @@ def info_get():
         time.sleep(3)
 
 
-def move_thread(i, event):
+def move_thread(event):
     logger.debug('Thread started')
     global step_set
     center = 1
     step = 1
-    move.robot_height(50)
+    # move.robot_height(50)
     while not event.is_set():
         if not steadyMode:
             if direction_command == 'forward' and turn_command == 'no':
@@ -161,7 +148,7 @@ def move_thread(i, event):
     logger.debug('Thread stopped')
 
 
-def info_send_client_thread(arg, event):
+def info_send_client_thread(event):
     logger.debug('Thread started')
     SERVER_IP = addr[0]
     SERVER_ADDR = (SERVER_IP, config.INFO_PORT)
@@ -179,15 +166,15 @@ def info_send_client_thread(arg, event):
 
 
 def run():
-    global direction_command, turn_command, smooth_mode, steadyMode, p
+    global direction_command, turn_command, steadyMode, p
     # Define a thread for FPV and OpenCV
-    moving_threading = threading.Thread(target=move_thread, args=(0, kill_event), daemon=True)
+    moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     # 'True' means it is a front thread,it would close when the mainloop() closes
     moving_threading.setDaemon(True)
     # Thread starts
     moving_threading.start()
     # Define a thread for FPV and OpenCV
-    info_threading = threading.Thread(target=info_send_client_thread, args=(0, kill_event), daemon=True)
+    info_threading = threading.Thread(target=info_send_client_thread, args=[kill_event], daemon=True)
     # 'True' means it is a front thread,it would close when the mainloop() closes
     info_threading.setDaemon(True)
     # Thread starts
@@ -275,14 +262,6 @@ def run():
             steadyMode = 0
             move.robot_home()
             tcp_server_socket.send('func_end'.encode())
-
-        elif 'Smooth_on' == data:
-            smoothMode = 1
-            tcp_server_socket.send('Smooth_on'.encode())
-        elif 'Smooth_off' == data:
-            smoothMode = 0
-            tcp_server_socket.send('Smooth_off'.encode())
-
         elif 'Switch_1_on' == data:
             switch.switch(1, 1)
             tcp_server_socket.send('Switch_1_on'.encode())
@@ -318,10 +297,10 @@ def run():
             global server_address, stream_audio_started, p
             if stream_audio_started == 0:
                 logger.info('Audio streaming server starting...')
-                p = subprocess.Popen([str(
+                p = subprocess.Popen([
                     'cvlc alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
-                        config.AUDIO_PORT) + '}"')],
-                    shell=True)
+                        config.AUDIO_PORT) + '}"'],
+                    shell=True, preexec_fn=os.setsid)
                 # p = subprocess.Popen(['/usr/bin/cvlc','-vvv', 'alsa://hw:1,0', ':live-caching=50', '--sout', '\"#standard{access=http,mux=ogg,dst=\'', server_address, '\':3030}\"'], shell=False)
                 stream_audio_started = 1
             else:
@@ -329,7 +308,7 @@ def run():
             tcp_server_socket.send('stream_audio'.encode())
         elif 'stream_audio_end' == data:
             if p is not None:
-                os.kill(p.pid + 1, signal.SIGHUP)
+                os.killpg(os.getpgid(p.pid), signal.SIGTERM)  # Send the signal to all the process groups
             stream_audio_started = 0
             tcp_server_socket.send('stream_audio_end'.encode())
         elif 'btn_balance_front' == data:
@@ -350,6 +329,13 @@ def run():
             move.robot_balance('back_left')
         elif 'btn_balance_back_right' == data:
             move.robot_balance('back_right')
+        elif 'speed:' in data:
+            logger.debug('Received set servo resolution')
+            try:
+                config.resolution = int(data.split(':', 2)[1])
+            except:
+                logger.error('Error setting servo resolution: %s', data[0])
+                pass
         else:
             logger.info('Speaking command received')
             speak(data)
@@ -365,7 +351,7 @@ def main():
     kill_event.clear()
 
     try:
-        led_threading = threading.Thread(target=breathe_thread)  # Define a thread for LED breatheing
+        led_threading = threading.Thread(target=led.led_thread, args=[kill_event])  # Define a thread for LED breatheing
         led_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
         led_threading.start()  # Thread starts
         led.color_set('blue')
@@ -373,7 +359,7 @@ def main():
         logger.error('Use "sudo pip3 install rpi_ws281x" to install WS_281x package')
         pass
 
-    while 1:
+    while True:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("1.1.1.1", 80))
@@ -422,10 +408,17 @@ def main():
             #    move.robot_height(x + 1)
             # move.robot_height(100)
             global fpv
-            fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=(addr[0], kill_event),
+            fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=[addr[0], kill_event],
                                              daemon=True)  # Define a thread for FPV and OpenCV
             fps_threading.start()  # Thread starts
             break
+        except KeyboardInterrupt:
+            logger.error('Exception while waiting for connection: %s', traceback.format_exc())
+            kill_event.set()
+            led.colorWipe([0, 0, 0])
+            sys.exit()
+            pass
+
         except:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
             kill_event.set()
@@ -442,17 +435,14 @@ def main():
     try:
         run()
     except:
-        logger.error('Run exception, terminate and restart main(). %s', traceback.format_exc())
+        logger.error('Run exception: %s', traceback.format_exc())
         disconnect()
-        main()
 
 
 def disconnect():
     logger.info('Disconnecting and termination threads.')
     speak(speak_dict.disconnect)
     global tcp_server_socket, tcp_server, kill_event, p
-    if p is not None and not p.poll() == 0:
-        os.kill(p.pid + 1, signal.SIGHUP)
     kill_event.set()
     led.colorWipe([0, 0, 0])
     # 150 - 500
@@ -467,8 +457,11 @@ def disconnect():
     time.sleep(2)
     tcp_server.close()
     tcp_server_socket.close()
-    main()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        while True:
+            main()
+    except KeyboardInterrupt:
+        pass
