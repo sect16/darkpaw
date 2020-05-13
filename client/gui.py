@@ -266,18 +266,17 @@ def read_config():
     global keyDict
     initial = 0
     ptr = 1
-    f = open("key_binding.txt", "r")
-    for line in f:
-        if line.find('<Start key binding definition>') == 0:
-            initial = ptr
-        elif line.find('<EOF>') == 0:
-            break
-        if initial > 0 & line.find('<KeyPress-') == 0:
-            thisList = line.replace(" ", "").replace("\n", "").split(',', 2)
-            if len(thisList) == 2:
-                keyDict[thisList[0]] = thisList[1]
-        ptr += 1
-    f.close()
+    with open("key_binding.txt", "r") as f:
+        for line in f:
+            if line.find('<Start key binding definition>') == 0:
+                initial = ptr
+            elif line.find('<EOF>') == 0:
+                break
+            if initial > 0 & line.find('<KeyPress-') == 0:
+                thisList = line.replace(" ", "").replace("\n", "").split(',', 2)
+                if len(thisList) == 2:
+                    keyDict[thisList[0]] = thisList[1]
+            ptr += 1
 
 
 def bind_keys():
