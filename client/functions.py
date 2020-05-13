@@ -56,10 +56,10 @@ def config_import(label):
     :param label: Label of value to be imported.
     :return: IP value in config.txt file.
     """
-    f = open("config.txt", "r")
-    for line in f:
-        if line.find(label) == 0:
-            return line.replace(" ", "").replace("\n", "").split(':', 2)[1]
+    with open("config.txt", "r") as f:
+        for line in f:
+            if line.find(label) == 0:
+                return line.replace(" ", "").replace("\n", "").split(':', 2)[1]
     logger.error('Unable read value label \"%s\" from configuration file.', label)
 
 
