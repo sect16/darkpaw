@@ -142,12 +142,12 @@ class Fpv:
                         X_lock = 1
                     # logger.debug('Find color position output (X,Y) = (%s,%s)', outv_X, outv_Y)
                     # if X_lock == 1 and Y_lock == 1:
-                    led.breathe_color_set('red')
+                    led.color_set('red')
 
                 else:
                     cv2.putText(frame_image, 'Target Detecting', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
                                 cv2.LINE_AA)
-                    led.breathe_color_set('yellow')
+                    led.color_set('yellow')
 
                 for i in range(1, len(pts)):
                     if pts[i - 1] is None or pts[i] is None:
@@ -192,12 +192,12 @@ class Fpv:
                     cv2.rectangle(frame_image, (x, y), (x + w, y + h), (128, 255, 0), 1)
                     motionCounter += 1
                     logger.info('Motion frame counter: %s', motionCounter)
-                    led.breathe_color_set('red')
+                    led.color_set('red')
                     last_motion_captured = timestamp
 
                 if (timestamp - last_motion_captured).seconds >= 0.5:
                     logger.debug('No motion detected.')
-                    led.breathe_color_set('blue')
+                    led.color_set('blue')
 
             if config.VIDEO_OUT == 1:
                 if footage_socket_client is None:
