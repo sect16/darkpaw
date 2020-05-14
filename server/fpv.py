@@ -212,7 +212,7 @@ class Fpv:
                 footage_socket_client.close()
                 footage_socket_client = None
             rawCapture.truncate(0)
-        logger.debug('Stopping thread')
+        logger.info('Stopping thread')
         camera.close()
 
 
