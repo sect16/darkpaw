@@ -66,7 +66,7 @@ class Fpv:
 
     def fpv_capture_thread(self, client_ip_address, event):
         global footage_socket_client
-        logger.debug('Starting thread')
+        logger.info('Starting thread')
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,
                         help="max buffer size")
