@@ -123,7 +123,6 @@ def servo_thread(servo, pos):
                 config.servo[servo] -= config.resolution
         pca.set_pwm(servo, 0, pos)
         config.servo[servo] = pos
-        # time.sleep(0)
         config.servo_motion[servo] = 0
     else:
         logger.debug("Servo [%s] still in motion", servo)
@@ -449,6 +448,7 @@ def ctrl_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
     :param roll: range(-100, 100)
     :return: void
     """
+    logger.debug('Pitch=%s Roll=%s', pitch, roll)
     wiggle = config.lower_leg_w
     pos1 = ctrl_range((config.lower_leg_m - wiggle * pitch / 100 - wiggle * roll / 100), config.lower_leg_h,
                       config.lower_leg_l)
@@ -487,7 +487,7 @@ def ctrl_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
     pos2 = int(config.torso_m - wiggle * yaw / 100)
     pos3 = int(config.torso_m2 + wiggle * yaw / 100)
     pos4 = int(config.torso_m2 - wiggle * yaw / 100)
-    # robot_X(config.default_X)
+    # robot_X(config.DEFAULT_X)
     if instant:
         set_pwm_init(0, pos1)
         set_pwm_init(3, pos2)
@@ -552,9 +552,9 @@ def servo_init():
         if i == 5 or i == 8:
             set_pwm_init(i, config.upper_leg_m2 - 2)
         if i == 0 or i == 3:
-            set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * (config.default_X - 2) / 100))
+            set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * (config.DEFAULT_X - 2) / 100))
         if i == 6 or i == 9:
-            set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * (config.default_X - 2) / 100))
+            set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * (config.DEFAULT_X - 2) / 100))
     for i in range(0, 12):
         if i == 1 or i == 10:
             set_pwm_init(i, config.lower_leg_l)
@@ -565,9 +565,9 @@ def servo_init():
         if i == 5 or i == 8:
             set_pwm_init(i, config.upper_leg_m2)
         if i == 0 or i == 3:
-            set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * config.default_X / 100))
+            set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * config.DEFAULT_X / 100))
         if i == 6 or i == 9:
-            set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * config.default_X / 100))
+            set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * config.DEFAULT_X / 100))
 
     config.servo_init = config.servo.copy()
     logger.debug('Servo init: %s', config.servo_init)
@@ -580,7 +580,7 @@ def robot_home():
     :return: void
     """
     logger.info('Servos to home position...')
-    robot_X(config.default_X)
+    robot_X(config.DEFAULT_X)
     ctrl_pitch_roll(0, 0)
     robot_height(50)
 

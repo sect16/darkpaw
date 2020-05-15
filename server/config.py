@@ -24,12 +24,13 @@ MAX_CONTOUR_AREA = 5000
 FPV_PORT = 5555
 RESOLUTION = [640, 480]
 AUDIO_PORT = 3030
+FRAME_RATE = 30
 
 """
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
 DO NOT increase or it may cause mechanical collisions.
 """
-default_X = 50
+DEFAULT_X = 50
 speed_set = 100  # Maximum radius of servo motors
 
 lower_leg_h = 500  # DOWN
