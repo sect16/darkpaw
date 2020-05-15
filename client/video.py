@@ -91,29 +91,32 @@ def open_cv_thread(event):
             img = base64.b64decode(frame)
             numpy_image = numpy.frombuffer(img, dtype=numpy.uint8)
             source = cv2.imdecode(numpy_image, 1)
-            cv2.putText(source, ('PC FPS: %s' % fps), (40, 20), config.FONT, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.putText(source, ('CPU Temperature: %s' % functions.cpu_temp), (370, 350), config.FONT, 0.5,
+            cv2.putText(source, ('PC FPS: %s' % fps), (40, 40), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
+                        cv2.LINE_AA)
+            cv2.putText(source, ('CPU Temperature: %s' % functions.cpu_temp),
+                        (int(config.VIDEO_WIDTH) - 240, int(config.VIDEO_HEIGHT) - 90), config.FONT, config.FONT_SIZE,
                         (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('CPU Usage: %s' % functions.cpu_use), (370, 380), config.FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('CPU Usage: %s' % functions.cpu_use),
+                        (int(config.VIDEO_WIDTH) - 240, int(config.VIDEO_HEIGHT) - 60), config.FONT, config.FONT_SIZE,
+                        (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('RAM Usage: %s' % functions.ram_use), (370, 410), config.FONT, 0.5, (128, 255, 128), 1,
+            cv2.putText(source, ('RAM Usage: %s' % functions.ram_use),
+                        (int(config.VIDEO_WIDTH) - 240, int(config.VIDEO_HEIGHT) - 30), config.FONT, config.FONT_SIZE,
+                        (128, 255, 128), 1,
                         cv2.LINE_AA)
-
             # Ultra thread with data is called from GUI
             if gui.ultrasonic_mode == 1:
-                cv2.line(source, (320, 240), (260, 300), (255, 255, 255), 1)
-                cv2.line(source, (210, 300), (260, 300), (255, 255, 255), 1)
-                cv2.putText(source, ('%sm' % config.ultra_data), (210, 290), config.FONT, 0.5, (255, 255, 255), 1,
+                cv2.line(source, (int(config.VIDEO_WIDTH / 2), int(config.VIDEO_HEIGHT / 2)),
+                         (int(config.VIDEO_WIDTH / 2) - 60, int(config.VIDEO_HEIGHT / 2) + 60), (255, 255, 255), 1)
+                cv2.line(source, (int(config.VIDEO_WIDTH / 2) - 110, int(config.VIDEO_HEIGHT / 2) + 60),
+                         (int(config.VIDEO_WIDTH / 2) - 60, int(config.VIDEO_HEIGHT / 2) + 60), (255, 255, 255), 2)
+                cv2.putText(source, ('%sm' % config.ultra_data),
+                            (int(config.VIDEO_WIDTH / 2) - 110, int(config.VIDEO_HEIGHT / 2) + 50), config.FONT, 0.5,
+                            (255, 255, 255), 1,
                             cv2.LINE_AA)
-            # cv2.putText(source,('%sm'% config.ultra_data),(210,290), config.FONT, 0.5,(255,255,255),1,cv2.LINE_AA)
-            # dsize
             cv2.namedWindow(stream, cv2.WINDOW_NORMAL)
             cv2.imshow(stream, source)
-
-            # dsize = (config.VIDEO_WIDTH + zoom, config.VIDEO_HEIGHT + zoom)
-            # cv2.imshow(stream, cv2.resize(source, dsize))
-
             frame_num += 1
             c = chr(cv2.waitKey(1) & 255)
             if 'q' == c or cv2.getWindowProperty(stream, cv2.WND_PROP_VISIBLE) == 0:
