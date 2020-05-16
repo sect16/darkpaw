@@ -21,22 +21,22 @@ handlers:
 
 loggers:
   server:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propogate: no
 
   speak:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propogate: no
 
   move:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propogate: no
 
-  FPV:
-    level: INFO
+  fpv:
+    level: DEBUG
     handlers: [console]
     propogate: no
 
@@ -46,7 +46,7 @@ loggers:
     handlers: [console]
     propogate: no
 
-  LED:
-    level: DEBUG
+  led:
+    level: INFO
     handlers: [console]
     propogate: no
