@@ -2,25 +2,26 @@
 # File name   : fpv.py
 # Description : FPV video and OpenCV functions
 # E-mail      : sect16@gmail.com
-# Author      : Chin Pin Hon(Based on Adrian Rosebrock's OpenCV code on pyimagesearch.com)
-# Date        : 30/12/2019
+# Author      : Chin Pin Hon (Based on Adrian Rosebrock's OpenCV code on pyimagesearch.com)
+# Date        : 16/05/2020
 
 import argparse
 import base64
 import datetime
 import logging
+import time
 from collections import deque
 
 import cv2
 import imutils
 import numpy
 import zmq
-from imutils.video.pivideostream import PiVideoStream
 
 import config
 import led
 import move
 import pid
+import pivideostream
 import speak_dict
 from speak import speak
 
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 led = led.Led()
 pid = pid.Pid()
+pvs = pivideostream.PiVideoStream()
 pid.SetKp(10)
 pid.SetKd(0)
 pid.SetKi(0)
@@ -47,6 +49,7 @@ frame_image = None
 avg = None
 motion_counter = 0
 last_motion_captured = datetime.datetime.now()
+image_loop_start = datetime.datetime.now()
 
 
 class Fpv:
@@ -77,16 +80,15 @@ class Fpv:
                         help="max buffer size")
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
-        vs = PiVideoStream(resolution=config.RESOLUTION, framerate=config.FRAME_RATE).start()
-        # time.sleep(2.0)
+        frame_rate_mili = int(1000000 / config.FRAME_RATE)
+        vs = pvs.start()
+        frame_image = vs.read()
         while not event.is_set():
-            frame_image = vs.read()
             # Draw crosshair lines
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2) - 20, int(config.RESOLUTION[1] / 2)),
                      (int(config.RESOLUTION[0] / 2) + 20, int(config.RESOLUTION[1] / 2)), (128, 255, 128), 1)
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2), int(config.RESOLUTION[1] / 2) - 20),
                      (int(config.RESOLUTION[0] / 2), int(config.RESOLUTION[1] / 2) + 20), (128, 255, 128), 1)
-
             if FindColorMode:
                 find_color(self, pts, args)
 
@@ -97,20 +99,40 @@ class Fpv:
                 if footage_socket_client is None:
                     logger.info('Initializing ZMQ client...')
                     init_client(client_ip_address)
-                encoded, buffer = cv2.imencode('.jpg', frame_image)
+                try:
+                    encoded, buffer = cv2.imencode('.jpg', frame_image)
+                    footage_socket_client.send(base64.b64encode(buffer))
+                except:
+                    logger.warning('Unable to encode frame.')
+                    pass
                 # with open('buffer.jpg', mode='wb') as file:
                 #     file.write(buffer)
                 # logger.debug('Sending footage using ZMQ')
-                footage_socket_client.send(base64.b64encode(buffer))
+
             elif config.VIDEO_OUT == 0 and footage_socket_client is not None:
                 logger.info('Terminating ZMQ client.')
                 footage_socket_client.close()
                 footage_socket_client = None
-            if event.is_set():
-                logger.info('Kill event received, terminating FPV thread.')
-                break
-        logger.info('Stopping VIDEO thread')
+            limit_framerate(frame_rate_mili)
+            frame_image = vs.read()
+        logger.info('Kill event received, terminating FPV thread.')
         vs.stop()
+
+
+def limit_framerate(frame_rate):
+    global image_loop_start
+    """
+    This function does not do anything if framerate is below preset value.
+    If framerate is above preset value, the function sleeps for the remaining amount of time derived from datetime input param. 
+    
+    :param frame_rate: Frame rate in milliseconds.
+    :param image_loop_start: Last run time.
+    :return: void
+    """
+    timelapse = datetime.datetime.now() - image_loop_start
+    if timelapse < datetime.timedelta(microseconds=frame_rate):
+        time.sleep((frame_rate - timelapse.microseconds) / 1000000)
+    image_loop_start = datetime.datetime.now()
 
 
 def init_client(client_ip_address):
@@ -163,7 +185,7 @@ def watchdog():
     if (timestamp - last_motion_captured).seconds >= 0.5:
         logger.debug('No motion detected.')
         # timer = str(timestamp - last_motion_captured).split('.', 2)[0]
-        # cv2.putText(frame_image, 'No motion detected for ' + timer, (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
+        # cv2.putText(frame_image, 'No motion detected for ' + timer, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
         #             cv2.LINE_AA)
         led.color_set(WATCH_STANDBY)
 
@@ -178,7 +200,7 @@ def find_color(self, pts, args):
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)[-2]
     if len(cnts) > 0:
-        cv2.putText(frame_image, 'Target Detected', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
+        cv2.putText(frame_image, 'Target Detected', (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
                     cv2.LINE_AA)
         c = max(cnts, key=cv2.contourArea)
         ((x, y), radius) = cv2.minEnclosingCircle(c)
@@ -218,7 +240,7 @@ def find_color(self, pts, args):
         led.color_set('red')
 
     else:
-        cv2.putText(frame_image, 'Detecting target', (40, 60), config.FONT, 0.5, (255, 255, 255), 1,
+        cv2.putText(frame_image, 'Detecting target', (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
                     cv2.LINE_AA)
         led.color_set('yellow')
 

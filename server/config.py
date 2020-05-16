@@ -10,6 +10,7 @@ import time
 import cv2
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
+FONT_SIZE = 0.5
 
 SPEAK_SPEED = 150
 allow_speak = 1
@@ -24,7 +25,7 @@ MAX_CONTOUR_AREA = 5000
 FPV_PORT = 5555
 RESOLUTION = [640, 480]
 AUDIO_PORT = 3030
-FRAME_RATE = 30
+FRAME_RATE = 32
 
 """
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
