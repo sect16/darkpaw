@@ -20,12 +20,12 @@ import config
 import fpv
 import led
 import move
+import power_meter
 import speak_dict
 import switch
 from speak import speak
 
 logger = logging.getLogger(__name__)
-
 """
 Initiation number of steps, don't have to change it.
 """
@@ -37,6 +37,7 @@ direction_command = 'no'
 turn_command = 'no'
 led = led.Led()
 fpv = fpv.Fpv()
+power_meter = power_meter.PowerMeter()
 steadyMode = 0
 addr = None
 tcp_server_socket = None
@@ -157,7 +158,9 @@ def info_send_client_thread(event):
     logger.info('Server address %s', SERVER_ADDR)
     while not event.is_set():
         try:
-            Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()).encode())
+            power = power_meter.read_ina219()
+            Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
+                power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
             time.sleep(1)
         except:
             logger.error('Exception: %s', traceback.format_exc())

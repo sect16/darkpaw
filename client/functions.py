@@ -23,6 +23,8 @@ ultra_event = threading.Event()
 cpu_temp = 0
 cpu_use = 0
 ram_use = 0
+voltage = 0
+current = 0
 
 
 def config_export(label, new_num):
@@ -88,7 +90,7 @@ def stat_server_thread(event):
     :param event: Clear event flag to terminate thread
     """
     logger.debug('Thread started')
-    global cpu_temp, cpu_use, ram_use, connect_event
+    global cpu_temp, cpu_use, ram_use, voltage, current, connect_event
     addr = ('', config.INFO_PORT)
     stat_sock = socket(AF_INET, SOCK_STREAM)
     stat_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -101,17 +103,18 @@ def stat_server_thread(event):
         try:
             info_data = str(stat_sock.recv(config.BUFFER_SIZE).decode())
             info_get = info_data.split()
-            if info_get.__len__() == 3:
-                cpu_temp, cpu_use, ram_use = info_get
-                logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s' % (cpu_temp, cpu_use, ram_use))
-                gui.stat_update(cpu_temp, cpu_use, ram_use)
+            if info_get.__len__() == 5:
+                cpu_temp, cpu_use, ram_use, voltage, current = info_get
+                logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s, voltage:%s, current:%s' % (
+                cpu_temp, cpu_use, ram_use, voltage, current))
+                gui.stat_update(cpu_temp, cpu_use, ram_use, voltage, current)
                 retries = 0
             elif retries >= 10:
                 logger.error('Maximum retires reached (%d), disconnecting', retries)
                 disconnect()
             else:
                 logger.warning('Invalid info_data received from server: "%s"', info_data)
-                gui.stat_update('-', '-', '-')
+                gui.stat_update('-', '-', '-', '-', '-')
                 retries = retries + 1
         except:
             logger.error('Connection error, disconnecting')

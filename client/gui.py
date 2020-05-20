@@ -51,7 +51,7 @@ def loop():  # GUI
     global root, e1, e2, e3, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
-        btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B
+        btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -69,6 +69,8 @@ def loop():  # GUI
     label_cpu_temp = tk.Label(root, width=18, text='CPU Temp:', fg=COLOR_TEXT, bg='#212121')
     label_cpu_use = tk.Label(root, width=18, text='CPU Usage:', fg=COLOR_TEXT, bg='#212121')
     label_ram_use = tk.Label(root, width=18, text='RAM Usage:', fg=COLOR_TEXT, bg='#212121')
+    label_voltage = tk.Label(root, width=18, text='Voltage:', fg=COLOR_TEXT, bg='#212121')
+    label_current = tk.Label(root, width=18, text='Current:', fg=COLOR_TEXT, bg='#212121')
     label_ip_0 = tk.Label(root, width=18, text='Status', fg=COLOR_TEXT, bg=COLOR_BTN)
     label_ip_1 = tk.Label(root, width=18, text='Disconnected', fg=COLOR_TEXT, bg='#F44336')
     label_ip_2 = tk.Label(root, width=18, text='Use default IP', fg=COLOR_TEXT, bg=COLOR_BTN)
@@ -77,17 +79,19 @@ def loop():  # GUI
     label_cpu_temp.place(x=400, y=15)  # Define a Label and put it in position
     label_cpu_use.place(x=400, y=45)  # Define a Label and put it in position
     label_ram_use.place(x=400, y=75)  # Define a Label and put it in position
+    label_voltage.place(x=250, y=45)  # Define a Label and put it in position
+    label_current.place(x=250, y=75)  # Define a Label and put it in position
     label_ip_0.place(x=30, y=110)  # Define a Label and put it in position
     label_ip_1.place(x=400, y=110)  # Define a Label and put it in position
     label_ip_2.place(x=400, y=145)  # Define a Label and put it in position
-    label_ip_3.place(x=175, y=15)  # Define a Label and put it in position
+    label_ip_3.place(x=220, y=15)  # Define a Label and put it in position
     label_open_cv.place(x=180, y=110)  # Define a Label and put it in position
 
-    e1 = tk.Entry(root, show=None, width=16, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+    e1 = tk.Entry(root, show=None, width=12, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
                   state='normal')
     e2 = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
                   state='disabled')
-    e1.place(x=180, y=40)  # Define a Entry and put it in position
+    e1.place(x=300, y=15)  # Define a Entry and put it in position
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
     btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN, command=connect,
@@ -102,12 +106,12 @@ def loop():  # GUI
     btn_FPV = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_e2 = tk.Button(root, width=10, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
-    btn_connect.place(x=315, y=15)  # Define a Button and put it in position
+    btn_connect.place(x=150, y=15)  # Define a Button and put it in position
     btn0.place(x=100, y=195)
     btn1.place(x=100, y=230)
     btn2.place(x=30, y=230)
     btn3.place(x=170, y=230)
-    btn_FPV.place(x=315, y=60)  # Define a Button and put it in position
+    btn_FPV.place(x=150, y=60)  # Define a Button and put it in position
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
     btn_up.place(x=400, y=195)
     btn_down.place(x=400, y=265)
@@ -222,15 +226,15 @@ def loop():  # GUI
         logger.warning('Exception reading LED values from file: %s', traceback.format_exc())
         pass
 
-    # Darkpaw speed_set
-    e3 = tk.Entry(root, show=None, width=8, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+    # Darkpaw speed_set entry
+    e3 = tk.Entry(root, show=None, width=3, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
                   state='normal')
     try:
         e3.insert(0, int(config_import('SPEED:')))
     except:
         pass
     label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT, bg='#000000')
-    btn_e3 = tk.Button(root, width=5, text='SET', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_e3 = tk.Button(root, width=3, text='SET', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_e3.bind('<ButtonPress-1>', lambda _: send('speed:' + e3.get()))
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -610,17 +614,20 @@ def focus(event):
         unbind_keys()
 
 
-def stat_update(cpu_temp, cpu_use, ram_use):
+def stat_update(cpu_temp, cpu_use, ram_use, voltage, current):
     """
     This function updates the GUI label from statistical data received from robot.
     :param cpu_temp: CPU Temperature value
     :param cpu_use: CPU usage value
     :param ram_use: RAM usage value
+    :param voltage: Bus voltage value (V)
+    :param current: Bus current value (mA)
     """
     label_cpu_temp.config(text='CPU Temp: %s℃' % cpu_temp)
     label_cpu_use.config(text='CPU Usage: %s' % cpu_use)
     label_ram_use.config(text='RAM Usage: %s' % ram_use)
-
+    label_voltage.config(text='Voltage: %s' % voltage)
+    label_current.config(text='Current: %s' % current)
 
 def set_R(event):
     send_led('wsR', var_R.get())
