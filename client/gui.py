@@ -39,6 +39,7 @@ COLOR_SWT_ACT = config.COLOR_SWT_ACT
 COLOR_BTN_ACT = config.COLOR_BTN_ACT
 COLOR_BG = config.COLOR_BG  # Set background color
 COLOR_TEXT = config.COLOR_TEXT
+COLOR_TEXT_LABEL = config.COLOR_TEXT_LABEL
 COLOR_BTN = config.COLOR_BTN
 label_bg = config.COLOR_BTN
 COLOR_BTN_RED = config.COLOR_BTN_RED
