@@ -27,6 +27,7 @@ FONT_SIZE = 0.5
 
 # Configuration
 INFO_PORT = 2256  # Define port serial
+MAX_INFO_RETRY = 10
 SERVER_PORT = 10223  # Define port serial
 BUFFER_SIZE = 1024
 ULTRA_PORT = 2257  # Define port serial
@@ -35,6 +36,8 @@ VIDEO_PORT = 5555
 VIDEO_TIMEOUT = 10000
 VIDEO_WIDTH = 640
 VIDEO_HEIGHT = 480
+POWER_MODULE = True
+CAMERA_MODULE = True
 
 ultra_data = 0
 

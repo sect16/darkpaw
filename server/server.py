@@ -158,9 +158,13 @@ def info_send_client_thread(event):
     logger.info('Server address %s', SERVER_ADDR)
     while not event.is_set():
         try:
-            power = power_meter.read_ina219()
-            Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
-                power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
+            if config.POWER_MODULE:
+                power = power_meter.read_ina219()
+                Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
+                    power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
+            else:
+                Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' - -').encode())
+            pass
             time.sleep(1)
         except:
             logger.error('Exception: %s', traceback.format_exc())
@@ -410,10 +414,11 @@ def main():
             # for x in range(99):
             #    move.robot_height(x + 1)
             # move.robot_height(100)
-            global fpv
-            fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=[addr[0], kill_event],
-                                             daemon=True)  # Define a thread for FPV and OpenCV
-            fps_threading.start()  # Thread starts
+            if config.CAMERA_MODULE:
+                global fpv
+                fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=[addr[0], kill_event],
+                                                 daemon=True)  # Define a thread for FPV and OpenCV
+                fps_threading.start()  # Thread starts
             break
         except KeyboardInterrupt:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
