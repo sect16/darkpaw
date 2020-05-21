@@ -12,14 +12,14 @@ import cv2
 TITLE = 'DarkPaw'
 COLOR_SWT_ACT = '#4CAF50'
 COLOR_BTN_ACT = '#00E676'
+# COLOR_BG = '#BBBBBB'  # Set background color
+# COLOR_TEXT_LABEL = '#000000'
 COLOR_BG = '#000000'  # Set background color
+COLOR_TEXT_LABEL = '#E1F5FE'
 COLOR_TEXT = '#E1F5FE'  # Set text color
 COLOR_BTN = '#0277BD'  # Set button color
 COLOR_GREY = '#A7A7A7'
 LABEL_BG = '#F44336'
-# color_line = '#01579B'  # Set line color
-# color_can = '#212121'  # Set canvas color
-# color_oval = '#2196F3'  # Set oval color
 COLOR_BTN_RED = '#FF6D00'
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 MAX_CONTOUR_AREA = 5000
