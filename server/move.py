@@ -115,13 +115,16 @@ def servo_thread(servo, pos):
         logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
         if config.servo[servo] - pos < 0:
             while config.servo[servo] < pos:
-                pca.set_pwm(servo, 0, config.servo[servo])
+                if config.SERVO_ENABLE:
+                    pca.set_pwm(servo, 0, config.servo[servo])
                 config.servo[servo] += config.resolution
         elif config.servo[servo] - pos > 0:
             while config.servo[servo] > pos:
-                pca.set_pwm(servo, 0, config.servo[servo])
+                if config.SERVO_ENABLE:
+                    pca.set_pwm(servo, 0, config.servo[servo])
                 config.servo[servo] -= config.resolution
-        pca.set_pwm(servo, 0, pos)
+        if config.SERVO_ENABLE:
+            pca.set_pwm(servo, 0, pos)
         config.servo[servo] = pos
         config.servo_motion[servo] = 0
     else:
@@ -137,8 +140,9 @@ def set_pwm(servo, pos):
     :return: void
     """
     threading.Thread(target=servo_thread, args=([servo, pos]), daemon=True).start()
-    # pca.set_pwm(servo, 0, pos)
-    # config.servo[servo] = pos
+    # if config.SERVO_ENABLE:
+    #     pca.set_pwm(servo, 0, pos)
+    #     config.servo[servo] = pos
 
 
 def set_pwm_init(servo, pos):
@@ -150,7 +154,8 @@ def set_pwm_init(servo, pos):
     :return: void
     """
     logger.debug("Initialize PWM on servo [%s], position [%s])", servo, pos)
-    pca.set_pwm(servo, 0, pos)
+    if config.SERVO_ENABLE:
+        pca.set_pwm(servo, 0, pos)
     config.servo[servo] = pos
 
 

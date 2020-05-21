@@ -106,10 +106,10 @@ def stat_server_thread(event):
             if info_get.__len__() == 5:
                 cpu_temp, cpu_use, ram_use, voltage, current = info_get
                 logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s, voltage:%s, current:%s' % (
-                cpu_temp, cpu_use, ram_use, voltage, current))
+                    cpu_temp, cpu_use, ram_use, voltage, current))
                 gui.stat_update(cpu_temp, cpu_use, ram_use, voltage, current)
                 retries = 0
-            elif retries >= 10:
+            elif retries >= config.MAX_INFO_RETRY:
                 logger.error('Maximum retires reached (%d), disconnecting', retries)
                 disconnect()
             else:
