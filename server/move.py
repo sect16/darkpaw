@@ -117,11 +117,15 @@ def servo_thread(servo, pos):
             while config.servo[servo] < pos:
                 if config.SERVO_ENABLE:
                     pca.set_pwm(servo, 0, config.servo[servo])
+                else:
+                    logger.info('Servo module DISABLED')
                 config.servo[servo] += config.resolution
         elif config.servo[servo] - pos > 0:
             while config.servo[servo] > pos:
                 if config.SERVO_ENABLE:
                     pca.set_pwm(servo, 0, config.servo[servo])
+                else:
+                    logger.info('Servo module DISABLED')
                 config.servo[servo] -= config.resolution
         if config.SERVO_ENABLE:
             pca.set_pwm(servo, 0, pos)
@@ -156,6 +160,8 @@ def set_pwm_init(servo, pos):
     logger.debug("Initialize PWM on servo [%s], position [%s])", servo, pos)
     if config.SERVO_ENABLE:
         pca.set_pwm(servo, 0, pos)
+    else:
+        logger.info('Servo module DISABLED')
     config.servo[servo] = pos
 
 
