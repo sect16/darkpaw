@@ -37,7 +37,8 @@ direction_command = 'no'
 turn_command = 'no'
 led = led.Led()
 fpv = fpv.Fpv()
-power_meter = power_meter.PowerMeter()
+if config.POWER_MODULE:
+    power_meter = power_meter.PowerMeter()
 steadyMode = 0
 addr = None
 tcp_server_socket = None
