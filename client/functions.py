@@ -38,13 +38,17 @@ def config_export(label, new_num):
     str_num = str(new_num)
     contents = []
     exist = 0
-    with open("config.txt", "r") as f:
-        for line in f.readlines():
-            if line.find(label) >= 0:
-                exist = 1
-                contents.append(label + str_num)
-            elif line != '\n':
-                contents.append(line.strip('\n'))
+    try:
+        with open("config.txt", "r") as f:
+            for line in f.readlines():
+                if line.find(label) >= 0:
+                    exist = 1
+                    contents.append(label + str_num)
+                elif line != '\n':
+                    contents.append(line.strip('\n'))
+    except:
+        logger.warning('Unable to read config.txt file.')
+        pass
     with open("config.txt", "w") as f:
         if exist == 0:
             contents.append(label + str_num)
@@ -62,7 +66,7 @@ def config_import(label):
         for line in f:
             if line.find(label) == 0:
                 return line.replace(" ", "").replace("\n", "").split(':', 2)[1]
-    logger.error('Unable read value label \"%s\" from configuration file.', label)
+    logger.warning('Unable to read value label \"%s\" from configuration file.', label)
 
 
 def status_client_thread(event):
