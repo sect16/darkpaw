@@ -25,7 +25,7 @@ loggers:
     propogate: no
 
   functions:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propogate: no
 
@@ -37,6 +37,11 @@ loggers:
 
 
   video:
+    level: INFO
+    handlers: [console]
+    propogate: no
+
+  power_meter:
     level: INFO
     handlers: [console]
     propogate: no

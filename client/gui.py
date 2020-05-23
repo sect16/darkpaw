@@ -240,7 +240,8 @@ def loop():  # GUI
         pass
     label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT, bg='#000000')
     btn_e3 = tk.Button(root, width=3, text='SET', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_e3.bind('<ButtonPress-1>', lambda _: send('speed:' + e3.get()))
+    btn_e3.bind('<ButtonPress-1>', set_speed)
+
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -659,8 +660,8 @@ def send_led(index, value):
 
 def send_command(event):
     """
-    This function sends TTS string to robot when connection is established. Nothing is sent is connection off.
-    :param event:
+    This function sends TTS string to robot when connection is established.
+    :param event: Not used
     """
     if e2.get() != '' and connect_event.is_set():
         send(e2.get())
@@ -679,13 +680,17 @@ def connect_init(ip_address):
     btn_connect.config(state='normal')
     btn_connect.config(text='Disconnect')
     # Send initial values
-    '''
     send('wsR %s' + str(var_R.get()))
-    time.sleep(1)
+    time.sleep(0.5)
     send('wsG %s' + str(var_G.get()))
-    time.sleep(1)
+    time.sleep(0.5)
     send('wsB %s' + str(var_B.get()))
-    time.sleep(1)
-    '''
+    time.sleep(0.5)
     send('speed:' + e3.get())
     return None
+
+
+def set_speed(event):
+    global e3
+    send('speed:' + e3.get())
+    e1.focus_set()
