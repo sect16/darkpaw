@@ -167,6 +167,8 @@ def info_send_client_thread(event):
                 Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' - -').encode())
             pass
             time.sleep(1)
+        except BrokenPipeError:
+            pass
         except:
             logger.error('Exception: %s', traceback.format_exc())
             pass
