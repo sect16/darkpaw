@@ -410,10 +410,7 @@ def main():
             tcp_server_socket, addr = tcp_server.accept()
             logger.info('Connected from %s', addr)
             speak(speak_dict.connect)
-            time.sleep(1)
             move.servo_init()
-            # for x in range(99):
-            #    move.robot_height(x + 1)
             move.robot_height(50)
             if config.CAMERA_MODULE:
                 global fpv
@@ -463,7 +460,7 @@ def disconnect():
     switch.switch(1, 0)
     switch.switch(2, 0)
     switch.switch(3, 0)
-    time.sleep(2)
+    time.sleep(0.5)
     tcp_server.close()
     tcp_server_socket.close()
 
