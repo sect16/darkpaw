@@ -679,14 +679,15 @@ def connect_init(ip_address):
     e2.config(state='normal')
     btn_connect.config(state='normal')
     btn_connect.config(text='Disconnect')
+    time.sleep(5)
     # Send initial values
-    send('wsR %s' + str(var_R.get()))
+    send(' wsR ' + var_R.get())
     time.sleep(0.5)
-    send('wsG %s' + str(var_G.get()))
+    send(' wsG ' + var_G.get())
     time.sleep(0.5)
-    send('wsB %s' + str(var_B.get()))
+    send(' wsB ' + var_B.get())
     time.sleep(0.5)
-    send('speed:' + e3.get())
+    send(' speed:' + e3.get())
     return None
 
 
