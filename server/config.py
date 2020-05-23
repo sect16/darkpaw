@@ -28,9 +28,9 @@ AUDIO_PORT = 3030
 FRAME_RATE = 32
 
 # Hardware configuration
-POWER_MODULE = False
-SERVO_ENABLE = False
-CAMERA_MODULE = False
+POWER_MODULE = True
+SERVO_ENABLE = True
+CAMERA_MODULE = True
 
 """
 The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
