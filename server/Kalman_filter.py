@@ -1,10 +1,8 @@
 #! /usr/bin/python
-# File name   : car_dir.py
+# File name   : kalman_filter.py
 # Description : By controlling Servo,thecamera can move Up and down,left and right and the Ultrasonic wave can move to left and right.
-# Website     : www.adeept.com
-# E-mail      : support@adeept.com
-# Author      : William
-# Date        : 2018/08/22
+# Author      : Chin Pin Hon
+# Date        : 22/05/2020
 
 
 class Kalman_filter:
@@ -24,12 +22,12 @@ class Kalman_filter:
 
         self.Z_k = ADC_Value
 
-        """
+        '''
         if abs(self.kalman_adc_old - ADC_Value) >= 60:
             self.x_k1_k1 = ADC_Value * 0.382 + self.kalman_adc_old * 0.618
         else:
             self.x_k1_k1 = self.kalman_adc_old
-        """
+        '''
         self.x_k1_k1 = self.kalman_adc_old
         self.x_k_k1 = self.x_k1_k1
         self.P_k_k1 = self.P_k1_k1 + self.Q

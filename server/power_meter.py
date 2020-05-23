@@ -19,8 +19,8 @@ class PowerMeter:
         self.ina.configure(self.ina.RANGE_32V)
 
     def read_ina219(self):
-        self.ina.wake()
-        self.ina.sleep()
+        # self.ina.wake()
+        # self.ina.sleep()
         try:
             logger.debug('Bus Voltage: {0:0.2f}V'.format(self.ina.voltage()))
             logger.debug('Bus Current: {0:0.2f}mA'.format(self.ina.current()))
@@ -37,9 +37,9 @@ class PowerMeter:
         print('Bus Current: {0:0.2f}mA'.format(self.ina.current()))
         print('Power: {0:0.2f}mW'.format(self.ina.power()))
         print('Shunt Voltage: {0:0.2f}mV\n'.format(self.ina.shunt_voltage()))
-        self.ina.sleep()
+        # self.ina.sleep()
         sleep(REFRESH_RATE)
-        self.ina.wake()
+        # self.ina.wake()
 
 
 if __name__ == '__main__':

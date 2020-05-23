@@ -73,6 +73,11 @@ P = 3
 I = 0.1
 D = 0
 
+# Set quick the steady mode is triggered. Reduce if occilating.
+STEADY_DELAY = 0.005
+# Servo initialization delay. To prevent sudden power surge.
+INIT_DELAY = 0.2
+
 """
 >>> instantiation <<<
 """
@@ -201,7 +206,7 @@ def mpu6050Test():
         accelerometer_data = sensor.get_accel_data()
         logger.debug('Accelerometer output (X=%f, Y=%f, Z=%f)', accelerometer_data['x'], accelerometer_data['y'],
                      accelerometer_data['x'])
-        time.sleep(0.3)
+        time.sleep(STEADY_DELAY)
         break
 
 
@@ -512,25 +517,30 @@ def ctrl_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
 
 
 def robot_steady():
+    global STEADY_DELAY
     """
     Reads accelerometer sensor data and send output to servos to level the robot
 
     :return: void
     """
     global X_fix_output, Y_fix_output
-    accelerometer_data = sensor.get_accel_data()
-    X = accelerometer_data['x']
-    Y = accelerometer_data['y']
-    logger.debug('Accelerometer raw data [X,Y] = %s, %s', X, Y)
-    X = kalman_filter_X.kalman(X)
-    Y = kalman_filter_Y.kalman(Y)
-    logger.debug('Kalman filter output [X,Y] = %s, %s', X, Y)
-    X_fix_output -= X_pid.GenOut(X - X_steady)
-    Y_fix_output += Y_pid.GenOut(Y - Y_steady)
-    X_fix_output = ctrl_range(X_fix_output, 100, -100)
-    Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
-    logger.debug('Steady output = %s, %s', -X_fix_output, Y_fix_output)
-    ctrl_pitch_roll(-X_fix_output, Y_fix_output, 1)
+    try:
+        accelerometer_data = sensor.get_accel_data()
+        X = accelerometer_data['x']
+        Y = accelerometer_data['y']
+        logger.debug('Accelerometer raw data [X,Y] = %s, %s', X, Y)
+        X = kalman_filter_X.kalman(X)
+        Y = kalman_filter_Y.kalman(Y)
+        logger.debug('Kalman filter output [X,Y] = %s, %s', X, Y)
+        X_fix_output -= X_pid.GenOut(X - X_steady)
+        Y_fix_output += Y_pid.GenOut(Y - Y_steady)
+        X_fix_output = ctrl_range(X_fix_output, 100, -100)
+        Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
+        logger.debug('Steady output = %s, %s', -X_fix_output, Y_fix_output)
+        ctrl_pitch_roll(-X_fix_output, Y_fix_output, 1)
+    except:
+        logger.error('MPU6050 reading error.')
+    time.sleep(STEADY_DELAY)
 
 
 def servo_release():
@@ -566,6 +576,7 @@ def servo_init():
             set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * (config.DEFAULT_X - 2) / 100))
         if i == 6 or i == 9:
             set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * (config.DEFAULT_X - 2) / 100))
+        time.sleep(INIT_DELAY)
     for i in range(0, 12):
         if i == 1 or i == 10:
             set_pwm_init(i, config.lower_leg_l)
@@ -579,6 +590,7 @@ def servo_init():
             set_pwm_init(i, int(config.torso_m - wiggle + 2 * wiggle * config.DEFAULT_X / 100))
         if i == 6 or i == 9:
             set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * config.DEFAULT_X / 100))
+        time.sleep(INIT_DELAY)
 
     config.servo_init = config.servo.copy()
     logger.debug('Servo init: %s', config.servo_init)
@@ -719,17 +731,27 @@ def leg_up(id):
 
 
 if __name__ == '__main__':
-    logger.info("Starting move...")
-    servo_init()
-    time.sleep(1)
+    import sys
+    log_level = logging.DEBUG
+    if len(logging.getLogger().handlers) == 0:
+    # Initialize the root logger only if it hasn't been done yet by a
+    # parent module.
+        logging.basicConfig(format='%(asctime)s %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-20s: %(message)s')
+        logger = logging.getLogger(__name__)
+        logger.setLevel(log_level)
+        # logger.propagate = False
     try:
-        while 1:
-            robot_steady()
-            # time.sleep(0.1)
-            # break
-            pass
-
+        if sys.argv[1] == 'test':
+            while 1:
+                time.sleep(STEADY_DELAY)
+                mpu6050Test()
+        else:
+            logger.info("Starting move...")
+            servo_init()
+            while 1:
+                robot_steady()
+                time.sleep(STEADY_DELAY)
+                # break
         mpu6050Test()
     except KeyboardInterrupt:
-        time.sleep(1)
         servo_release()

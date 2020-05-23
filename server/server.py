@@ -414,7 +414,7 @@ def main():
             move.servo_init()
             # for x in range(99):
             #    move.robot_height(x + 1)
-            # move.robot_height(100)
+            move.robot_height(50)
             if config.CAMERA_MODULE:
                 global fpv
                 fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=[addr[0], kill_event],
@@ -458,8 +458,8 @@ def disconnect():
     # current_pos = int((config.servo[1] - config.lower_leg_l) / (config.lower_leg_w * 2) * 100)
     # for x in range(current_pos):
     #    move.robot_height(current_pos - x)
-    # move.robot_height(0)
-    move.servo_release()
+    move.robot_height(0)
+    # move.servo_release()
     switch.switch(1, 0)
     switch.switch(2, 0)
     switch.switch(3, 0)
