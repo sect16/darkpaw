@@ -37,9 +37,6 @@ pid.SetKp(10)
 pid.SetKd(0)
 pid.SetKi(0)
 
-context = zmq.Context()
-footage_socket_client = None
-
 Y_lock = 0
 X_lock = 0
 tor = 50
@@ -76,7 +73,7 @@ class Fpv:
         WatchDogMode = invar
 
     def fpv_capture_thread(self, client_ip_address, event):
-        global footage_socket_client, frame_image
+        global frame_image
         logger.info('Starting thread')
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,
@@ -86,6 +83,9 @@ class Fpv:
         frame_rate_mili = int(1000000 / config.FRAME_RATE)
         vs = pvs.start()
         frame_image = vs.read()
+        context = zmq.Context()
+        footage_socket_client = context.socket(zmq.PUB)
+        footage_socket_client.close()
         while not event.is_set():
             # Draw crosshair lines
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2) - 20, int(config.RESOLUTION[1] / 2)),
@@ -99,12 +99,12 @@ class Fpv:
                 watchdog()
 
             if config.VIDEO_OUT == 1:
-                if footage_socket_client is None:
+                if footage_socket_client.closed:
                     logger.info('Initializing ZMQ client...')
-                    init_client(client_ip_address)
+                    footage_socket_client = init_client(client_ip_address)
                 try:
                     encoded, buffer = cv2.imencode('.jpg', frame_image)
-                    footage_socket_client.send(base64.b64encode(buffer))
+                    footage_socket_client.send(base64.b64encode(buffer), zmq.NOBLOCK)
                 except:
                     logger.warning('Unable to encode frame.')
                     pass
@@ -112,10 +112,8 @@ class Fpv:
                 #     file.write(buffer)
                 # logger.debug('Sending footage using ZMQ')
 
-            elif config.VIDEO_OUT == 0 and footage_socket_client is not None:
-                logger.info('Terminating ZMQ client.')
-                footage_socket_client.close()
-                footage_socket_client = None
+            elif config.VIDEO_OUT == 0 and not footage_socket_client.closed:
+                destroy_client(footage_socket_client)
             limit_framerate(frame_rate_mili)
             frame_image = vs.read()
         logger.info('Kill event received, terminating FPV thread.')
@@ -139,12 +137,21 @@ def limit_framerate(frame_rate):
 
 
 def init_client(client_ip_address):
-    global footage_socket_client
-    logger.debug('Capture connection (%s:%s)', client_ip_address, config.FPV_PORT)
+    context = zmq.Context()
     footage_socket_client = context.socket(zmq.PUB)
+    logger.debug('Capture connection (%s:%s)', client_ip_address, config.FPV_PORT)
+    # footage_socket_client.setsockopt(zmq.HWM, 1)
+    # footage_socket_client.setsockopt(zmq.BACKLOG, 0)
+    footage_socket_client.set_hwm(1)
     footage_socket_client.setsockopt(zmq.LINGER, 0)
-    footage_socket_client.setsockopt(zmq.BACKLOG, 0)
+    footage_socket_client.setsockopt(zmq.CONFLATE, 1)
     footage_socket_client.connect('tcp://%s:%d' % (client_ip_address, config.FPV_PORT))
+    return footage_socket_client
+
+
+def destroy_client(footage_socket_client):
+    logger.info('Terminating ZMQ client.')
+    footage_socket_client.close()
 
 
 def watchdog():
