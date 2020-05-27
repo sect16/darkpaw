@@ -41,7 +41,8 @@ loggers:
     handlers: [console]
     propogate: no
 
-  power_meter:
+
+  power_module:
     level: INFO
     handlers: [console]
     propogate: no
