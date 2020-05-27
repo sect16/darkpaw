@@ -20,7 +20,7 @@ import config
 import fpv
 import led
 import move
-import power_meter
+import power_module
 import speak_dict
 import switch
 from speak import speak
@@ -38,7 +38,7 @@ turn_command = 'no'
 led = led.Led()
 fpv = fpv.Fpv()
 if config.POWER_MODULE:
-    power_meter = power_meter.PowerMeter()
+    power_module = power_module.PowerMeter()
 steadyMode = 0
 addr = None
 tcp_server_socket = None
@@ -160,7 +160,7 @@ def info_send_client_thread(event):
     while not event.is_set():
         try:
             if config.POWER_MODULE:
-                power = power_meter.read_ina219()
+                power = power_module.read_ina219()
                 Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
                     power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
             else:
