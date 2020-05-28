@@ -247,7 +247,7 @@ def start_ultra():
     Does not start if thread is existing not yet stopped.
     """
     global ultra_event
-    if gui.ultrasonic_mode == 0 and not ultra_event.is_set() and config.ULTRA_SENSOR is not None:
+    if gui.ultrasonic_mode == 0 and not ultra_event.is_set() and config.ULTRA_SENSOR:
         import ultra
         ultra_event.set()
         ultra_threading = threading.Thread(target=ultra.ultra_server_thread, args=([ultra_event]), daemon=True)

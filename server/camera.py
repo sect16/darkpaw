@@ -50,6 +50,7 @@ avg = None
 motion_counter = 0
 last_motion_captured = datetime.datetime.now()
 image_loop_start = datetime.datetime.now()
+UltraData = 0.45
 
 
 class Camera:
