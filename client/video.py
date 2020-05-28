@@ -72,7 +72,7 @@ def call_fpv(ip):
         mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
         mq.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
         # Define a thread for FPV and OpenCV
-        video_threading = threading.Thread(target=open_cv_thread, args=([fpv_event]), daemon=True)
+        video_threading = threading.Thread(target=open_cv_thread, args=([mq, fpv_event]), daemon=True)
         video_threading.setName('open_cv_thread')
         video_threading.start()
         mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
@@ -82,6 +82,8 @@ def call_fpv(ip):
     elif fpv_event.is_set() and functions.thread_isAlive('fps_thread') and functions.thread_isAlive('open_cv_thread'):
         logger.info('Stopping FPV')
         fpv_event.clear()
+        gui.btn_FPV.config(bg=config.COLOR_BTN)
+        gui.btn_FPV['state'] = 'normal'
     else:
         logger.warning('Cannot start video at the moment.')
         logger.debug('Connected: %s, video_enabled: %s, fps_thread: %s, cv_thread: %s.', connect_event.is_set(),
@@ -89,13 +91,14 @@ def call_fpv(ip):
                      functions.thread_isAlive('open_cv_thread'))
 
 
-def open_cv_thread(event):
+def open_cv_thread(mq, event):
     """
-    This function creates an overlay for the received video footage.
+    This function creates an overlay for the received ZMQ video footage. Clears the fpv_event flag when exception occurs
+    :param mq: ZMQ socket
     :param event: Event flag to signal termination.
     """
     logger.debug('Thread started')
-    global frame_num, mq, fps
+    global frame_num, fps
     zoom = 1
     multiplier = 0.1
     functions.send('start_video')
@@ -168,7 +171,5 @@ def open_cv_thread(event):
     logger.info('Destroying all CV2 windows')
     cv2.destroyAllWindows()
     mq.__exit__()
-    gui.btn_FPV.config(bg=config.COLOR_BTN)
-    gui.btn_FPV['state'] = 'normal'
     logger.debug('Thread stopped')
     fpv_event.clear()

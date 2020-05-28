@@ -16,11 +16,11 @@ import traceback
 
 import psutil
 
+import camera as cam
 import config
-import fpv
 import led
 import move
-import power_module
+import power_module as pm
 import speak_dict
 import switch
 from speak import speak
@@ -36,9 +36,10 @@ Initiation commands
 direction_command = 'no'
 turn_command = 'no'
 led = led.Led()
-fpv = fpv.Fpv()
 if config.POWER_MODULE:
-    power_module = power_module.PowerMeter()
+    power_module = pm.PowerModule()
+if config.CAMERA_MODULE:
+    camera = cam.Camera()
 steadyMode = 0
 addr = None
 tcp_server_socket = None
@@ -176,7 +177,7 @@ def info_send_client_thread(event):
 
 
 def run():
-    global direction_command, turn_command, steadyMode, p
+    global direction_command, turn_command, steadyMode, p, camera
     # Define a thread for FPV and OpenCV
     moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     # 'True' means it is a front thread,it would close when the mainloop() closes
@@ -252,26 +253,6 @@ def run():
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
-        elif 'FindColor' == data:
-            led.mode_set(1)
-            fpv.FindColor(1)
-            tcp_server_socket.send('FindColor'.encode())
-        elif 'WatchDog' == data:
-            led.mode_set(1)
-            fpv.WatchDog(1)
-            tcp_server_socket.send('WatchDog'.encode())
-        elif 'steady' == data:
-            led.mode_set(1)
-            led.color_set('blue')
-            steadyMode = 1
-            tcp_server_socket.send('steady'.encode())
-        elif 'func_end' == data:
-            led.mode_set(0)
-            fpv.FindColor(0)
-            fpv.WatchDog(0)
-            steadyMode = 0
-            move.robot_home()
-            tcp_server_socket.send('func_end'.encode())
         elif 'Switch_1_on' == data:
             switch.switch(1, 1)
             tcp_server_socket.send('Switch_1_on'.encode())
@@ -290,12 +271,6 @@ def run():
         elif 'Switch_3_off' == data:
             switch.switch(3, 0)
             tcp_server_socket.send('Switch_3_off'.encode())
-        elif 'start_video' == data:
-            config.VIDEO_OUT = 1
-            tcp_server_socket.send('start_video'.encode())
-        elif 'stop_video' == data:
-            config.VIDEO_OUT = 0
-            tcp_server_socket.send('stop_video'.encode())
         elif 'disconnect' == data:
             tcp_server_socket.send('disconnect'.encode())
             disconnect()
@@ -346,6 +321,33 @@ def run():
             except:
                 logger.error('Error setting servo resolution: %s', data[0])
                 pass
+        elif config.CAMERA_MODULE:
+            if 'start_video' == data:
+                config.VIDEO_OUT = 1
+                tcp_server_socket.send('start_video'.encode())
+            elif 'stop_video' == data:
+                config.VIDEO_OUT = 0
+                tcp_server_socket.send('stop_video'.encode())
+            elif 'FindColor' == data:
+                led.mode_set(1)
+                camera.FindColor(1)
+                tcp_server_socket.send('FindColor'.encode())
+            elif 'WatchDog' == data:
+                led.mode_set(1)
+                camera.WatchDog(1)
+                tcp_server_socket.send('WatchDog'.encode())
+            elif 'steady' == data:
+                led.mode_set(1)
+                led.color_set('blue')
+                steadyMode = 1
+                tcp_server_socket.send('steady'.encode())
+            elif 'func_end' == data:
+                led.mode_set(0)
+                camera.FindColor(0)
+                camera.WatchDog(0)
+                steadyMode = 0
+                move.robot_home()
+                tcp_server_socket.send('func_end'.encode())
         else:
             logger.info('Speaking command received')
             speak(data)
@@ -415,10 +417,11 @@ def main():
             move.servo_init()
             move.robot_height(50)
             if config.CAMERA_MODULE:
-                global fpv
-                fps_threading = threading.Thread(target=fpv.fpv_capture_thread, args=[addr[0], kill_event],
+                global camera
+                camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event],
                                                  daemon=True)  # Define a thread for FPV and OpenCV
-                fps_threading.start()  # Thread starts
+                camera_thread.setName('camera_thread')
+                camera_thread.start()  # Thread starts
             break
         except KeyboardInterrupt:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())

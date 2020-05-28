@@ -206,6 +206,8 @@ def disconnect():
     gui.unbind_keys()
     gui.e1.config(state='normal')
     gui.e2.config(state='disabled')
+    gui.btn_FPV.config(bg=config.COLOR_BTN)
+    gui.btn_FPV['state'] = 'normal'
     gui.btn_audio.config(bg=config.COLOR_BTN)
 
 

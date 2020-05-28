@@ -11,7 +11,7 @@ ADDRESS = 0x41
 REFRESH_RATE = 1
 
 
-class PowerMeter:
+class PowerModule:
 
     def __init__(self):
         logger.debug('Initializing INA219')
@@ -43,7 +43,7 @@ class PowerMeter:
 
 
 if __name__ == '__main__':
-    powerMeter = PowerMeter()
+    powerMeter = PowerModule()
     while True:
         try:
             powerMeter.run()
