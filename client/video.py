@@ -50,7 +50,7 @@ def fps_thread(event):
 
 def call_fpv(ip):
     """
-    This function creates a ZMQ socket server to receive video footage.
+    This function creates a ZMQ socket to receive video footage.
     :param ip: Server IP address to connect ZMQ socket.
     """
     global fpv_event, connect_event

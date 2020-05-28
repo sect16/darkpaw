@@ -41,7 +41,6 @@ COLOR_BG = config.COLOR_BG  # Set background color
 COLOR_TEXT = config.COLOR_TEXT
 COLOR_TEXT_LABEL = config.COLOR_TEXT_LABEL
 COLOR_BTN = config.COLOR_BTN
-label_bg = config.COLOR_BTN
 COLOR_BTN_RED = config.COLOR_BTN_RED
 
 
@@ -75,7 +74,7 @@ def loop():  # GUI
     label_ip_0 = tk.Label(root, width=18, text='Status', fg=COLOR_TEXT, bg=COLOR_BTN)
     label_ip_1 = tk.Label(root, width=18, text='Disconnected', fg=COLOR_TEXT, bg='#F44336')
     label_ip_2 = tk.Label(root, width=18, text='Use default IP', fg=COLOR_TEXT, bg=COLOR_BTN)
-    label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=COLOR_TEXT, bg='#000000')
+    label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
     label_open_cv = tk.Label(root, width=28, text='OpenCV Status', fg=COLOR_TEXT, bg=COLOR_BTN)
     label_cpu_temp.place(x=400, y=15)  # Define a Label and put it in position
     label_cpu_use.place(x=400, y=45)  # Define a Label and put it in position
@@ -555,7 +554,7 @@ def button_update(status_data):
                 btn_ultra.config(bg=COLOR_BTN_RED)
             except NameError:
                 pass
-        elif 'Ultrasonic_end' == status_data and config.ULTRA_SENSOR is not None:
+        elif 'Ultrasonic_end' == status_data and config.ULTRA_SENSOR:
             ultra_event.clear()
             ultrasonic_mode = 0
             try:
