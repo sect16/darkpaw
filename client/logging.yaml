@@ -37,7 +37,7 @@ loggers:
 
 
   video:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 

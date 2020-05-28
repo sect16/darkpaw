@@ -35,7 +35,7 @@ loggers:
     handlers: [console]
     propogate: no
 
-  fpv:
+  camera:
     level: DEBUG
     handlers: [console]
     propogate: no

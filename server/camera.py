@@ -1,5 +1,5 @@
 #!/usr/bin/env/python3
-# File name   : fpv.py
+# File name   : camera.py
 # Description : FPV video and OpenCV functions
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon (Based on Adrian Rosebrock's OpenCV code on pyimagesearch.com)
@@ -52,7 +52,7 @@ last_motion_captured = datetime.datetime.now()
 image_loop_start = datetime.datetime.now()
 
 
-class Fpv:
+class Camera:
     def __init__(self):
         self.frame_num = 0
         self.fps = 0
@@ -72,7 +72,7 @@ class Fpv:
         global WatchDogMode
         WatchDogMode = invar
 
-    def fpv_capture_thread(self, client_ip_address, event):
+    def capture_thread(self, event):
         global frame_image
         logger.info('Starting thread')
         ap = argparse.ArgumentParser()  # OpenCV initialization
@@ -101,7 +101,7 @@ class Fpv:
             if config.VIDEO_OUT == 1:
                 if mq.closed:
                     logger.info('Initializing ZMQ client...')
-                    mq = init_client(client_ip_address)
+                    mq = init_client()
                 try:
                     encoded, buffer = cv2.imencode('.jpg', frame_image)
                     mq.send(base64.b64encode(buffer), zmq.NOBLOCK)
@@ -136,15 +136,15 @@ def limit_framerate(frame_rate):
     image_loop_start = datetime.datetime.now()
 
 
-def init_client(client_ip_address):
+def init_client():
     context = zmq.Context()
     mq = context.socket(zmq.PUB)
-    logger.debug('Capture connection (%s:%s)', client_ip_address, config.VIDEO_PORT)
     mq.setsockopt(zmq.BACKLOG, 0)
     mq.set_hwm(1)
     mq.setsockopt(zmq.LINGER, 0)
     mq.setsockopt(zmq.CONFLATE, 1)
     # mq.connect('tcp://%s:%d' % (client_ip_address, config.FPV_PORT))
+    logger.info('FPV ZMQ connection listening on port: %s', config.VIDEO_PORT)
     mq.bind('tcp://*:%d' % config.VIDEO_PORT)
     return mq
 
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 
     event = threading.event
     event.is_set = False
-    fpv = Fpv()
+    camera = Camera()
     while 1:
-        fpv.fpv_capture_thread('127.0.0.1', event)
+        camera.capture_thread(event)
         pass
