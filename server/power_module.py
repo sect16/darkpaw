@@ -14,7 +14,7 @@ REFRESH_RATE = 1
 class PowerModule:
 
     def __init__(self):
-        logger.debug('Initializing INA219')
+        logger.info('Initializing INA219')
         self.ina = INA219(SHUNT_OHMS, MAX_EXPECTED_AMPS, address=ADDRESS)
         self.ina.configure(self.ina.RANGE_32V)
 
@@ -47,5 +47,5 @@ if __name__ == '__main__':
     while True:
         try:
             powerMeter.run()
-        except:
-            break
+        except KeyboardInterrupt:
+            pass

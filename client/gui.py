@@ -603,6 +603,8 @@ def button_update(status_data):
             btn_audio.config(bg=COLOR_SWT_ACT)
         elif 'stream_audio_end' == status_data:
             btn_audio.config(bg=COLOR_BTN)
+        elif 'stop_video' == status_data:
+            pass
     except:
         logger.error('Button status update exception: %s', traceback.format_exc())
 
@@ -678,14 +680,14 @@ def connect_init(ip_address):
     e2.config(state='normal')
     btn_connect.config(state='normal')
     btn_connect.config(text='Disconnect')
-    time.sleep(5)
+    time.sleep(0.2)
     # Send initial values
     send(' wsR ' + var_R.get())
-    time.sleep(0.5)
+    time.sleep(0.2)
     send(' wsG ' + var_G.get())
-    time.sleep(0.5)
+    time.sleep(0.2)
     send(' wsB ' + var_B.get())
-    time.sleep(0.5)
+    time.sleep(0.2)
     send(' speed:' + e3.get())
     return None
 

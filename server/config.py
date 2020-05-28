@@ -29,7 +29,7 @@ FRAME_RATE = 32
 
 # Hardware configuration
 POWER_MODULE = True
-SERVO_ENABLE = False
+SERVO_ENABLE = True
 CAMERA_MODULE = True
 
 """

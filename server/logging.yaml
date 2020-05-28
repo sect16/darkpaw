@@ -21,7 +21,7 @@ handlers:
 
 loggers:
   server:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 
@@ -40,13 +40,22 @@ loggers:
     handlers: [console]
     propogate: no
 
-
   servo:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propogate: no
 
   led:
+    level: INFO
+    handlers: [console]
+    propogate: no
+
+  stream:
+    level: DEBUG
+    handlers: [console]
+    propogate: no
+
+  power_module:
     level: INFO
     handlers: [console]
     propogate: no

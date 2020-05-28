@@ -82,8 +82,6 @@ def call_fpv(ip):
     elif fpv_event.is_set() and functions.thread_isAlive('fps_thread') and functions.thread_isAlive('open_cv_thread'):
         logger.info('Stopping FPV')
         fpv_event.clear()
-        gui.btn_FPV.config(bg=config.COLOR_BTN)
-        gui.btn_FPV['state'] = 'normal'
     else:
         logger.warning('Cannot start video at the moment.')
         logger.debug('Connected: %s, video_enabled: %s, fps_thread: %s, cv_thread: %s.', connect_event.is_set(),
@@ -173,3 +171,5 @@ def open_cv_thread(mq, event):
     mq.__exit__()
     logger.debug('Thread stopped')
     fpv_event.clear()
+    gui.btn_FPV.config(bg=config.COLOR_BTN)
+    gui.btn_FPV['state'] = 'normal'

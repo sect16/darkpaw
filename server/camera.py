@@ -21,18 +21,14 @@ import config
 import led
 import move
 import pid
-
-if config.CAMERA_MODULE:
-    import pivideostream
 import speak_dict
+import stream
 from speak import speak
 
 logger = logging.getLogger(__name__)
 
 led = led.Led()
 pid = pid.Pid()
-if config.CAMERA_MODULE:
-    pvs = pivideostream.PiVideoStream()
 pid.SetKp(10)
 pid.SetKd(0)
 pid.SetKi(0)
@@ -64,7 +60,8 @@ class Camera:
         self.IP = invar
 
     def FindColor(self, invar):
-        global FindColorMode
+        global FindColorMode, UltraData
+        UltraData = 0.45
         FindColorMode = invar
         if not FindColorMode:
             move.robot_home()
@@ -72,6 +69,10 @@ class Camera:
     def WatchDog(self, invar):
         global WatchDogMode
         WatchDogMode = invar
+
+    def UltraData(self, invar):
+        global UltraData
+        UltraData = invar
 
     def capture_thread(self, event):
         global frame_image
@@ -82,8 +83,8 @@ class Camera:
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
         frame_rate_mili = int(1000000 / config.FRAME_RATE)
-        vs = pvs.start()
-        frame_image = vs.read()
+        video_stream = stream.Stream().start()
+        frame_image = video_stream.read()
         context = zmq.Context()
         mq = context.socket(zmq.PUB)
         mq.close()
@@ -112,13 +113,12 @@ class Camera:
                 # with open('buffer.jpg', mode='wb') as file:
                 #     file.write(buffer)
                 # logger.debug('Sending footage using ZMQ')
-
             elif config.VIDEO_OUT == 0 and not mq.closed:
                 destroy_client(mq)
             limit_framerate(frame_rate_mili)
-            frame_image = vs.read()
+            frame_image = video_stream.read()
         logger.info('Kill event received, terminating FPV thread.')
-        vs.stop()
+        video_stream.stop()
 
 
 def limit_framerate(frame_rate):
