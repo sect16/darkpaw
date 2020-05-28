@@ -25,53 +25,68 @@ logger = logging.getLogger(__name__)
 # Variables
 connect_event = functions.connect_event
 fpv_event = functions.fpv_event
-footage_socket_server = None
 frame_num = 0
-fps = 0
+fps = -1
 
 
-def get_fps_thread(event):
+def fps_thread(event):
     """
     This function calculates the number of frame per second.
     :param event: Event flag to signal termination.
     """
     global fps, frame_num
     logger.debug('Thread started')
-    while event.is_set():
-        time.sleep(1)
-        fps = frame_num
-        frame_num = 0
+    if fps == -1:
+        while event.is_set():
+            time.sleep(1)
+            fps = frame_num
+            frame_num = 0
+    else:
+        logger.error('Expected FPS == -1, previous thread not stopped.')
+        return
     logger.debug('Thread stopped')
+    fps = -1
 
 
-def call_fpv(event):
+def call_fpv(ip):
     """
     This function creates a ZMQ socket server to receive video footage.
-    :param event: Event flag to signal termination.
+    :param ip: Server IP address to connect ZMQ socket.
     """
-    global footage_socket_server, fpv_event, connect_event
-    if str(gui.btn_FPV['state']) == 'normal':
+    global fpv_event, connect_event
+    if connect_event.is_set() and not fpv_event.is_set() and not functions.thread_isAlive(
+            'fps_thread') and not functions.thread_isAlive('open_cv_thread'):
         gui.btn_FPV['state'] = 'disabled'
-    if not fpv_event.is_set():
         logger.info('Starting FPV')
-        if connect_event.is_set():
-            fpv_event.set()
-            fps_threading = threading.Thread(target=get_fps_thread, args=([fpv_event]), daemon=True)
-            fps_threading.start()
-            footage_socket_server = zmq.Context().socket(zmq.SUB)
-            footage_socket_server.RCVTIMEO = config.VIDEO_TIMEOUT  # in milliseconds
-            footage_socket_server.bind('tcp://*:%d' % config.VIDEO_PORT)
-            footage_socket_server.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
-            # Define a thread for FPV and OpenCV
-            video_threading = threading.Thread(target=open_cv_thread, args=([fpv_event]), daemon=True)
-            video_threading.start()
-            gui.btn_FPV.config(bg='#00E676')
-            gui.btn_FPV['state'] = 'normal'
-        else:
-            logger.info('Cannot start FPV when not connected')
-    elif fpv_event.is_set():
+        fpv_event.set()
+        fps_threading = threading.Thread(target=fps_thread, args=([fpv_event]), daemon=True)
+        fps_threading.setName('fps_thread')
+        fps_threading.start()
+        mq = zmq.Context().socket(zmq.SUB)
+        mq.RCVTIMEO = config.VIDEO_TIMEOUT  # in milliseconds
+        # mq.bind('tcp://*:%d' % config.VIDEO_PORT)
+        mq.setsockopt(zmq.BACKLOG, 0)
+        mq.set_hwm(1)
+        mq.setsockopt(zmq.LINGER, 0)
+        mq.setsockopt(zmq.CONFLATE, 1)
+        mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
+        mq.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
+        # Define a thread for FPV and OpenCV
+        video_threading = threading.Thread(target=open_cv_thread, args=([fpv_event]), daemon=True)
+        video_threading.setName('open_cv_thread')
+        video_threading.start()
+        mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
+        mq.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
+        gui.btn_FPV.config(bg='#00E676')
+        gui.btn_FPV['state'] = 'normal'
+    elif fpv_event.is_set() and functions.thread_isAlive('fps_thread') and functions.thread_isAlive('open_cv_thread'):
         logger.info('Stopping FPV')
         fpv_event.clear()
+    else:
+        logger.warning('Cannot start video at the moment.')
+        logger.debug('Connected: %s, video_enabled: %s, fps_thread: %s, cv_thread: %s.', connect_event.is_set(),
+                     fpv_event.is_set(), functions.thread_isAlive('fps_thread'),
+                     functions.thread_isAlive('open_cv_thread'))
 
 
 def open_cv_thread(event):
@@ -80,14 +95,14 @@ def open_cv_thread(event):
     :param event: Event flag to signal termination.
     """
     logger.debug('Thread started')
-    global frame_num, footage_socket_server, fps
+    global frame_num, mq, fps
     zoom = 1
     multiplier = 0.1
     functions.send('start_video')
     stream = 'FPV Live Video Stream'
     while event.is_set():
         try:
-            frame = footage_socket_server.recv_string()
+            frame = mq.recv_string()
             img = base64.b64decode(frame)
             numpy_image = numpy.frombuffer(img, dtype=numpy.uint8)
             source = cv2.imdecode(numpy_image, 1)
@@ -152,7 +167,7 @@ def open_cv_thread(event):
             logger.error('Unable to send command.')
     logger.info('Destroying all CV2 windows')
     cv2.destroyAllWindows()
-    footage_socket_server.__exit__()
+    mq.__exit__()
     gui.btn_FPV.config(bg=config.COLOR_BTN)
     gui.btn_FPV['state'] = 'normal'
     logger.debug('Thread stopped')
