@@ -191,18 +191,6 @@ def move_thread(event):
     logger.debug('Thread stopped')
 
 
-def run():
-    global kill_event
-    logger.info('Starting info and move threads...')
-    info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
-    info_threading.setName('info_thread')
-    info_threading.start()
-    moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
-    moving_threading.setName('move_thread')
-    moving_threading.start()
-    listener_thread(kill_event)
-
-
 def main():
     logger.info('Starting server...')
     global kill_event, ADDR
@@ -286,9 +274,16 @@ def main():
         pass
 
     try:
-        run()
+        logger.info('Starting info and move threads...')
+        info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
+        info_threading.setName('info_thread')
+        info_threading.start()
+        moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
+        moving_threading.setName('move_thread')
+        moving_threading.start()
+        listener_thread(kill_event)
     except:
-        logger.error('Run exception: %s', traceback.format_exc())
+        logger.error('Exception: %s', traceback.format_exc())
         disconnect()
 
 
