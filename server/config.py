@@ -22,14 +22,14 @@ INFO_PORT = 2256  # Define port serial
 SERVER_PORT = 10223  # Define port serial
 BUFFER_SIZE = 1024  # Define buffer size
 MAX_CONTOUR_AREA = 5000
-FPV_PORT = 5555
+VIDEO_PORT = 5555
 RESOLUTION = [640, 480]
 AUDIO_PORT = 3030
 FRAME_RATE = 32
 
 # Hardware configuration
 POWER_MODULE = True
-SERVO_ENABLE = True
+SERVO_ENABLE = False
 CAMERA_MODULE = True
 
 """
@@ -69,3 +69,4 @@ servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 resolution = 3
+

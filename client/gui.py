@@ -175,7 +175,7 @@ def loop():  # GUI
     btn_up.bind('<ButtonPress-1>', lambda _: send('headup'))
     btn_down.bind('<ButtonPress-1>', lambda _: send('headdown'))
     btn_home.bind('<ButtonPress-1>', lambda _: send('headhome'))
-    btn_FPV.bind('<ButtonRelease-1>', video.call_fpv)
+    btn_FPV.bind('<ButtonRelease-1>', lambda _: video.call_fpv(e1.get()))
     btn_e2.bind('<ButtonRelease-1>', send_command)
     btn0.bind('<ButtonRelease-1>', call_stop)
     btn1.bind('<ButtonRelease-1>', call_stop)

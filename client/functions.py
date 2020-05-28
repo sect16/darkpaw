@@ -250,3 +250,16 @@ def start_ultra():
         ultra_event.set()
         ultra_threading = threading.Thread(target=ultra.ultra_server_thread, args=([ultra_event]), daemon=True)
         ultra_threading.start()
+
+
+def thread_isAlive(thread_name: str):
+    """
+    This function searches for the thread name defined using threading.Thread.setName() function.
+    :param thread_name: Name of the thread.
+    :return: Returns a boolean indicating if thread was found.
+    """
+    lst = threading.enumerate()
+    for x in lst:
+        if x.name == thread_name:
+            return True
+    return False
