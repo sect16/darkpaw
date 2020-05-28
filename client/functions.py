@@ -88,7 +88,7 @@ def status_client_thread(event):
     logger.debug('Thread stopped')
 
 
-def stat_server_thread(event):
+def stat_thread(event):
     """
     Statistics server thread
     :param event: Clear event flag to terminate thread
@@ -166,8 +166,10 @@ def connect():  # Call this function to connect with the server
             connect_event.set()  # Set to start threads
             status_threading = threading.Thread(target=status_client_thread, args=([connect_event]),
                                                 daemon=True)
+            status_threading.setName('status_thread')
             status_threading.start()
-            info_threading = threading.Thread(target=stat_server_thread, args=([connect_event]), daemon=True)
+            info_threading = threading.Thread(target=stat_thread, args=([connect_event]), daemon=True)
+            info_threading.setName('stat_thread')
             info_threading.start()
             gui.connect_init(ip_address)
         except:
@@ -251,6 +253,7 @@ def start_ultra():
         import ultra
         ultra_event.set()
         ultra_threading = threading.Thread(target=ultra.ultra_server_thread, args=([ultra_event]), daemon=True)
+        ultra_threading.setName('ultra_thread')
         ultra_threading.start()
 
 

@@ -30,8 +30,6 @@ logger = logging.getLogger(__name__)
 direction_command = 'no'
 turn_command = 'no'
 led = led.Led()
-if config.POWER_MODULE:
-    power_module = pm.PowerModule()
 if config.CAMERA_MODULE:
     camera = cam.Camera()
 ultrasonicMode = 0
@@ -126,10 +124,11 @@ def info_thread(event):
     Info_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     Info_Socket.connect(SERVER_ADDR)
     logger.info('Server address %s', SERVER_ADDR)
+    ina219 = pm.PowerModule()
     while not event.is_set():
         try:
             if config.POWER_MODULE:
-                power = power_module.read_ina219()
+                power = ina219.read_ina219()
                 Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
                     power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
             else:
@@ -193,18 +192,129 @@ def move_thread(event):
 
 
 def run():
-    global direction_command, turn_command, steadyMode, ultrasonicMode, camera, audio_pid
+    global kill_event
+    logger.info('Starting info and move threads...')
     info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
     info_threading.setName('info_thread')
     info_threading.start()
     moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     moving_threading.setName('move_thread')
     moving_threading.start()
+    listener_thread(kill_event)
 
-    ws_R = 0
+
+def main():
+    logger.info('Starting server...')
+    global kill_event, ADDR
+    switch.switchSetup()
+    switch.set_all_switch_off()
+    kill_event.clear()
+    try:
+        led_threading = threading.Thread(target=led.led_thread, args=[kill_event],
+                                         daemon=True)  # Define a thread for LED breatheing
+        led_threading.setName('led_thread')
+        led_threading.start()  # Thread starts
+        led.color_set('blue')
+    except:
+        pass
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("1.1.1.1", 80))
+            global server_address
+            server_address = s.getsockname()[0]
+            s.close()
+            logger.info('Server listening on: %s:%s', server_address, config.SERVER_PORT)
+        except:
+            logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
+            ap_threading = threading.Thread(target=ap_thread, daemon=True)
+            ap_threading.setName('ap_thread')
+            ap_threading.start()
+            led.colorWipe([0, 16, 50])
+            time.sleep(1)
+            led.colorWipe([0, 16, 100])
+            time.sleep(1)
+            led.colorWipe([0, 16, 150])
+            time.sleep(1)
+            led.colorWipe([0, 16, 200])
+            time.sleep(1)
+            led.colorWipe([0, 16, 255])
+            time.sleep(1)
+            led.colorWipe([35, 255, 35])
+        try:
+            global tcp_server_socket, tcp_server
+            global addr
+            tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            tcp_server.bind(ADDR)
+            # Start server,waiting for client
+            tcp_server.listen(5)
+            logger.info('Waiting for connection...')
+            led.color_set('cyan')
+            led.mode_set(1)
+            tcp_server_socket, addr = tcp_server.accept()
+            logger.info('Connected from %s', addr)
+            speak(speak_dict.connect)
+            threading.Thread(target=move.servo_init, args=[], daemon=True).start()
+            # move.servo_init()
+            # move.robot_height(50)
+            if config.CAMERA_MODULE:
+                global camera
+                camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event],
+                                                 daemon=True)  # Define a thread for FPV and OpenCV
+                camera_thread.setName('camera_thread')
+                camera_thread.start()  # Thread starts
+            break
+        except KeyboardInterrupt:
+            logger.error('Exception while waiting for connection: %s', traceback.format_exc())
+            kill_event.set()
+            led.colorWipe([0, 0, 0])
+            sys.exit()
+            pass
+
+        except:
+            logger.error('Exception while waiting for connection: %s', traceback.format_exc())
+            kill_event.set()
+            led.colorWipe([0, 0, 0])
+            pass
+
+    try:
+        led.mode_set(0)
+        led.colorWipe([255, 255, 255])
+    except:
+        logger.error('Exception LED breathe: %s', traceback.format_exc())
+        pass
+
+    try:
+        run()
+    except:
+        logger.error('Run exception: %s', traceback.format_exc())
+        disconnect()
+
+
+def disconnect():
+    logger.info('Disconnecting and termination threads.')
+    speak(speak_dict.disconnect)
+    global tcp_server_socket, tcp_server, kill_event
+    kill_event.set()
+    led.colorWipe([0, 0, 0])
+    move.robot_height(0)
+    # move.servo_release()
+    switch.switch(1, 0)
+    switch.switch(2, 0)
+    switch.switch(3, 0)
+    time.sleep(0.5)
+    tcp_server.close()
+    tcp_server_socket.close()
+
+
+def listener_thread(event):
+    logger.info('Starting main listener thread...')
+    global direction_command, turn_command, steadyMode, ultrasonicMode, camera, audio_pid
     ws_G = 0
+    ws_R = 0
     ws_B = 0
-    while not kill_event.is_set():
+    while not event.is_set():
         data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
         logger.debug('Received data on tcp socket: %s', data)
         if not data:
@@ -238,6 +348,7 @@ def run():
             tcp_server_socket.send(('Ultrasonic').encode())
             ultra_event.set()
             ultra_threading = threading.Thread(target=ultra_send_client, args=([ultra_event]), daemon=True)
+            ultra_threading.setName('ultra_thread')
             ultra_threading.start()  # Thread starts
 
         elif 'Ultrasonic_end' == data:
@@ -366,117 +477,10 @@ def run():
             except:
                 logger.error('Error setting servo resolution: %s', data[0])
                 pass
-
         else:
             logger.info('Speaking command received')
             speak(data)
             pass
-
-
-def main():
-    logger.info('Starting server...')
-    global kill_event, ADDR
-    switch.switchSetup()
-    switch.set_all_switch_off()
-    kill_event.clear()
-    try:
-        led_threading = threading.Thread(target=led.led_thread, args=[kill_event])  # Define a thread for LED breatheing
-        led_threading.setDaemon(True)  # 'True' means it is a front thread,it would close when the mainloop() closes
-        led_threading.start()  # Thread starts
-        led.color_set('blue')
-    except:
-        pass
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("1.1.1.1", 80))
-            global server_address
-            server_address = s.getsockname()[0]
-            s.close()
-            logger.info('Server listening on: %s:%s', server_address, config.SERVER_PORT)
-        except:
-            logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
-            # Define a thread for data receiving
-            ap_threading = threading.Thread(target=ap_thread)
-            # 'True' means it is a front thread,it would close when the mainloop() closes
-            ap_threading.setDaemon(True)
-            # Thread starts
-            ap_threading.start()
-            led.colorWipe([0, 16, 50])
-            time.sleep(1)
-            led.colorWipe([0, 16, 100])
-            time.sleep(1)
-            led.colorWipe([0, 16, 150])
-            time.sleep(1)
-            led.colorWipe([0, 16, 200])
-            time.sleep(1)
-            led.colorWipe([0, 16, 255])
-            time.sleep(1)
-            led.colorWipe([35, 255, 35])
-        try:
-            global tcp_server_socket, tcp_server
-            global addr
-            tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            tcp_server.bind(ADDR)
-            # Start server,waiting for client
-            tcp_server.listen(5)
-            logger.info('Waiting for connection...')
-            led.color_set('cyan')
-            led.mode_set(1)
-            tcp_server_socket, addr = tcp_server.accept()
-            logger.info('Connected from %s', addr)
-            speak(speak_dict.connect)
-            move.servo_init()
-            move.robot_height(50)
-            if config.CAMERA_MODULE:
-                global camera
-                camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event],
-                                                 daemon=True)  # Define a thread for FPV and OpenCV
-                camera_thread.setName('camera_thread')
-                camera_thread.start()  # Thread starts
-            break
-        except KeyboardInterrupt:
-            logger.error('Exception while waiting for connection: %s', traceback.format_exc())
-            kill_event.set()
-            led.colorWipe([0, 0, 0])
-            sys.exit()
-            pass
-
-        except:
-            logger.error('Exception while waiting for connection: %s', traceback.format_exc())
-            kill_event.set()
-            led.colorWipe([0, 0, 0])
-            pass
-
-    try:
-        led.mode_set(0)
-        led.colorWipe([255, 255, 255])
-    except:
-        logger.error('Exception LED breathe: %s', traceback.format_exc())
-        pass
-
-    try:
-        run()
-    except:
-        logger.error('Run exception: %s', traceback.format_exc())
-        disconnect()
-
-
-def disconnect():
-    logger.info('Disconnecting and termination threads.')
-    speak(speak_dict.disconnect)
-    global tcp_server_socket, tcp_server, kill_event
-    kill_event.set()
-    led.colorWipe([0, 0, 0])
-    move.robot_height(0)
-    # move.servo_release()
-    switch.switch(1, 0)
-    switch.switch(2, 0)
-    switch.switch(3, 0)
-    time.sleep(0.5)
-    tcp_server.close()
-    tcp_server_socket.close()
 
 
 if __name__ == "__main__":

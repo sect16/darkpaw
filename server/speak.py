@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 def speak(text):
     speak_threading = threading.Thread(target=speak_thread, args=[text], daemon=True)
+    speak_threading.setName('speak_thread')
     speak_threading.start()
 
 

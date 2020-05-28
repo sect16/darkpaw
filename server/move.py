@@ -148,7 +148,9 @@ def set_pwm(servo, pos):
     :param pos: Position range 100 to 500.
     :return: void
     """
-    threading.Thread(target=servo_thread, args=([servo, pos]), daemon=True).start()
+    servo_threading = threading.Thread(target=servo_thread, args=([servo, pos]), daemon=True)
+    servo_threading.setName('servo_thread')
+    servo_threading.start()
     # if config.SERVO_ENABLE:
     #     pca.set_pwm(servo, 0, pos)
     #     config.servo[servo] = pos
@@ -555,9 +557,7 @@ def servo_release():
 def servo_init():
     """
     Initialize all servos.
-
     A small twitch is required to command servos after release.
-
     :return: void
     """
     global torso_wiggle
@@ -595,6 +595,8 @@ def servo_init():
     config.servo_init = config.servo.copy()
     logger.debug('Servo init: %s', config.servo_init)
     logger.debug('Servo status: %s', config.servo)
+    logger.debug('Going to default height.')
+    robot_height(50)
 
 
 def robot_home():
