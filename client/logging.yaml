@@ -40,9 +40,3 @@ loggers:
     level: INFO
     handlers: [console]
     propogate: no
-
-
-  power_module:
-    level: INFO
-    handlers: [console]
-    propogate: no

@@ -134,7 +134,8 @@ def info_thread(event):
     info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     info_socket.connect((client_address, config.INFO_PORT))
     logger.info('Connected to client address (\'%s\', %i)', client_address, config.INFO_PORT)
-    ina219 = pm.PowerModule()
+    if config.POWER_MODULE:
+        ina219 = pm.PowerModule()
     while not event.is_set():
         try:
             if config.POWER_MODULE:
@@ -167,6 +168,8 @@ def connect():
             led.mode_set(1)
             tcp_server_socket, client_address = tcp_server.accept()
             server_address = tcp_server_socket.getsockname()[0]
+            # Timeout in seconds
+            tcp_server_socket.settimeout(config.LISTENER_TIMEOUT)
             logger.info('Connected from %s', client_address)
             client_address = client_address[0]
             break
@@ -201,7 +204,8 @@ def disconnect():
     tcp_server_socket.close()
     move.robot_height(0)
     logger.info('Waiting for threads to finish.')
-    while thread_isAlive('led_thread', 'camera_thread', 'info_thread', 'stream_thread', 'speak_thread', 'ultra_thread',
+    while thread_isAlive('led_thread', 'camera_thread', 'info_thread', 'stream_thread',
+                         'speak_thread', 'ultra_thread',
                          'move_thread'):
         time.sleep(1)
     logger.info('All threads terminated.')
@@ -210,17 +214,33 @@ def disconnect():
 
 def listener_thread(event):
     logger.info('Starting listener thread...')
-    global camera, steadyMode, direction_command, turn_command
+    global camera, tcp_server_socket, steadyMode, direction_command, turn_command
     ws_G = 0
     ws_R = 0
     ws_B = 0
     audio_pid = None
+    error_count = 0
     while not event.is_set():
-        data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
-        logger.debug('Received data on tcp socket: %s', data)
+        try:
+            data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
+        except socket.timeout:
+            logger.warning('Listener socket timed out')
+            data = ''
+        if error_count >= config.LISTENER_MAX_ERROR:
+            logger.error('Maximum listener error count reached, terminating thread.')
+            return
         if not data:
+            error_count += 1
+            logger.warning('NULL message or no KEEPALIVE message received, error count: %s/%s', error_count,
+                           config.LISTENER_MAX_ERROR)
             continue
-        elif 'wsR' in data:
+        elif '|ACK|' in data:
+            logger.debug('ACK message received')
+            continue
+        else:
+            logger.info('Received data on tcp socket: %s', data)
+            error_count = 0
+        if 'wsR' in data:
             try:
                 set_R = data.split()
                 ws_R = int(set_R[1])
@@ -258,10 +278,9 @@ def listener_thread(event):
             if audio_pid is None:
                 logger.info('Audio streaming server starting...')
                 audio_pid = subprocess.Popen([
-                    'cvlc alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
+                    'cvlc alsa://hw:2,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
                         config.AUDIO_PORT) + '}"'],
                     shell=True, preexec_fn=os.setsid)
-                # p = subprocess.Popen(['/usr/bin/cvlc','-vvv', 'alsa://hw:1,0', ':live-caching=50', '--sout', '\"#standard{access=http,mux=ogg,dst=\'', server_address, '\':3030}\"'], shell=False)
             else:
                 logger.info('Audio streaming server already started.')
             tcp_server_socket.send('stream_audio'.encode())
@@ -287,6 +306,27 @@ def listener_thread(event):
             led.mode_set(1)
             camera.WatchDog(1)
             tcp_server_socket.send('WatchDog'.encode())
+        elif 'Switch_1_on' == data:
+            switch.switch(1, 1)
+            tcp_server_socket.send('Switch_1_on'.encode())
+        elif 'Switch_1_off' == data:
+            switch.switch(1, 0)
+            tcp_server_socket.send('Switch_1_off'.encode())
+        elif 'Switch_2_on' == data:
+            switch.switch(2, 1)
+            tcp_server_socket.send('Switch_2_on'.encode())
+        elif 'Switch_2_off' == data:
+            switch.switch(2, 0)
+            tcp_server_socket.send('Switch_2_off'.encode())
+        elif 'Switch_3_on' == data:
+            switch.switch(3, 1)
+            tcp_server_socket.send('Switch_3_on'.encode())
+        elif 'Switch_3_off' == data:
+            switch.switch(3, 0)
+            tcp_server_socket.send('Switch_3_off'.encode())
+        elif 'disconnect' == data:
+            tcp_server_socket.send('disconnect'.encode())
+            disconnect()
         elif 'steady' == data:
             led.mode_set(1)
             led.color_set('blue')
@@ -331,27 +371,7 @@ def listener_thread(event):
         elif 'headright' == data:
             move.ctrl_yaw(config.torso_w, -100)
 
-        elif 'Switch_1_on' == data:
-            switch.switch(1, 1)
-            tcp_server_socket.send('Switch_1_on'.encode())
-        elif 'Switch_1_off' == data:
-            switch.switch(1, 0)
-            tcp_server_socket.send('Switch_1_off'.encode())
-        elif 'Switch_2_on' == data:
-            switch.switch(2, 1)
-            tcp_server_socket.send('Switch_2_on'.encode())
-        elif 'Switch_2_off' == data:
-            switch.switch(2, 0)
-            tcp_server_socket.send('Switch_2_off'.encode())
-        elif 'Switch_3_on' == data:
-            switch.switch(3, 1)
-            tcp_server_socket.send('Switch_3_on'.encode())
-        elif 'Switch_3_off' == data:
-            switch.switch(3, 0)
-            tcp_server_socket.send('Switch_3_off'.encode())
-        elif 'disconnect' == data:
-            tcp_server_socket.send('disconnect'.encode())
-            disconnect()
+
         elif 'btn_balance_front' == data:
             move.robot_balance('front')
         elif 'btn_balance_back' == data:
@@ -469,7 +489,7 @@ def main():
         listener_thread(kill_event)
     except:
         logger.error('Exception: %s', traceback.format_exc())
-        disconnect()
+    disconnect()
 
 
 if __name__ == "__main__":
