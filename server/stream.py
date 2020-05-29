@@ -38,7 +38,6 @@ class Stream:
         self.stopped = False
 
     def start(self):
-        logger.info('Starting thread')
         # start the thread to read frames from the video stream
         t = Thread(target=self.update, args=(), daemon=True)
         t.setName('stream_thread')
@@ -46,7 +45,7 @@ class Stream:
         return self
 
     def update(self):
-        global read
+        logger.info('Thread started')
         # keep looping infinitely until the thread is stopped
         for f in self.stream:
             # grab the frame from the stream and clear the stream in
@@ -56,10 +55,11 @@ class Stream:
             # if the thread indicator variable is set, stop the thread
             # and resource camera resources
             if self.stopped:
-                logger.debug('Stopping stream and closing camera.')
+                logger.info('Stopping stream and closing camera.')
                 self.stream.close()
                 self.rawCapture.close()
                 self.camera.close()
+                logger.info('Thread stopped')
                 return
 
     def read(self):

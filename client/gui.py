@@ -14,7 +14,7 @@ import traceback
 
 import config
 import video
-from functions import send, connect, terminate, ultra_event, start_ultra, connect_event, config_import
+from common import send, connect, terminate, ultra_event, start_ultra, connect_event, config_import
 
 logger = logging.getLogger(__name__)
 root = tk.Tk()  # Define a window named root

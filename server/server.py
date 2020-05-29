@@ -83,6 +83,24 @@ def get_swap_info():
     return str(swap_cent)
 
 
+def thread_isAlive(*args):
+    """
+    This function searches for the thread name defined using threading.Thread.setName() function.
+    :param args: Name of the thread. Can be multiple.
+    :return: Returns a boolean indicating if any of the threads was found.
+    """
+    logger.debug('Checking for existence of threads: %s', args)
+    for thread_name in args:
+        logger.debug('Looking for thread: ' + thread_name)
+        lst = threading.enumerate()
+        for x in lst:
+            if x.name == thread_name:
+                logger.debug('Found %s is active.', x)
+                return True
+    logger.debug('No threads found.')
+    return False
+
+
 def info_get():
     global cpu_t, cpu_u, gpu_t, ram_info
     while 1:
@@ -93,7 +111,7 @@ def info_get():
 
 
 def ultra_send_client(event):
-    logger.info('Starting ultrasonic thread.')
+    logger.info('Thread started')
     ultra_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     ultra_socket.connect((client_address, config.ULTRA_PORT))
     logger.info('Connected to client address (\'%s\', %i)', client_address, config.ULTRA_PORT)
@@ -108,10 +126,11 @@ def ultra_send_client(event):
             break
     time.sleep(0.5)
     ultra_event.clear()
+    logger.info('Thread stopped')
 
 
 def info_thread(event):
-    logger.debug('Thread started')
+    logger.info('Thread started')
     info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     info_socket.connect((client_address, config.INFO_PORT))
     logger.info('Connected to client address (\'%s\', %i)', client_address, config.INFO_PORT)
@@ -131,7 +150,7 @@ def info_thread(event):
         except:
             logger.error('Exception: %s', traceback.format_exc())
             pass
-    logger.debug('Thread stopped')
+    logger.info('Thread stopped')
 
 
 def connect():
@@ -165,6 +184,10 @@ def connect():
 
 
 def disconnect():
+    """
+    This function shutdown all threads and performs cleanup function ensuring all thread has exited gracefully.
+    It is meant to be blocking and not threaded to ensure all threads has been terminated before continuing.
+    """
     global tcp_server_socket, tcp_server, kill_event
     logger.info('Disconnecting and termination threads.')
     speak(speak_dict.disconnect)
@@ -177,11 +200,16 @@ def disconnect():
     tcp_server.close()
     tcp_server_socket.close()
     move.robot_height(0)
+    logger.info('Waiting for threads to finish.')
+    while thread_isAlive('led_thread', 'camera_thread', 'info_thread', 'stream_thread', 'speak_thread', 'ultra_thread',
+                         'move_thread'):
+        time.sleep(1)
+    logger.info('All threads terminated.')
     # move.servo_release()
 
 
 def listener_thread(event):
-    logger.info('Starting main listener thread...')
+    logger.info('Starting listener thread...')
     global camera, steadyMode, direction_command, turn_command
     ws_G = 0
     ws_R = 0
@@ -354,7 +382,7 @@ def listener_thread(event):
 
 
 def move_thread(event):
-    logger.debug('Thread started')
+    logger.info('Thread started')
     global step_set, direction_command, turn_command
     center = 1
     step = 1
@@ -398,11 +426,11 @@ def move_thread(event):
             pass
         else:
             move.robot_steady()
-    logger.debug('Thread stopped')
+    logger.info('Thread stopped')
 
 
 def main():
-    logger.info('Starting server...')
+    logger.info('Starting server.')
     global kill_event
     switch.switchSetup()
     switch.set_all_switch_off()
@@ -425,7 +453,6 @@ def main():
         logger.error('Exception LED: %s', traceback.format_exc())
         pass
     try:
-        logger.info('Starting threads...')
         if config.CAMERA_MODULE:
             global camera
             camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event], daemon=True)

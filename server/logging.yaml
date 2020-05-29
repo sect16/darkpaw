@@ -21,7 +21,7 @@ handlers:
 
 loggers:
   server:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propogate: no
 

@@ -3,10 +3,6 @@
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020
 
-"""
-Functions for starting threads
-"""
-
 import logging
 import threading
 import time
@@ -74,7 +70,7 @@ def status_client_thread(event):
     TCP client thread
     :param event: Clear event flag to terminate thread
     """
-    logger.debug('Thread started')
+    logger.info('Thread started')
     global tcp_client_socket
     while event.is_set():
         try:
@@ -85,7 +81,7 @@ def status_client_thread(event):
         except:
             logger.error('Thread exception: %s', traceback.format_exc())
             disconnect()
-    logger.debug('Thread stopped')
+    logger.info('Thread stopped')
 
 
 def stat_thread(event):
@@ -93,7 +89,7 @@ def stat_thread(event):
     Statistics server thread
     :param event: Clear event flag to terminate thread
     """
-    logger.debug('Thread started')
+    logger.info('Thread started')
     global cpu_temp, cpu_use, ram_use, voltage, current, connect_event
     addr = ('', config.INFO_PORT)
     stat_sock = socket(AF_INET, SOCK_STREAM)
@@ -124,7 +120,7 @@ def stat_thread(event):
             logger.error('Connection error, disconnecting')
             disconnect()
             logger.error('Thread exception: %s', traceback.format_exc())
-    logger.debug('Thread stopped')
+    logger.info('Thread stopped')
 
 
 def ip_check(ip_address):
@@ -257,14 +253,19 @@ def start_ultra():
         ultra_threading.start()
 
 
-def thread_isAlive(thread_name: str):
+def thread_isAlive(*args):
     """
     This function searches for the thread name defined using threading.Thread.setName() function.
-    :param thread_name: Name of the thread.
-    :return: Returns a boolean indicating if thread was found.
+    :param args: Name of the thread. Can be multiple.
+    :return: Returns a boolean indicating if any of the threads was found.
     """
-    lst = threading.enumerate()
-    for x in lst:
-        if x.name == thread_name:
-            return True
+    logger.debug('Checking for existence of threads: %s', args)
+    for thread_name in args:
+        logger.debug('Looking for thread: ' + thread_name)
+        lst = threading.enumerate()
+        for x in lst:
+            if x.name == thread_name:
+                logger.debug('Found %s is active.', x)
+                return True
+    logger.debug('No threads found.')
     return False
