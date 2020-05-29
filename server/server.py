@@ -214,7 +214,7 @@ def listener_thread(event):
     ws_G = 0
     ws_R = 0
     ws_B = 0
-    stream_audio_started = False
+    audio_pid = None
     while not event.is_set():
         data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
         logger.debug('Received data on tcp socket: %s', data)
@@ -255,21 +255,23 @@ def listener_thread(event):
             tcp_server_socket.send(('Ultrasonic_end').encode())
         elif 'stream_audio' == data:
             global server_address
-            if stream_audio_started:
+            if audio_pid is None:
                 logger.info('Audio streaming server starting...')
                 audio_pid = subprocess.Popen([
                     'cvlc alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
                         config.AUDIO_PORT) + '}"'],
                     shell=True, preexec_fn=os.setsid)
                 # p = subprocess.Popen(['/usr/bin/cvlc','-vvv', 'alsa://hw:1,0', ':live-caching=50', '--sout', '\"#standard{access=http,mux=ogg,dst=\'', server_address, '\':3030}\"'], shell=False)
-                stream_audio_started = True
             else:
                 logger.info('Audio streaming server already started.')
             tcp_server_socket.send('stream_audio'.encode())
         elif 'stream_audio_end' == data:
             if audio_pid is not None:
-                os.killpg(os.getpgid(audio_pid.pid), signal.SIGTERM)  # Send the signal to all the process groups
-            stream_audio_started = False
+                try:
+                    os.killpg(os.getpgid(audio_pid.pid), signal.SIGTERM)  # Send the signal to all the process groups
+                    audio_pid = None
+                except:
+                    logger.error('Unable to kill audio stream.')
             tcp_server_socket.send('stream_audio_end'.encode())
         elif 'start_video' == data:
             config.VIDEO_OUT = True
