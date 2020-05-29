@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Description : DarkPaw client
+# Description : Robot client
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020

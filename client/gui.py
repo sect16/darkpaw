@@ -51,7 +51,7 @@ def loop():  # GUI
     global root, e1, e2, e3, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
-        btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current
+        btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -142,6 +142,13 @@ def loop():  # GUI
                        fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
     scale_B.place(x=30, y=410)  # Define a Scale and put it in position
 
+    # Camera scale
+    var_camera = tk.StringVar()
+    var_camera.set(0)
+    scale_cam = tk.Scale(root, label=None, from_=100, to=-100, orient=tk.VERTICAL, length=80, showvalue=1,
+                         tickinterval=None, resolution=1, variable=var_camera, troughcolor='#FFFFFF',
+                         command=set_camera,
+                         fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
     canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=352, highlightthickness=0)
     canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
     # Canvas testing
@@ -237,7 +244,7 @@ def loop():  # GUI
         e3.insert(0, int(config_import('SPEED:')))
     except:
         pass
-    label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT, bg='#000000')
+    label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
     btn_e3 = tk.Button(root, width=3, text='SET', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_e3.bind('<ButtonPress-1>', set_speed)
 
@@ -657,6 +664,10 @@ def send_led(index, value):
         led_sleep = 0
     else:
         pass
+
+
+def set_camera(event):
+    send_led('headAngle %s', var_camera.get())
 
 
 def send_command(event):

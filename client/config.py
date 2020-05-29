@@ -12,10 +12,10 @@ import cv2
 TITLE = 'DarkPaw'
 COLOR_SWT_ACT = '#4CAF50'
 COLOR_BTN_ACT = '#00E676'
-# COLOR_BG = '#BBBBBB'  # Set background color
-# COLOR_TEXT_LABEL = '#000000'
-COLOR_BG = '#000000'  # Set background color
-COLOR_TEXT_LABEL = '#E1F5FE'
+COLOR_BG = '#BBBBBB'  # Set background color
+COLOR_TEXT_LABEL = '#000000'
+# COLOR_BG = '#000000'  # Set background color
+# COLOR_TEXT_LABEL = '#E1F5FE'
 COLOR_TEXT = '#E1F5FE'  # Set text color
 COLOR_BTN = '#0277BD'  # Set button color
 COLOR_GREY = '#A7A7A7'

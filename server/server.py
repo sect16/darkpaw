@@ -27,24 +27,20 @@ import ultra
 from speak import speak
 
 logger = logging.getLogger(__name__)
-direction_command = 'no'
-turn_command = 'no'
+# Socket connection sequence. Bind socket to port, create socket, get client address/port, get server address/port.
+tcp_server = None
+tcp_server_socket = None
+client_address = None
+server_address = None
 led = led.Led()
 if config.CAMERA_MODULE:
     camera = cam.Camera()
-ultrasonicMode = 0
-addr = None
-tcp_server_socket = None
-tcp_server = None
-HOST = ''
-ADDR = (HOST, config.SERVER_PORT)
 kill_event = threading.Event()
 ultra_event = threading.Event()
-server_address = ''
-stream_audio_started = 0
-audio_pid = None
 steadyMode = 0
 wiggle = 100
+direction_command = 'no'
+turn_command = 'no'
 
 
 def ap_thread():
@@ -97,16 +93,13 @@ def info_get():
 
 
 def ultra_send_client(event):
-    global ultra_event
     logger.info('Starting ultrasonic thread.')
-    ultra_IP = addr[0]
-    ultra_ADDR = (ultra_IP, config.ULTRA_PORT)
-    ultra_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
-    ultra_Socket.connect(ultra_ADDR)
-    logger.debug(ultra_ADDR)
-    while event.is_set() and ultrasonicMode:
+    ultra_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
+    ultra_socket.connect((client_address, config.ULTRA_PORT))
+    logger.info('Connected to client address (\'%s\', %i)', client_address, config.ULTRA_PORT)
+    while event.is_set():
         try:
-            ultra_Socket.send(str(round(ultra.checkdist(), 2)).encode())
+            ultra_socket.send(str(round(ultra.checkdist(), 2)).encode())
             time.sleep(0.5)
             camera.UltraData(round(ultra.checkdist(), 2))
             time.sleep(0.2)
@@ -119,20 +112,18 @@ def ultra_send_client(event):
 
 def info_thread(event):
     logger.debug('Thread started')
-    SERVER_IP = addr[0]
-    SERVER_ADDR = (SERVER_IP, config.INFO_PORT)
-    Info_Socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
-    Info_Socket.connect(SERVER_ADDR)
-    logger.info('Server address %s', SERVER_ADDR)
+    info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
+    info_socket.connect((client_address, config.INFO_PORT))
+    logger.info('Connected to client address (\'%s\', %i)', client_address, config.INFO_PORT)
     ina219 = pm.PowerModule()
     while not event.is_set():
         try:
             if config.POWER_MODULE:
                 power = ina219.read_ina219()
-                Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
+                info_socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
                     power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
             else:
-                Info_Socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' - -').encode())
+                info_socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' - -').encode())
             pass
             time.sleep(1)
         except BrokenPipeError:
@@ -143,115 +134,22 @@ def info_thread(event):
     logger.debug('Thread stopped')
 
 
-def move_thread(event):
-    logger.debug('Thread started')
-    global step_set
-    center = 1
-    step = 1
-    # move.robot_height(50)
-    while not event.is_set():
-        if not steadyMode:
-            if direction_command == 'forward' and turn_command == 'no':
-                if center == 1:
-                    move.robot_balance('forward')
-                move.move_direction('forward')
-                if step_set == 9:
-                    step_set = 1
-                continue
-            elif direction_command == 'backward' and turn_command == 'no':
-                stand_stu = 0
-                move.dove_move_tripod(step_set, wiggle, 'backward')
-                step_set += 1
-                if step_set == 9:
-                    step_set = 1
-                continue
-            else:
-                pass
-            if turn_command != 'no':
-                stand_stu = 0
-                move.dove_move_diagonal(step_set, wiggle, turn_command)
-                step_set += 1
-                if step_set == 9:
-                    step_set = 1
-                continue
-            else:
-                pass
-            if turn_command == 'no' and direction_command == 'stand':
-                if stand_stu == 0:
-                    move.robot_height(config.lower_leg_m)
-                    step_set = 1
-                    stand_stu = 1
-                else:
-                    time.sleep(0.01)
-                    pass
-            time.sleep(0.5)
-            pass
-        else:
-            move.robot_steady()
-    logger.debug('Thread stopped')
-
-
-def main():
-    logger.info('Starting server...')
-    global kill_event, ADDR
-    switch.switchSetup()
-    switch.set_all_switch_off()
-    kill_event.clear()
-    try:
-        led_threading = threading.Thread(target=led.led_thread, args=[kill_event],
-                                         daemon=True)  # Define a thread for LED breatheing
-        led_threading.setName('led_thread')
-        led_threading.start()  # Thread starts
-        led.color_set('blue')
-    except:
-        pass
+def connect():
+    global server_address, tcp_server_socket, tcp_server, client_address
     while True:
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("1.1.1.1", 80))
-            global server_address
-            server_address = s.getsockname()[0]
-            s.close()
-            logger.info('Server listening on: %s:%s', server_address, config.SERVER_PORT)
-        except:
-            logger.warning('No network connection, starting local AP. %s', traceback.format_exc())
-            ap_threading = threading.Thread(target=ap_thread, daemon=True)
-            ap_threading.setName('ap_thread')
-            ap_threading.start()
-            led.colorWipe([0, 16, 50])
-            time.sleep(1)
-            led.colorWipe([0, 16, 100])
-            time.sleep(1)
-            led.colorWipe([0, 16, 150])
-            time.sleep(1)
-            led.colorWipe([0, 16, 200])
-            time.sleep(1)
-            led.colorWipe([0, 16, 255])
-            time.sleep(1)
-            led.colorWipe([35, 255, 35])
-        try:
-            global tcp_server_socket, tcp_server
-            global addr
             tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            tcp_server.bind(ADDR)
+            tcp_server.bind(('', config.SERVER_PORT))
             # Start server,waiting for client
             tcp_server.listen(5)
             logger.info('Waiting for connection...')
             led.color_set('cyan')
             led.mode_set(1)
-            tcp_server_socket, addr = tcp_server.accept()
-            logger.info('Connected from %s', addr)
-            speak(speak_dict.connect)
-            threading.Thread(target=move.servo_init, args=[], daemon=True).start()
-            # move.servo_init()
-            # move.robot_height(50)
-            if config.CAMERA_MODULE:
-                global camera
-                camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event],
-                                                 daemon=True)  # Define a thread for FPV and OpenCV
-                camera_thread.setName('camera_thread')
-                camera_thread.start()  # Thread starts
+            tcp_server_socket, client_address = tcp_server.accept()
+            server_address = tcp_server_socket.getsockname()[0]
+            logger.info('Connected from %s', client_address)
+            client_address = client_address[0]
             break
         except KeyboardInterrupt:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
@@ -259,56 +157,36 @@ def main():
             led.colorWipe([0, 0, 0])
             sys.exit()
             pass
-
         except:
             logger.error('Exception while waiting for connection: %s', traceback.format_exc())
             kill_event.set()
             led.colorWipe([0, 0, 0])
             pass
 
-    try:
-        led.mode_set(0)
-        led.colorWipe([255, 255, 255])
-    except:
-        logger.error('Exception LED breathe: %s', traceback.format_exc())
-        pass
-
-    try:
-        logger.info('Starting info and move threads...')
-        info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
-        info_threading.setName('info_thread')
-        info_threading.start()
-        moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
-        moving_threading.setName('move_thread')
-        moving_threading.start()
-        listener_thread(kill_event)
-    except:
-        logger.error('Exception: %s', traceback.format_exc())
-        disconnect()
-
 
 def disconnect():
+    global tcp_server_socket, tcp_server, kill_event
     logger.info('Disconnecting and termination threads.')
     speak(speak_dict.disconnect)
-    global tcp_server_socket, tcp_server, kill_event
     kill_event.set()
     led.colorWipe([0, 0, 0])
-    move.robot_height(0)
-    # move.servo_release()
     switch.switch(1, 0)
     switch.switch(2, 0)
     switch.switch(3, 0)
     time.sleep(0.5)
     tcp_server.close()
     tcp_server_socket.close()
+    move.robot_height(0)
+    # move.servo_release()
 
 
 def listener_thread(event):
     logger.info('Starting main listener thread...')
-    global direction_command, turn_command, steadyMode, ultrasonicMode, camera, audio_pid
+    global camera, steadyMode, direction_command, turn_command
     ws_G = 0
     ws_R = 0
     ws_B = 0
+    stream_audio_started = False
     while not event.is_set():
         data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
         logger.debug('Received data on tcp socket: %s', data)
@@ -339,40 +217,37 @@ def listener_thread(event):
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'Ultrasonic' == data:
-            ultrasonicMode = 1
             tcp_server_socket.send(('Ultrasonic').encode())
             ultra_event.set()
             ultra_threading = threading.Thread(target=ultra_send_client, args=([ultra_event]), daemon=True)
             ultra_threading.setName('ultra_thread')
-            ultra_threading.start()  # Thread starts
-
+            ultra_threading.start()
         elif 'Ultrasonic_end' == data:
-            ultrasonicMode = 0
             ultra_event.clear()
             tcp_server_socket.send(('Ultrasonic_end').encode())
         elif 'stream_audio' == data:
-            global server_address, stream_audio_started
-            if stream_audio_started == 0:
+            global server_address
+            if stream_audio_started:
                 logger.info('Audio streaming server starting...')
                 audio_pid = subprocess.Popen([
                     'cvlc alsa://hw:1,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
                         config.AUDIO_PORT) + '}"'],
                     shell=True, preexec_fn=os.setsid)
                 # p = subprocess.Popen(['/usr/bin/cvlc','-vvv', 'alsa://hw:1,0', ':live-caching=50', '--sout', '\"#standard{access=http,mux=ogg,dst=\'', server_address, '\':3030}\"'], shell=False)
-                stream_audio_started = 1
+                stream_audio_started = True
             else:
                 logger.info('Audio streaming server already started.')
             tcp_server_socket.send('stream_audio'.encode())
         elif 'stream_audio_end' == data:
             if audio_pid is not None:
                 os.killpg(os.getpgid(audio_pid.pid), signal.SIGTERM)  # Send the signal to all the process groups
-            stream_audio_started = 0
+            stream_audio_started = False
             tcp_server_socket.send('stream_audio_end'.encode())
         elif 'start_video' == data:
-            config.VIDEO_OUT = 1
+            config.VIDEO_OUT = True
             tcp_server_socket.send('start_video'.encode())
         elif 'stop_video' == data:
-            config.VIDEO_OUT = 0
+            config.VIDEO_OUT = False
             tcp_server_socket.send('stop_video'.encode())
         elif 'FindColor' == data:
             led.mode_set(1)
@@ -476,6 +351,96 @@ def listener_thread(event):
             logger.info('Speaking command received')
             speak(data)
             pass
+
+
+def move_thread(event):
+    logger.debug('Thread started')
+    global step_set, direction_command, turn_command
+    center = 1
+    step = 1
+    # move.robot_height(50)
+    while not event.is_set():
+        if not steadyMode:
+            if direction_command == 'forward' and turn_command == 'no':
+                if center == 1:
+                    move.robot_balance('forward')
+                move.move_direction('forward')
+                if step_set == 9:
+                    step_set = 1
+                continue
+            elif direction_command == 'backward' and turn_command == 'no':
+                stand_stu = 0
+                move.dove_move_tripod(step_set, wiggle, 'backward')
+                step_set += 1
+                if step_set == 9:
+                    step_set = 1
+                continue
+            else:
+                pass
+            if turn_command != 'no':
+                stand_stu = 0
+                move.dove_move_diagonal(step_set, wiggle, turn_command)
+                step_set += 1
+                if step_set == 9:
+                    step_set = 1
+                continue
+            else:
+                pass
+            if turn_command == 'no' and direction_command == 'stand':
+                if stand_stu == 0:
+                    move.robot_height(config.lower_leg_m)
+                    step_set = 1
+                    stand_stu = 1
+                else:
+                    time.sleep(0.01)
+                    pass
+            time.sleep(0.5)
+            pass
+        else:
+            move.robot_steady()
+    logger.debug('Thread stopped')
+
+
+def main():
+    logger.info('Starting server...')
+    global kill_event
+    switch.switchSetup()
+    switch.set_all_switch_off()
+    kill_event.clear()
+    try:
+        led_threading = threading.Thread(target=led.led_thread, args=[kill_event], daemon=True)
+        led_threading.setName('led_thread')
+        led_threading.start()  # Thread starts
+        led.color_set('blue')
+    except:
+        pass
+    connect()
+    speak(speak_dict.connect)
+    threading.Thread(target=move.servo_init, args=[], daemon=True).start()
+
+    try:
+        led.mode_set(0)
+        led.colorWipe([255, 255, 255])
+    except:
+        logger.error('Exception LED: %s', traceback.format_exc())
+        pass
+    try:
+        logger.info('Starting threads...')
+        if config.CAMERA_MODULE:
+            global camera
+            camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event], daemon=True)
+            camera_thread.setName('camera_thread')
+            camera_thread.start()
+        info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
+        info_threading.setName('info_thread')
+        info_threading.start()
+        moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
+        moving_threading.setName('move_thread')
+        moving_threading.start()
+        listener_thread(kill_event)
+    except:
+        logger.error('Exception: %s', traceback.format_exc())
+        disconnect()
 
 
 if __name__ == "__main__":
