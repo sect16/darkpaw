@@ -100,7 +100,7 @@ class Camera:
             elif WatchDogMode:
                 watchdog()
 
-            if config.VIDEO_OUT == 1:
+            if config.VIDEO_OUT:
                 if mq.closed:
                     logger.info('Initializing ZMQ client...')
                     mq = init_client()
@@ -113,7 +113,7 @@ class Camera:
                 # with open('buffer.jpg', mode='wb') as file:
                 #     file.write(buffer)
                 # logger.debug('Sending footage using ZMQ')
-            elif config.VIDEO_OUT == 0 and not mq.closed:
+            elif not config.VIDEO_OUT and not mq.closed:
                 destroy_client(mq)
             limit_framerate(frame_rate_mili)
             frame_image = video_stream.read()

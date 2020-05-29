@@ -17,8 +17,8 @@ def speak(text):
 def speak_thread(input_text):
     logger.info('Text to speech received: "%s"', input_text)
     while True:
-        if config.allow_speak == 1 and abs(int(time.time()) - config.last_text[0]) > config.SPEAK_DELAY:
-            config.allow_speak = 0
+        if config.allow_speak and abs(int(time.time()) - config.last_text[0]) > config.SPEAK_DELAY:
+            config.allow_speak = False
             if type(input_text) == str:
                 speak_command(input_text)
                 pass
@@ -27,7 +27,7 @@ def speak_thread(input_text):
                 pass
             else:
                 logger.error('Unknow input_text type: %s', input_text)
-            config.allow_speak = 1
+            config.allow_speak = True
             config.last_text[0] = int(time.time())
             config.last_text[1] = input_text
             break

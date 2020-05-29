@@ -13,8 +13,8 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SIZE = 0.5
 
 SPEAK_SPEED = 150
-allow_speak = 1
-VIDEO_OUT = 0
+allow_speak = True
+VIDEO_OUT = False
 last_text = list([int(time.time()), ""])
 
 SPEAK_DELAY = 2
@@ -28,8 +28,8 @@ AUDIO_PORT = 3030
 FRAME_RATE = 32
 
 # Hardware configuration
-POWER_MODULE = True
-SERVO_ENABLE = True
+POWER_MODULE = False
+SERVO_MODULE = True
 CAMERA_MODULE = True
 
 """
