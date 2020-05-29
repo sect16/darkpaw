@@ -203,7 +203,6 @@ def watchdog():
 
 def find_color(self, pts, args):
     global Y_lock, X_lock
-    ####>>>OpenCV Start<<<####
     hsv = cv2.cvtColor(frame_image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, self.colorLower, self.colorUpper)
     mask = cv2.erode(mask, None, iterations=2)
@@ -260,7 +259,6 @@ def find_color(self, pts, args):
             continue
         thickness = int(numpy.sqrt(args["buffer"] / float(i + 1)) * 2.5)
         cv2.line(frame_image, pts[i - 1], pts[i], (0, 0, 255), thickness)
-    ####>>>OpenCV Ends<<<####
 
 
 if __name__ == '__main__':
