@@ -76,7 +76,7 @@ class Camera:
 
     def capture_thread(self, event):
         global frame_image
-        logger.info('Starting thread')
+        logger.info('Thread started')
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,
                         help="max buffer size")
@@ -117,7 +117,7 @@ class Camera:
                 destroy_client(mq)
             limit_framerate(frame_rate_mili)
             frame_image = video_stream.read()
-        logger.info('Kill event received, terminating FPV thread.')
+        logger.info('Stopping thread.')
         video_stream.stop()
 
 

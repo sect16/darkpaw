@@ -2,17 +2,13 @@
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020
 
-"""
-This function contains the ultrasonic data tcp server thread..
-"""
-
 import logging
 import traceback
 from socket import *
 
 import config
-import functions
 import gui
+from common import ultra_event
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +18,7 @@ def ultra_server_thread(event):
     Creates a TCP server and listen on port.
     :param event: Event flag to signal termination.
     """
-    logger.debug('Thread started')
+    logger.info('Thread started')
     ultra_addr = ('', config.ULTRA_PORT)
     ultra_sock = socket(AF_INET, SOCK_STREAM)
     ultra_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -52,9 +48,9 @@ def ultra_server_thread(event):
                                                                fill='BLACK')
         except:
             logger.error('Ultrasonic exception: %s', traceback.format_exc())
-            functions.ultra_event.clear()
+            ultra_event.clear()
             pass
     gui.canvas_ultra.create_rectangle(0, 0, 352, 30, fill='#FFFFFF', width=0)
     gui.canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
     gui.ultrasonic_mode = 0
-    logger.debug('Thread stopped')
+    logger.info('Thread stopped')

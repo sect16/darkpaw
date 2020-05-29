@@ -28,7 +28,7 @@ AUDIO_PORT = 3030
 FRAME_RATE = 32
 
 # Hardware configuration
-POWER_MODULE = False
+POWER_MODULE = True
 SERVO_MODULE = True
 CAMERA_MODULE = True
 
@@ -68,5 +68,4 @@ torso_w = int((torso_h - torso_l) / 2)
 servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-resolution = 3
-
+resolution = 1

@@ -24,8 +24,8 @@ loggers:
     handlers: [console]
     propogate: no
 
-  functions:
-    level: INFO
+  common:
+    level: DEBUG
     handlers: [console]
     propogate: no
 

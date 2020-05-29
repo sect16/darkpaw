@@ -166,7 +166,7 @@ class Led:
                 pass
             else:
                 time.sleep(THREAD_REFRESH)
-        logger.debug('Thread stopped')
+        logger.info('Thread stopped')
 
     def breathe_effect(self):
         for a in range(0, brightness, frequency):
