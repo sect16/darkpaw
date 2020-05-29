@@ -17,7 +17,9 @@ allow_speak = True
 VIDEO_OUT = False
 last_text = list([int(time.time()), ""])
 
-SPEAK_DELAY = 2
+LISTENER_MAX_ERROR = 10
+LISTENER_TIMEOUT = 30
+SPEAK_DELAY = 1
 INFO_PORT = 2256  # Define port serial
 SERVER_PORT = 10223  # Define port serial
 BUFFER_SIZE = 1024  # Define buffer size
