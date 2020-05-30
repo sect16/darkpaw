@@ -699,8 +699,8 @@ def connect_init(ip_address):
     time.sleep(0.2)
     send(' wsB ' + var_B.get())
     time.sleep(0.2)
-    send(' speed:' + e3.get())
-    return None
+    if not e3.get() == '':
+        send(' speed:' + e3.get())
 
 
 def set_speed(event):

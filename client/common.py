@@ -167,6 +167,9 @@ def connect():  # Call this function to connect with the server
             info_threading = threading.Thread(target=stat_thread, args=([connect_event]), daemon=True)
             info_threading.setName('stat_thread')
             info_threading.start()
+            keepalive_threading = threading.Thread(target=keepalive_thread, args=([connect_event]), daemon=True)
+            keepalive_threading.setName('keepalive_thread')
+            keepalive_threading.start()
             gui.connect_init(ip_address)
         except:
             logger.error('Unable to connect: %s', traceback.format_exc())
@@ -269,3 +272,12 @@ def thread_isAlive(*args):
                 return True
     logger.debug('No threads found.')
     return False
+
+
+def keepalive_thread(event):
+    logger.info('Thread started')
+    while event.is_set():
+        time.sleep(config.KEEPALIVE_INTERVAL)
+        logger.debug('Sending keepalive message')
+        send('|ACK|')
+    logger.info('Thread stopped')

@@ -31,7 +31,7 @@ loggers:
     propogate: no
 
   move:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 
@@ -51,7 +51,7 @@ loggers:
     propogate: no
 
   servo:
-    level: INFO
+    level: DEBUG
     handlers: [console]
     propogate: no
 
