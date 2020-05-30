@@ -326,7 +326,7 @@ def listener_thread(event):
             tcp_server_socket.send('Switch_3_off'.encode())
         elif 'disconnect' == data:
             tcp_server_socket.send('disconnect'.encode())
-            disconnect()
+            return
         elif 'steady' == data:
             led.mode_set(1)
             led.color_set('blue')
@@ -403,30 +403,72 @@ def listener_thread(event):
             pass
 
 
+# Diagonal method to maintain robot balance
 def move_thread(event):
     logger.info('Thread started')
-    global step_set, direction_command, turn_command
-    center = 1
-    step = 1
-    # move.robot_height(50)
+    global direction_command, turn_command
+    balance = 'center'
+    step = 0
+    ground = 1
+    height = 50
     while not event.is_set():
         if not steadyMode:
+            # Skip if servo in motion
+            if config.servo_motion != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+                time.sleep(0.5)
+                continue
             if direction_command == 'forward' and turn_command == 'no':
-                if center == 1:
-                    move.robot_balance('forward')
-                move.move_direction('forward')
-                if step_set == 9:
-                    step_set = 1
-                continue
-            elif direction_command == 'backward' and turn_command == 'no':
-                stand_stu = 0
-                move.dove_move_tripod(step_set, wiggle, 'backward')
-                step_set += 1
-                if step_set == 9:
-                    step_set = 1
-                continue
-            else:
-                pass
+                if not config.height == 100:
+                    move.robot_height(100)
+                    height = 100
+
+                if step == 0:
+                    if not balance == 'front_right':
+                        move.robot_balance('front_right')
+                        balance = 'front_right'
+
+                    elif ground == 1:
+                        move.leg_up(2)
+                        ground = 0
+
+                    elif ground == 0:
+                        move.leg_down(2)
+                        ground = 1
+                        step = 1
+
+                elif step == 1:
+                    if ground == 1:
+                        move.leg_up(1)
+                        ground = 0
+
+                    elif ground == 0:
+                        move.leg_down(1)
+                        ground = 1
+                        step = 2
+
+                elif step == 2:
+                    if not balance == 'front_left':
+                        move.robot_balance('front_left')
+                        balance = 'front_left'
+
+                    elif ground == 1:
+                        move.leg_up(4)
+                        ground = 0
+
+                    elif ground == 0:
+                        move.leg_down(4)
+                        ground = 1
+                        step = 3
+                elif step == 3:
+                    if ground == 1:
+                        move.leg_up(3)
+                        ground = 0
+                    elif ground == 0:
+                        move.leg_down(3)
+                        ground = 1
+                        step = 0
+
+            '''
             if turn_command != 'no':
                 stand_stu = 0
                 move.dove_move_diagonal(step_set, wiggle, turn_command)
@@ -436,14 +478,17 @@ def move_thread(event):
                 continue
             else:
                 pass
+            '''
             if turn_command == 'no' and direction_command == 'stand':
-                if stand_stu == 0:
-                    move.robot_height(config.lower_leg_m)
-                    step_set = 1
-                    stand_stu = 1
-                else:
-                    time.sleep(0.01)
-                    pass
+                if not balance == 'center':
+                    move.robot_balance('center')
+                    balance = 'center'
+                if not height == 50:
+                    move.robot_height(50)
+                    height = 50
+                step = 0
+                ground = 1
+                pass
             time.sleep(0.5)
             pass
         else:

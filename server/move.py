@@ -4,6 +4,7 @@
 # E-mail      : sect16@gmail.com
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
+
 import logging
 import threading
 import time
@@ -17,41 +18,7 @@ import pid
 logger = logging.getLogger(__name__)
 pca = Adafruit_PCA9685.PCA9685()
 pca.set_pwm_freq(50)
-"""
-# Configure min and max servo pulse lengths
-i=0
-for i in range(0,12):
-    if i == 0 or i == 3:
-        exec('pwm%d=config.torso_m'%i)
-        exec('pwm%d_max=config.torso_h'%i)
-        exec('pwm%d_min=config.torso_l'%i)
 
-    if i == 6 or i == 9:
-        exec('pwm%d=config.torso_m2'%i)
-        exec('pwm%d_max=config.torso_h2'%i)
-        exec('pwm%d_min=config.torso_l2'%i)
-
-    if i == 1 or i == 10:
-        exec('pwm%d=config.lower_leg_m'%i)
-        exec('pwm%d_max=config.lower_leg_h'%i)
-        exec('pwm%d_min=config.lower_leg_l'%i)
-
-    if i == 4 or i == 7:
-        exec('pwm%d=config.lower_leg_m2'%i)
-        exec('pwm%d_max=config.lower_leg_h2'%i)
-        exec('pwm%d_min=config.lower_leg_l2'%i)
-
-
-    if i == 2 or i == 11:
-        exec('pwm%d=config.upper_leg_m'%i)
-        exec('pwm%d_max=config.upper_leg_h'%i)
-        exec('pwm%d_min=config.upper_leg_l'%i)
-
-    if i == 5 or i == 8:
-        exec('pwm%d=config.upper_leg_m2'%i)
-        exec('pwm%d_max=config.upper_leg_h2'%i)
-        exec('pwm%d_min=config.upper_leg_l2'%i)
-"""
 """
 Leg_I   --- forward --- Leg_III
                |
@@ -73,9 +40,9 @@ P = 3
 I = 0.1
 D = 0
 
-# Set quick the steady mode is triggered. Reduce if occilating.
+# Set how fast the steady mode is updated. Reduce if oscillating.
 STEADY_DELAY = 0.005
-# Servo initialization delay. To prevent sudden power surge.
+# Delay interval between servos during initialization. Prevents sudden power surge.
 INIT_DELAY = 0.2
 
 """
@@ -154,6 +121,7 @@ def set_pwm(servo, pos):
     # if config.SERVO_MODULE:
     #     pca.set_pwm(servo, 0, pos)
     #     config.servo[servo] = pos
+    return servo_threading
 
 
 def set_pwm_init(servo, pos):
@@ -170,13 +138,6 @@ def set_pwm_init(servo, pos):
     else:
         logger.info('Servo module DISABLED')
     config.servo[servo] = pos
-
-
-'''
-    if config.servo_init.count(0) == 12:
-        if config.servo.count(0) == 0:
-            config.servo_init = list(config.servo)
-'''
 
 
 def leg_I(x, y, z):
@@ -430,10 +391,15 @@ def robot_height(height, instant=0):
         set_pwm_init(7, pos3)
         set_pwm_init(10, pos4)
     else:
-        set_pwm(1, pos1)
-        set_pwm(4, pos2)
-        set_pwm(7, pos3)
-        set_pwm(10, pos4)
+        m1 = set_pwm(1, pos1)
+        m2 = set_pwm(4, pos2)
+        m3 = set_pwm(7, pos3)
+        m4 = set_pwm(10, pos4)
+        m1.join()
+        m2.join()
+        m3.join()
+        m4.join()
+    config.height = height
 
 
 def ctrl_range(input_value, max_genout, min_genout):
@@ -596,7 +562,7 @@ def servo_init():
     logger.debug('Servo init: %s', config.servo_init)
     logger.debug('Servo status: %s', config.servo)
     logger.debug('Going to default height.')
-    robot_height(50)
+    robot_height(config.height)
 
 
 def robot_home():
@@ -607,7 +573,7 @@ def robot_home():
     logger.info('Servos to home position...')
     robot_X(config.DEFAULT_X)
     ctrl_pitch_roll(0, 0)
-    robot_height(50)
+    robot_height(config.height)
 
 
 def robot_balance(balance):
@@ -696,54 +662,69 @@ def balance_left():
 
 def move_direction(direction):
     if direction == 'forward':
-        leg_up(4)
+        leg_up(2)
         pass
 
 
 def leg_up(id):
+    delay = 0.1
     if id == 1:
-        # UP
-        set_pwm(1, config.lower_leg_h)
-        # OUT
-        set_pwm(2, config.upper_leg_h)
-        # FORWARD
-        set_pwm(0, config.servo_init[0])
-        # DOWN
-        set_pwm(1, config.servo_init[1])
-
+        set_pwm(1, int(config.lower_leg_l))
+        # time.sleep(delay)
+        # set_pwm(0, int(config.servo_init[0] + (config.torso_w/2)))
     if id == 2:
-        # UP OUT FORWARD MIDDLE
-        set_pwm(4, config.lower_leg_h2)
-        set_pwm(5, config.upper_leg_h2)
-        set_pwm(3, config.servo_init[3] - (config.torso_w / 2))
-        while config.servo_motion != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
-            pass
-        # DOWN IN
-        set_pwm(3, config.servo_init[3] - config.torso_w)
-        set_pwm(5, config.servo_init[5])
-        set_pwm(4, int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * 50)))
+        set_pwm(4, int(config.lower_leg_h2))
+        # time.sleep(delay)
+        # set_pwm(3, int(config.servo_init[3] - (config.torso_w/2)))
     if id == 3:
-        set_pwm(6, config.servo_init[6])
-        set_pwm(7, config.lower_leg_h)
-        set_pwm(8, config.upper_leg_h)
+        set_pwm(7, int(config.lower_leg_h))
+        # time.sleep(delay)
+        # set_pwm(6, int(config.servo_init[6] - (config.torso_w/2)))
     if id == 4:
-        set_pwm(9, config.servo_init[9])
-        set_pwm(10, config.lower_leg_h2)
-        set_pwm(11, config.upper_leg_h)
+        set_pwm(10, int(config.lower_leg_l2))
+        # time.sleep(delay)
+        # set_pwm(9, int(config.servo_init[9] + (config.torso_w/2)))
+
+
+def leg_down(id):
+    if id == 1:
+        set_pwm(0, int(config.servo_init[0] + config.torso_w))
+        set_pwm(1, int(config.lower_leg_h))
+    if id == 2:
+        # DOWN IN
+        set_pwm(3, int(config.servo_init[3] - config.torso_w))
+        set_pwm(4, int(config.lower_leg_l2))
+    if id == 3:
+        set_pwm(6, int(config.servo_init[6] - config.torso_w))
+        set_pwm(7, int(config.lower_leg_l))
+    if id == 4:
+        set_pwm(9, int(config.servo_init[9] + config.torso_w))
+        set_pwm(10, int(config.lower_leg_h2))
 
 
 if __name__ == '__main__':
-    import sys
     log_level = logging.DEBUG
     if len(logging.getLogger().handlers) == 0:
-    # Initialize the root logger only if it hasn't been done yet by a
-    # parent module.
-        logging.basicConfig(format='%(asctime)s %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-20s: %(message)s')
+        # Initialize the root logger only if it hasn't been done yet by a
+        # parent module.
+        logging.basicConfig(
+            format='%(asctime)s %(levelname)7s %(thread)5d --- [%(threadName)16s] %(funcName)-20s: %(message)s')
         logger = logging.getLogger(__name__)
         logger.setLevel(log_level)
         # logger.propagate = False
+    servo_init()
+    robot_balance('left')
+    time.sleep(0.5)
+    robot_balance('right')
+    time.sleep(0.5)
+    robot_balance('center')
+    time.sleep(0.5)
+    robot_balance('front')
+
+    leg_up(2)
+    '''
     try:
-        if sys.argv[1] == 'test':
+        if sys.argv.__len__() > 1 and sys.argv[1] == 'test':
             while 1:
                 time.sleep(STEADY_DELAY)
                 mpu6050Test()
@@ -755,5 +736,7 @@ if __name__ == '__main__':
                 time.sleep(STEADY_DELAY)
                 # break
         mpu6050Test()
+
     except KeyboardInterrupt:
         servo_release()
+    '''
