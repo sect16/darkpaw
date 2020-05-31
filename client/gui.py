@@ -106,6 +106,8 @@ def loop():  # GUI
     btn_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_FPV = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_e2 = tk.Button(root, width=10, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_roll_left = tk.Button(root, width=8, text='Roll L', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_roll_right = tk.Button(root, width=8, text='Roll R', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
     btn_connect.place(x=150, y=15)  # Define a Button and put it in position
     btn0.place(x=100, y=195)
@@ -209,8 +211,8 @@ def loop():  # GUI
     btn_high.bind('<ButtonPress-1>', lambda _: send('high'))
     btn_left.bind('<ButtonPress-1>', lambda _: send('headleft'))
     btn_right.bind('<ButtonPress-1>', lambda _: send('headright'))
-    btn_left_side.bind('<ButtonRelease-1>', call_turn_stop)
-    btn_right_side.bind('<ButtonRelease-1>', call_turn_stop)
+    btn_left_side.bind('<ButtonRelease-1>', call_stop)
+    btn_right_side.bind('<ButtonRelease-1>', call_stop)
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -220,6 +222,8 @@ def loop():  # GUI
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
     btn_sport.bind('<ButtonPress-1>', call_sport_mode)
+    btn_roll_left.bind('<ButtonPress-1>', lambda _: send('rollLeft'))
+    btn_roll_right.bind('<ButtonPress-1>', lambda _: send('rollRight'))
 
     # Import last scale parameters
     try:
