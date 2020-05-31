@@ -82,29 +82,28 @@ move_stu = 1
 
 
 def servo_thread(servo, pos):
+    logger.debug('Thread started')
+    if not config.SERVO_MODULE:
+        return
     if config.servo_motion[servo] == 0:
         config.servo_motion[servo] = 1
         logger.debug("Set PWM on servo [%s], position [%s])", servo, pos)
-        if config.servo[servo] - pos < 0:
-            while config.servo[servo] < pos:
-                if config.SERVO_MODULE:
-                    pca.set_pwm(servo, 0, config.servo[servo])
-                else:
-                    logger.info('Servo module DISABLED')
-                config.servo[servo] += config.resolution
-        elif config.servo[servo] - pos > 0:
-            while config.servo[servo] > pos:
-                if config.SERVO_MODULE:
-                    pca.set_pwm(servo, 0, config.servo[servo])
-                else:
-                    logger.info('Servo module DISABLED')
-                config.servo[servo] -= config.resolution
-        if config.SERVO_MODULE:
-            pca.set_pwm(servo, 0, pos)
+        SPEED = config.SPEED
+        servo_pos = config.servo[servo]
+        if servo_pos - pos < 0:
+            while servo_pos < pos:
+                pca.set_pwm(servo, 0, servo_pos)
+                servo_pos += SPEED
+        elif servo_pos - pos > 0:
+            while servo_pos > pos:
+                pca.set_pwm(servo, 0, servo_pos)
+                servo_pos -= SPEED
+        pca.set_pwm(servo, 0, pos)
         config.servo[servo] = pos
         config.servo_motion[servo] = 0
     else:
         logger.debug("Servo [%s] still in motion", servo)
+    logger.debug('Thread stopped')
 
 
 def set_pwm(servo, pos):
@@ -373,6 +372,64 @@ def robot_X(amp):
 
 
 def robot_height(height, instant=0):
+    """
+    Highest point 100
+    Mid point 50
+    lowest point 0
+
+    :param instant: boolean is servo should move instantly or gradually
+    :param height: range(100,0)
+    :return: void
+    """
+    if not config.SERVO_MODULE or not config.servo_motion == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+        return
+    config.servo_motion = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]
+    pos1 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
+    pos2 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
+    pos3 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
+    pos4 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
+    if instant:
+        set_pwm_init(1, pos1)
+        set_pwm_init(4, pos2)
+        set_pwm_init(7, pos3)
+        set_pwm_init(10, pos4)
+    else:
+
+        SPEED = config.SPEED
+        servo_pos1 = config.servo[1]
+        servo_pos2 = config.servo[4]
+        while servo_pos1 < pos1 and servo_pos2 > pos2:
+            # 1 and 10
+            pca.set_pwm(1, 0, servo_pos1)
+            pca.set_pwm(10, 0, servo_pos1)
+            servo_pos1 += SPEED
+            # 4 and 7
+            pca.set_pwm(4, 0, servo_pos2)
+            pca.set_pwm(7, 0, servo_pos2)
+            servo_pos2 -= SPEED
+        while servo_pos1 > pos1 and servo_pos2 < pos2:
+            # 1 and 10
+            pca.set_pwm(1, 0, servo_pos1)
+            pca.set_pwm(10, 0, servo_pos1)
+            servo_pos1 -= SPEED
+            # 4 and 7
+            pca.set_pwm(4, 0, servo_pos2)
+            pca.set_pwm(7, 0, servo_pos2)
+            servo_pos2 += SPEED
+
+    pca.set_pwm(1, 0, pos1)
+    pca.set_pwm(4, 0, pos2)
+    pca.set_pwm(7, 0, pos3)
+    pca.set_pwm(10, 0, pos4)
+    config.height = height
+    config.servo[1] = pos1
+    config.servo[4] = pos2
+    config.servo[7] = pos3
+    config.servo[10] = pos4
+    config.servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+def robot_height1(height, instant=0):
     """
     Highest point 100
     Mid point 50
@@ -686,7 +743,7 @@ def leg_up(id):
         # set_pwm(9, int(config.servo_init[9] + (config.torso_w/2)))
 
 
-def leg_down(id):
+def leg_down_forward(id):
     if id == 1:
         set_pwm(0, int(config.servo_init[0] + config.torso_w))
         set_pwm(1, int(config.lower_leg_h))
@@ -699,6 +756,54 @@ def leg_down(id):
         set_pwm(7, int(config.lower_leg_l))
     if id == 4:
         set_pwm(9, int(config.servo_init[9] + config.torso_w))
+        set_pwm(10, int(config.lower_leg_h2))
+
+
+def leg_down_backward(id):
+    if id == 1:
+        set_pwm(0, int(config.servo_init[0] - config.torso_w))
+        set_pwm(1, int(config.lower_leg_h))
+    if id == 2:
+        # DOWN IN
+        set_pwm(3, int(config.servo_init[3] + config.torso_w))
+        set_pwm(4, int(config.lower_leg_l2))
+    if id == 3:
+        set_pwm(6, int(config.servo_init[6] + config.torso_w))
+        set_pwm(7, int(config.lower_leg_l))
+    if id == 4:
+        set_pwm(9, int(config.servo_init[9] - config.torso_w))
+        set_pwm(10, int(config.lower_leg_h2))
+
+
+def leg_down_in(id):
+    if id == 1:
+        set_pwm(2, int(config.servo_init[2] + config.upper_leg_w))
+        set_pwm(1, int(config.lower_leg_h))
+    if id == 2:
+        # DOWN IN
+        set_pwm(5, int(config.servo_init[5] - config.upper_leg_w))
+        set_pwm(4, int(config.lower_leg_l2))
+    if id == 3:
+        set_pwm(8, int(config.servo_init[8] - config.upper_leg_w))
+        set_pwm(7, int(config.lower_leg_l))
+    if id == 4:
+        set_pwm(11, int(config.servo_init[11] + config.upper_leg_w))
+        set_pwm(10, int(config.lower_leg_h2))
+
+
+def leg_down_out(id):
+    if id == 1:
+        set_pwm(2, int(config.servo_init[2] - config.upper_leg_w))
+        set_pwm(1, int(config.lower_leg_h))
+    if id == 2:
+        # DOWN IN
+        set_pwm(5, int(config.servo_init[5] + config.upper_leg_w))
+        set_pwm(4, int(config.lower_leg_l2))
+    if id == 3:
+        set_pwm(8, int(config.servo_init[8] + config.upper_leg_w))
+        set_pwm(7, int(config.lower_leg_l))
+    if id == 4:
+        set_pwm(11, int(config.servo_init[11] - config.upper_leg_w))
         set_pwm(10, int(config.lower_leg_h2))
 
 
