@@ -354,7 +354,7 @@ def listener_thread(event):
         elif 'rightside' == data:
             direction_command = 'c_right'
         elif 'TS' in data:
-            turn_command = 'no'
+            turn_command = 'stand'
         elif 'headup' == data:
             move.ctrl_pitch_roll(-100, 0)
         elif 'headdown' == data:
@@ -555,8 +555,6 @@ def move_thread(event):
                         move.leg_down_out(3)
                         ground = 1
                         step = 0
-
-
             elif direction_command == 'c_left' and turn_command == 'no':
                 if not height == 100:
                     move.robot_height(100)
@@ -607,18 +605,56 @@ def move_thread(event):
                         move.leg_down_out(1)
                         ground = 1
                         step = 0
-
-
-
-            elif turn_command == 'no' and direction_command == 'stand':
+            elif direction_command == 'no' and turn_command == 'left':
+                if not height == 100:
+                    move.robot_height(100)
+                    height = 100
+                    ground = -1
+                if step == 0 or step == 1:
+                    if ground == -1:
+                        move.robot_balance('back')
+                        ground = 1
+                    elif ground == 1:
+                        move.leg_up(int(step + 1))
+                        ground = 0
+                    elif ground == 0:
+                        move.leg_down_backward(int(step + 1))
+                        ground = 1
+                        step += 1
+                elif step == 2:
+                    move.robot_balance('center')
+                    step = 0
+                    ground = -1
+            elif direction_command == 'no' and turn_command == 'right':
+                if not height == 100:
+                    move.robot_height(100)
+                    height = 100
+                    ground = -1
+                if step == 0 or step == 1:
+                    if ground == -1:
+                        move.robot_balance('back')
+                        ground = 1
+                    elif ground == 1:
+                        move.leg_up(int(step + 3))
+                        ground = 0
+                    elif ground == 0:
+                        move.leg_down_backward(int(step + 3))
+                        ground = 1
+                        step += 1
+                elif step == 2:
+                    move.robot_balance('center')
+                    step = 0
+                    ground = -1
+            elif turn_command == 'stand' or direction_command == 'stand':
                 if not height == 50:
                     move.robot_height(50)
                     height = 50
-                if not balance == 'center':
                     move.robot_balance('center')
                     balance = 'center'
                 step = 0
                 ground = 1
+                turn_command = 'no'
+                direction_command = 'no'
                 pass
             time.sleep(0.5)
             pass
