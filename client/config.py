@@ -51,7 +51,7 @@ guiTuple = (
     "btn_balance_left.place(x=237, y=230)", "btn_balance_center.place(x=267, y=230)",
     "btn_balance_right.place(x=297, y=230)", "btn_balance_back_left.place(x=237, y=265)",
     "btn_balance_back.place(x=267, y=265)", "btn_balance_back_right.place(x=297, y=265)",
-    "label_e3.place(x=30, y=160)", "e3.place(x=70, y=160)",
-    "label_e4.place(x=30, y=130)", "e4.place(x=70, y=130)",
+    "label_e4.place(x=30, y=150)", "e4.place(x=70, y=150)",
+    "label_ambient.place(x=250, y=15)",
     "btn_roll_left.place(x=330, y=265)", "btn_roll_right.place(x=470, y=265)"
 )

@@ -2,8 +2,9 @@
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020
 
-import logging
 import traceback
+
+import logging
 from socket import *
 
 import config
@@ -27,7 +28,7 @@ def ultra_server_thread(event):
     gui.ultrasonic_mode = 1
     ultra_sock, addr = ultra_sock.accept()
     logger.info('Ultrasonic port connected')
-    gui.canvas_ultra.create_rectangle(0, 0, 352, 30, fill='#FFFFFF', width=0)
+    gui.canvas_ultra.create_rectangle(0, 0, 280, 30, fill='#FFFFFF', width=0)
     while event.is_set():
         try:
             config.ultra_data = str(ultra_sock.recv(config.BUFFER_SIZE).decode())
@@ -41,7 +42,7 @@ def ultra_server_thread(event):
                     except:
                         pass
                     canvas_rec = gui.canvas_ultra.create_rectangle(0, 0,
-                                                                   (352 - int(float(config.ultra_data) * 352 / 3)), 30,
+                                                                   (280 - int(float(config.ultra_data) * 280 / 3)), 30,
                                                                    fill='#448AFF', width=0)
                     canvas_text = gui.canvas_ultra.create_text((90, 11),
                                                                text='Ultrasonic Output: %sm' % config.ultra_data,
@@ -50,7 +51,7 @@ def ultra_server_thread(event):
             logger.error('Ultrasonic exception: %s', traceback.format_exc())
             ultra_event.clear()
             pass
-    gui.canvas_ultra.create_rectangle(0, 0, 352, 30, fill='#FFFFFF', width=0)
+    gui.canvas_ultra.create_rectangle(0, 0, 280, 30, fill='#FFFFFF', width=0)
     gui.canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
     gui.ultrasonic_mode = 0
     logger.info('Thread stopped')

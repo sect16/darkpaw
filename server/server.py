@@ -409,10 +409,13 @@ def listener_thread(event):
                 logger.error('Error setting light intensity: %s', value)
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
-        else:
+        elif 'espeak:' in data:
             logger.info('Speaking command received')
-            speak(data)
+            value = str(data.split(':', 2)[1])
+            speak(value)
             pass
+        else:
+            logger.warning('Unknown message received!')
 
 
 # Diagonal method to maintain robot balance

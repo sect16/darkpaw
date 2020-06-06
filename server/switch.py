@@ -1,10 +1,8 @@
 #!/usr/bin/env/python
 # File name   : switch.py
-# Production  : HAT
-# Website     : www.adeept.com
-# E-mail      : support@adeept.com
-# Author      : William
-# Date        : 2018/08/22
+# E-mail      : sect16@gmail.com
+# Author      : Chin Pin Hon
+# Date        : 07/06/2020
 
 import RPi.GPIO as GPIO
 
