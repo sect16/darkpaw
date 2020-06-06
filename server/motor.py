@@ -8,18 +8,17 @@
 import time
 
 import RPi.GPIO as GPIO
-import config
 
 # motor_EN_A: Pin7  |  motor_EN_B: Pin11
 # motor_A:  Pin8,Pin10    |  motor_B: Pin13,Pin12
 
-Motor_A_EN = 4
-Motor_B_EN = 17
+Motor_A_EN = 7
+Motor_B_EN = 11
 
-Motor_A_Pin1 = 26
-Motor_A_Pin2 = 21
-Motor_B_Pin1 = 27
-Motor_B_Pin2 = 18
+Motor_A_Pin1 = 37
+Motor_A_Pin2 = 40
+Motor_B_Pin1 = 13
+Motor_B_Pin2 = 12
 
 Dir_forward = 0
 Dir_backward = 1
@@ -46,7 +45,7 @@ def motorStop():  # Motor stops
 def setup():  # Motor initialization
     global pwm_A, pwm_B
     GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BCM)
+    GPIO.setmode(GPIO.BOARD)
     GPIO.setup(Motor_A_EN, GPIO.OUT)
     GPIO.setup(Motor_B_EN, GPIO.OUT)
     GPIO.setup(Motor_A_Pin1, GPIO.OUT)
@@ -56,8 +55,8 @@ def setup():  # Motor initialization
 
     motorStop()
     try:
-        pwm_A = GPIO.PWM(Motor_A_EN, 1000)
-        pwm_B = GPIO.PWM(Motor_B_EN, 1000)
+        pwm_A = GPIO.PWM(Motor_A_EN, 80)
+        pwm_B = GPIO.PWM(Motor_B_EN, 80)
     except:
         pass
 
@@ -106,15 +105,15 @@ def destroy():
 
 if __name__ == '__main__':
     try:
-        speed_set = 10
+        speed_set = 5
         setup()
         # motor_left(1, 1, speed_set)
         # motor_right(1, 1, speed_set)
         # time.sleep(1)
         while True:
             motor_left(1, 0, speed_set)
-            speed_set += 10
-            time.sleep(1)
+            speed_set += 5
+            time.sleep(6000)
             if speed_set == 100:
                 speed_set = 0
         # motor_right(1, 0, speed_set)

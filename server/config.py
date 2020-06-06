@@ -30,16 +30,13 @@ AUDIO_PORT = 3030
 FRAME_RATE = 32
 
 # Hardware configuration
-POWER_MODULE = True
-SERVO_MODULE = True
+POWER_MODULE = True  # INA219
+SERVO_MODULE = True  # PCA9685
 CAMERA_MODULE = True
+GYRO_MODULE = True  # MPU6050
 
-"""
-The range of the legs wiggling, you can decrease it to make the robot slower while the frequency unchanged.
-DO NOT increase or it may cause mechanical collisions.
-"""
+# 100 = Leg spread out
 DEFAULT_X = 50
-speed_set = 100  # Maximum radius of servo motors
 
 lower_leg_h = 500  # DOWN
 lower_leg_l = 150  # UP
@@ -65,10 +62,16 @@ torso_m2 = int((torso_h2 - torso_l2) / 2 + torso_l2)
 
 lower_leg_w = int((lower_leg_h - lower_leg_l) / 2)
 upper_leg_w = int((upper_leg_h - upper_leg_l) / 2)
-torso_w = int((torso_h - torso_l) / 2)
+# Set maximum wiggle value
+# torso_w = int((torso_h - torso_l) / 2)
+torso_w = 100
 
 servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 SPEED = 1
 height = 50
+
+OFFSET_VOLTAGE = 0
+OFFSET_CURRENT = 0
+OFFSET_AMBIENT = 0

@@ -8,6 +8,7 @@
 import logging
 import threading
 import time
+import traceback
 
 import Adafruit_PCA9685
 
@@ -16,22 +17,11 @@ import config
 import pid
 
 logger = logging.getLogger(__name__)
-pca = Adafruit_PCA9685.PCA9685()
-pca.set_pwm_freq(50)
+if config.SERVO_MODULE:
+    pca = Adafruit_PCA9685.PCA9685()
+    pca.set_pwm_freq(50)
 
-"""
-Leg_I   --- forward --- Leg_III
-               |
-           robotbody
-               |
-Leg_II  -- backward --- Leg_IV 
-"""
 Set_Direction = 1
-
-"""
-the bigger pixel is, the slower the servos will run.
-"""
-pixel = 50
 
 """
 Set PID
@@ -60,15 +50,18 @@ Y_pid = pid.Pid()
 Y_pid.SetKp(P)
 Y_pid.SetKd(I)
 Y_pid.SetKi(D)
-torso_wiggle = config.servo_init[0] - config.torso_l
-toe_wiggle = config.servo_init[2] - config.upper_leg_l
+torso_wiggle = config.torso_w
+toe_wiggle = config.upper_leg_w
 
-try:
-    from mpu6050 import mpu6050
+if config.GYRO_MODULE:
+    try:
+        logger.info('Initializing MPU6050 accelerometer')
+        from mpu6050 import mpu6050
 
-    sensor = mpu6050(0x68)
-except:
-    pass
+        sensor = mpu6050(0x68)
+    except:
+        logger.error('Exception: %s', traceback.format_exc())
+        pass
 
 kalman_filter_X = Kalman_filter.Kalman_filter(0.001, 0.1)
 kalman_filter_Y = Kalman_filter.Kalman_filter(0.001, 0.1)
@@ -84,6 +77,7 @@ move_stu = 1
 def servo_thread(servo, pos):
     logger.debug('Thread started')
     if not config.SERVO_MODULE:
+        logger.info('Servo module DISABLED')
         return
     if config.servo_motion[servo] == 0:
         config.servo_motion[servo] = 1
@@ -132,35 +126,11 @@ def set_pwm_init(servo, pos):
     :return: void
     """
     logger.debug("Initialize PWM on servo [%s], position [%s])", servo, pos)
-    if config.SERVO_MODULE:
-        pca.set_pwm(servo, 0, pos)
-    else:
+    if not config.SERVO_MODULE:
         logger.info('Servo module DISABLED')
+        return
+    pca.set_pwm(servo, 0, pos)
     config.servo[servo] = pos
-
-
-def leg_I(x, y, z):
-    set_pwm(0, int(config.upper_leg_m + (config.upper_leg_w * y / 100)))
-    set_pwm(1, int(config.lower_leg_m + (config.lower_leg_w * z / 100)))
-    set_pwm(2, int(config.torso_m + (config.torso_w * -x / 100)))
-
-
-def leg_II(x, y, z):
-    set_pwm(3, int(config.upper_leg_m + (config.upper_leg_w * y / 100)))
-    set_pwm(4, int(config.lower_leg_m2 + (config.lower_leg_w * -z / 100)))
-    set_pwm(5, int(config.torso_m2 + (config.torso_w * x / 100)))
-
-
-def leg_III(x, y, z):
-    set_pwm(6, int(config.upper_leg_m2 + (config.upper_leg_w * y / 100)))
-    set_pwm(7, int(config.lower_leg_m2 + (config.lower_leg_w * -z / 100)))
-    set_pwm(8, int(config.torso_m2 + (config.torso_w * x / 100)))
-
-
-def leg_IV(x, y, z):
-    set_pwm(9, int(config.upper_leg_m2 + (config.upper_leg_w * -y / 100)))
-    set_pwm(10, int(config.upper_leg_m + (config.upper_leg_w * z / 100)))
-    set_pwm(11, int(config.torso_m + (config.torso_w * -x / 100)))
 
 
 def mpu6050Test():
@@ -168,190 +138,9 @@ def mpu6050Test():
         accelerometer_data = sensor.get_accel_data()
         logger.debug('Accelerometer output (X=%f, Y=%f, Z=%f)', accelerometer_data['x'], accelerometer_data['y'],
                      accelerometer_data['x'])
+        logger.debug('Accelerometer temperature: %s', sensor.get_temp())
         time.sleep(STEADY_DELAY)
         break
-
-
-"""
-def move_diagonal(step):
-    if step == 1:
-        leg_move_diagonal('I', 1, config.speed_set)
-        leg_move_diagonal('IV', 1, config.speed_set)
-
-        leg_move_diagonal('II', 3, config.speed_set)
-        leg_move_diagonal('III', 3, config.speed_set)
-    elif step == 2:
-        leg_move_diagonal('I', 2, config.speed_set)
-        leg_move_diagonal('IV', 2, config.speed_set)
-
-        leg_move_diagonal('II', 4, config.speed_set)
-        leg_move_diagonal('III', 4, config.speed_set)
-    elif step == 3:
-        leg_move_diagonal('I', 3, config.speed_set)
-        leg_move_diagonal('IV', 3, config.speed_set)
-
-        leg_move_diagonal('II', 1, config.speed_set)
-        leg_move_diagonal('III', 1, config.speed_set)
-    elif step == 4:
-        leg_move_diagonal('I', 4, config.speed_set)
-        leg_move_diagonal('IV', 4, config.speed_set)
-
-        leg_move_diagonal('II', 2, config.speed_set)
-        leg_move_diagonal('III', 2, config.speed_set)
-
-def leg_tripod(name, pos, spot, speed): #Step, Leg pos, iterator, wiggle
-    increase = spot/pixel
-    wiggle = speed/100
-    balance = 50
-    if wiggle > 0:
-        direction = 1
-    else:
-        direction = 0
-        wiggle=-wiggle
-
-    if name == 'I':
-        if pos == 1:
-            if direction:
-                set_pwm(0, 0, int(config.servo_init[0]-(config.torso_w-balance*wiggle)*increase))
-            else:
-                set_pwm(0, 0, int(config.servo_init[0]+(config.torso_w-balance*wiggle)*increase))
-                pass
-        elif pos == 2:
-                pass
- 
-    elif name == 'II':
-        
-        if pos == 1:
-            if direction:
-                set_pwm(3, 0, int(config.servo_init[3]+(config.torso_w-balance*wiggle)*increase))
-            else:
-                set_pwm(3, 0, int(config.servo_init[3]-(config.torso_w-balance*wiggle)*increase))
-                pass
-        elif pos == 2:
-            if direction:
-                set_pwm(4, 0, int(config.servo[4]+(config.torso_w*wiggle)*increase))
-                set_pwm(3, 0, int(config.servo[3]-(config.torso_w*wiggle)*increase))
-            else:
-                set_pwm(4, 0, int(config.servo[4]-(config.torso_w*wiggle)*increase))
-                set_pwm(3, 0, int(config.servo[3]+(config.torso_w*wiggle)*increase))
-                pass
-
-    elif name == 'III':
-        if pos == 1:
-            if direction:
-                set_pwm(6, 0, int(config.servo_init[6]+(config.torso_w-balance*wiggle)*increase))
-            else:
-                set_pwm(6, 0, int(config.servo_init[6]-(config.torso_w-balance*wiggle)*increase))
-                pass
-        elif pos == 2:
-            if direction:
-                set_pwm(6, 0, int(config.servo_init[6]-(config.torso_w-balance*wiggle)*increase))
-            else:
-                set_pwm(6, 0, int(config.servo_init[6]+(config.torso_w-balance*wiggle)*increase))
-                pass
-                
-    elif name == 'IV':
-        if pos == 1:
-            if direction:
-                set_pwm(9, 0, int(config.servo_init[9]-(config.torso_w-balance*wiggle)*increase))
-            else:
-                set_pwm(9, 0, int(config.servo_init[9]+(config.torso_w-balance*wiggle)*increase))
-                pass
-        elif pos == 2:
-            if direction:
-                set_pwm(9, 0, int(config.servo_init[9]-(config.torso_w-balance*wiggle)*increase))
-            else:
-                set_pwm(9, 0, int(config.servo_init[9]+(config.torso_w-balance*wiggle)*increase))
-                pass
-
-def dove_move_tripod(step, speed, command):
-    step_I  = step
-    step_II = step
-    step_III= step
-    step_IV = step
-    if step_II > 8:
-        step_II = step_II - 8
-    if step_III> 8:
-        step_III= step_III- 8
-    if step_IV > 8:
-        step_IV = step_IV - 8
-    if command == 'forward':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, speed)
-            leg_tripod('II', step_II, i, speed)
-
-            leg_tripod('III', step_III, i, speed)
-            leg_tripod('IV', step_IV, i, speed)
-
-    elif command == 'backward':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, -speed)
-            leg_tripod('II', step_II, i, -speed)
-
-            leg_tripod('III', step_III, i, -speed)
-            leg_tripod('IV', step_IV, i, -speed)
-
-    elif command == 'left':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, -int(speed*turn_steady))
-            leg_tripod('II', step_II, i, -int(speed*turn_steady))
-
-            leg_tripod('III', step_III, i, speed)
-            leg_tripod('IV', step_IV, i, speed)
-
-    elif command == 'right':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, speed)
-            leg_tripod('II', step_II, i, speed)
-
-            leg_tripod('III', step_III, i, -int(speed*turn_steady))
-            leg_tripod('IV', step_IV, i, -int(speed*turn_steady))
-
-
-def dove_move_diagonal(step, speed, command):
-    step_I  = step
-    step_II = step+4
-    step_III= step+4
-    step_IV = step
-    if step_II > 8:
-        step_II = step_II - 8
-    if step_III> 8:
-        step_III= step_III- 8
-    if step_IV > 8:
-        step_IV = step_IV - 8
-
-    if command == 'forward':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, speed)
-            leg_tripod('II', step_II, i, speed)
-
-            leg_tripod('III', step_III, i, speed)
-            leg_tripod('IV', step_IV, i, speed)
-
-    elif command == 'backward':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, -speed)
-            leg_tripod('II', step_II, i, -speed)
-
-            leg_tripod('III', step_III, i, -speed)
-            leg_tripod('IV', step_IV, i, -speed)
-
-    elif command == 'left':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, -speed)
-            leg_tripod('II', step_II, i, -speed)
-
-            leg_tripod('III', step_III, i, speed)
-            leg_tripod('IV', step_IV, i, speed)
-
-    elif command == 'right':
-        for i in range(1,(pixel+1)):
-            leg_tripod('I', step_I, i, speed)
-            leg_tripod('II', step_II, i, speed)
-
-            leg_tripod('III', step_III, i, -speed)
-            leg_tripod('IV', step_IV, i, -speed)
-"""
 
 
 def robot_X(amp):
@@ -373,6 +162,7 @@ def robot_X(amp):
 
 def robot_height(height, instant=0):
     """
+    Blocking servo movement.
     Highest point 100
     Mid point 50
     lowest point 0
@@ -427,36 +217,6 @@ def robot_height(height, instant=0):
     config.servo[7] = pos3
     config.servo[10] = pos4
     config.servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-
-
-def robot_height1(height, instant=0):
-    """
-    Highest point 100
-    Mid point 50
-    lowest point 0
-
-    :param height: range(100,0)
-    :return: void
-    """
-    pos1 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
-    pos2 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
-    pos3 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
-    pos4 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
-    if instant:
-        set_pwm_init(1, pos1)
-        set_pwm_init(4, pos2)
-        set_pwm_init(7, pos3)
-        set_pwm_init(10, pos4)
-    else:
-        m1 = set_pwm(1, pos1)
-        m2 = set_pwm(4, pos2)
-        m3 = set_pwm(7, pos3)
-        m4 = set_pwm(10, pos4)
-        m1.join()
-        m2.join()
-        m3.join()
-        m4.join()
-    config.height = height
 
 
 def ctrl_range(input_value, max_genout, min_genout):
@@ -573,6 +333,9 @@ def servo_release():
     Release all servos.
     :return: void
     """
+    if not config.SERVO_MODULE:
+        logger.info('Servo module DISABLED')
+        return
     logger.info('Releasing servos...')
     pca.set_all_pwm(0, 0)
 
@@ -687,34 +450,34 @@ def balance_all():
 
 def balance_back():
     global torso_wiggle
-    set_pwm(0, config.servo_init[0] - torso_wiggle)
-    set_pwm(3, config.servo_init[3] + torso_wiggle)
-    set_pwm(6, config.servo_init[6] + torso_wiggle)
-    set_pwm(9, config.servo_init[9] - torso_wiggle)
-
-
-def balance_front():
-    global torso_wiggle
     set_pwm(0, config.servo_init[0] + torso_wiggle)
     set_pwm(3, config.servo_init[3] - torso_wiggle)
     set_pwm(6, config.servo_init[6] - torso_wiggle)
     set_pwm(9, config.servo_init[9] + torso_wiggle)
 
 
+def balance_front():
+    global torso_wiggle
+    set_pwm(0, config.servo_init[0] - torso_wiggle)
+    set_pwm(3, config.servo_init[3] + torso_wiggle)
+    set_pwm(6, config.servo_init[6] + torso_wiggle)
+    set_pwm(9, config.servo_init[9] - torso_wiggle)
+
+
 def balance_right():
-    global toe_wiggle
-    set_pwm(2, config.servo_init[2] + toe_wiggle)
-    set_pwm(5, config.servo_init[5] - toe_wiggle)
-    set_pwm(8, config.servo_init[8] + toe_wiggle)
-    set_pwm(11, config.servo_init[11] - toe_wiggle)
-
-
-def balance_left():
     global toe_wiggle
     set_pwm(2, config.servo_init[2] - toe_wiggle)
     set_pwm(5, config.servo_init[5] + toe_wiggle)
     set_pwm(8, config.servo_init[8] - toe_wiggle)
     set_pwm(11, config.servo_init[11] + toe_wiggle)
+
+
+def balance_left():
+    global toe_wiggle
+    set_pwm(2, config.servo_init[2] + toe_wiggle)
+    set_pwm(5, config.servo_init[5] - toe_wiggle)
+    set_pwm(8, config.servo_init[8] + toe_wiggle)
+    set_pwm(11, config.servo_init[11] - toe_wiggle)
 
 
 def move_direction(direction):

@@ -7,13 +7,13 @@ This script creates the video window, initiates the connection and inserts an ov
 """
 
 import base64
-import logging
-import threading
-import time
 import traceback
 
 import cv2
+import logging
 import numpy
+import threading
+import time
 import zmq
 
 import common
@@ -54,7 +54,7 @@ def call_fpv(ip):
     if common.connect_event.is_set() and not common.fpv_event.is_set() and not common.thread_isAlive('fps_thread',
                                                                                                      'open_cv_thread'):
         logger.info('Starting video stream.')
-        gui.btn_FPV['state'] = 'disabled'
+        gui.btn_video['state'] = 'disabled'
         common.fpv_event.set()
         fps_threading = threading.Thread(target=fps_thread, args=([common.fpv_event]), daemon=True)
         fps_threading.setName('fps_thread')
