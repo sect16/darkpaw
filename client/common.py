@@ -3,10 +3,11 @@
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020
 
+import traceback
+
 import logging
 import threading
 import time
-import traceback
 from socket import *
 
 import config
@@ -21,6 +22,7 @@ cpu_use = 0
 ram_use = 0
 voltage = 0
 current = 0
+ambient = 0
 
 
 def config_export(label, new_num):
@@ -29,7 +31,7 @@ def config_export(label, new_num):
     :param label:
     :param new_num:
     """
-    logger.debug('Writing configuration to file: ' + label + new_num)
+    logger.info('Writing configuration to file: ' + label + new_num)
     ptr = 0
     str_num = str(new_num)
     contents = []
@@ -84,7 +86,7 @@ def status_client_thread(event):
     logger.info('Thread stopped')
 
 
-def stat_thread(event):
+def info_thread(event):
     """
     Statistics server thread
     :param event: Clear event flag to terminate thread
@@ -101,20 +103,20 @@ def stat_thread(event):
     retries = 0
     while event.is_set():
         try:
-            info_data = str(stat_sock.recv(config.BUFFER_SIZE).decode())
-            info_get = info_data.split()
-            if info_get.__len__() == 5:
-                cpu_temp, cpu_use, ram_use, voltage, current = info_get
-                logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s, voltage:%s, current:%s' % (
-                    cpu_temp, cpu_use, ram_use, voltage, current))
-                gui.stat_update(cpu_temp, cpu_use, ram_use, voltage, current)
+            message = str(stat_sock.recv(config.BUFFER_SIZE).decode())
+            data = message.split()
+            if data.__len__() == 6:
+                cpu_temp, cpu_use, ram_use, voltage, current, ambient = data
+                logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s, voltage:%s, current:%s, ambient:%s' % (
+                    cpu_temp, cpu_use, ram_use, voltage, current, ambient))
+                gui.stat_update(cpu_temp, cpu_use, ram_use, voltage, current, ambient)
                 retries = 0
             elif retries >= config.MAX_INFO_RETRY:
                 logger.error('Maximum retires reached (%d), disconnecting', retries)
                 disconnect()
             else:
-                logger.warning('Invalid info_data received from server: "%s"', info_data)
-                gui.stat_update('-', '-', '-', '-', '-')
+                logger.warning('Invalid info_data received from server: "%s"', message)
+                gui.stat_update('-', '-', '-', '-', '-', '-')
                 retries = retries + 1
         except:
             logger.error('Connection error, disconnecting')
@@ -164,7 +166,7 @@ def connect():  # Call this function to connect with the server
                                                 daemon=True)
             status_threading.setName('status_thread')
             status_threading.start()
-            info_threading = threading.Thread(target=stat_thread, args=([connect_event]), daemon=True)
+            info_threading = threading.Thread(target=info_thread, args=([connect_event]), daemon=True)
             info_threading.setName('stat_thread')
             info_threading.start()
             keepalive_threading = threading.Thread(target=keepalive_thread, args=([connect_event]), daemon=True)
@@ -207,9 +209,10 @@ def disconnect():
     gui.unbind_keys()
     gui.e1.config(state='normal')
     gui.e2.config(state='disabled')
-    gui.btn_FPV.config(bg=config.COLOR_BTN)
-    gui.btn_FPV['state'] = 'normal'
+    gui.btn_video.config(bg=config.COLOR_BTN)
+    gui.btn_video['state'] = 'normal'
     gui.btn_audio.config(bg=config.COLOR_BTN)
+    gui.stat_update('-', '-', '-', '-', '-', '-')
 
 
 def terminate(event=None):

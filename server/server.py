@@ -19,6 +19,7 @@ import psutil
 import camera as cam
 import config
 import led
+import motor
 import move
 import power_module as pm
 import speak_dict
@@ -101,15 +102,6 @@ def thread_isAlive(*args):
     return False
 
 
-def info_get():
-    global cpu_t, cpu_u, gpu_t, ram_info
-    while 1:
-        cpu_t = get_cpu_temp()
-        cpu_u = get_cpu_use()
-        ram_info = get_ram_info()
-        time.sleep(3)
-
-
 def ultra_send_client(event):
     logger.info('Thread started')
     ultra_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
@@ -138,13 +130,18 @@ def info_thread(event):
         ina219 = pm.PowerModule()
     while not event.is_set():
         try:
+            message = get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
             if config.POWER_MODULE:
                 power = ina219.read_ina219()
-                info_socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' {0:0.2f}V'.format(
-                    power[0]) + ' {0:0.2f}mA'.format(power[1])).encode())
+                message += ' {0:0.2f}V'.format(power[0] + config.OFFSET_VOLTAGE) + ' {0:0.2f}mA'.format(
+                    power[1] + config.OFFSET_CURRENT)
             else:
-                info_socket.send((get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info() + ' - -').encode())
-            pass
+                message += ' - -'
+            if config.GYRO_MODULE:
+                message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
+            else:
+                message += ' -'
+            info_socket.send(message.encode())
             time.sleep(1)
         except BrokenPipeError:
             pass
@@ -209,6 +206,7 @@ def disconnect():
                          'move_thread'):
         time.sleep(1)
     logger.info('All threads terminated.')
+    motor.destroy()
     # move.servo_release()
 
 
@@ -395,9 +393,21 @@ def listener_thread(event):
         elif 'speed:' in data:
             logger.debug('Received set servo speed')
             try:
-                config.SPEED = int(data.split(':', 2)[1])
+                value = int(data.split(':', 2)[1])
+                if value > 0:
+                    config.SPEED = value
             except:
-                logger.error('Error setting servo speed: %s', data[0])
+                logger.error('Error setting servo speed: %s', value)
+                logger.error('Exception: %s', traceback.format_exc())
+                pass
+        elif 'light:' in data:
+            logger.debug('Received flash light intensity %s%', value)
+            try:
+                value = int(data.split(':', 2)[1])
+                motor.motor_left(1, 0, value)
+            except:
+                logger.error('Error setting light intensity: %s', value)
+                logger.error('Exception: %s', traceback.format_exc())
                 pass
         else:
             logger.info('Speaking command received')
@@ -413,10 +423,15 @@ def move_thread(event):
     step = 0
     ground = 1
     height = 0
+    count = 0
     while not event.is_set():
         if not steadyMode:
             # Skip if servo in motion
             if config.servo_motion != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+                count += 1
+                if count == 100:
+                    logger.warning('Servo motion status timeout, resetting motion status')
+                    config.servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                 pass
             elif direction_command == 'forward' and turn_command == 'no':
                 if not height == 100:
@@ -668,6 +683,7 @@ def main():
     global kill_event
     switch.switchSetup()
     switch.set_all_switch_off()
+    motor.setup()
     kill_event.clear()
     try:
         led_threading = threading.Thread(target=led.led_thread, args=[kill_event], daemon=True)

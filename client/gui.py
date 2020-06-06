@@ -7,10 +7,11 @@
 GUI layout definition
 """
 
-import logging
-import time
 import tkinter as tk
 import traceback
+
+import logging
+import time
 
 import config
 import video
@@ -48,9 +49,9 @@ def loop():  # GUI
     """
     Main GUI layout
     """
-    global root, e1, e2, e3, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+    global root, e1, e2, e3, e4, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, label_ambient, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
-        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
+        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
         btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
@@ -71,31 +72,27 @@ def loop():  # GUI
     label_ram_use = tk.Label(root, width=18, text='RAM Usage:', fg=COLOR_TEXT, bg='#212121')
     label_voltage = tk.Label(root, width=18, text='Voltage:', fg=COLOR_TEXT, bg='#212121')
     label_current = tk.Label(root, width=18, text='Current:', fg=COLOR_TEXT, bg='#212121')
-    label_ip_0 = tk.Label(root, width=18, text='Status', fg=COLOR_TEXT, bg=COLOR_BTN)
+    label_ambient = tk.Label(root, width=18, text='Ambient:', fg=COLOR_TEXT, bg='#212121')
     label_ip_1 = tk.Label(root, width=18, text='Disconnected', fg=COLOR_TEXT, bg='#F44336')
-    label_ip_2 = tk.Label(root, width=18, text='Use default IP', fg=COLOR_TEXT, bg=COLOR_BTN)
     label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
-    label_open_cv = tk.Label(root, width=28, text='OpenCV Status', fg=COLOR_TEXT, bg=COLOR_BTN)
     label_cpu_temp.place(x=400, y=15)  # Define a Label and put it in position
     label_cpu_use.place(x=400, y=45)  # Define a Label and put it in position
     label_ram_use.place(x=400, y=75)  # Define a Label and put it in position
     if config.POWER_MODULE:
         label_voltage.place(x=250, y=45)  # Define a Label and put it in position
         label_current.place(x=250, y=75)  # Define a Label and put it in position
-    label_ip_0.place(x=30, y=110)  # Define a Label and put it in position
     label_ip_1.place(x=400, y=110)  # Define a Label and put it in position
-    label_ip_2.place(x=400, y=145)  # Define a Label and put it in position
-    label_ip_3.place(x=220, y=15)  # Define a Label and put it in position
-    label_open_cv.place(x=180, y=110)  # Define a Label and put it in position
+    label_ip_3.place(x=400, y=145)  # Define a Label and put it in position
+    label_ambient.place(x=250, y=15)  # Define a Label and put it in position
 
-    e1 = tk.Entry(root, show=None, width=12, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+    e1 = tk.Entry(root, show=None, width=10, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
                   state='normal')
     e2 = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
                   state='disabled')
-    e1.place(x=300, y=15)  # Define a Entry and put it in position
+    e1.place(x=470, y=145)  # Define a Entry and put it in position
     e2.place(x=30, y=305)  # Define a Entry and put it in position
 
-    btn_connect = tk.Button(root, width=8, height=2, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN, command=connect,
+    btn_connect = tk.Button(root, width=8, height=1, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN, command=connect,
                             relief='ridge')
     btn0 = tk.Button(root, width=8, text='Forward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn1 = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -104,18 +101,18 @@ def loop():  # GUI
     btn_up = tk.Button(root, width=8, text='Up', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_down = tk.Button(root, width=8, text='Down', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_FPV = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_e2 = tk.Button(root, width=10, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_video = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_e2 = tk.Button(root, width=8, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_roll_left = tk.Button(root, width=8, text='Roll L', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_roll_right = tk.Button(root, width=8, text='Roll R', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
-    btn_connect.place(x=150, y=15)  # Define a Button and put it in position
+    btn_connect.place(x=320, y=110)  # Define a Button and put it in position
     btn0.place(x=100, y=195)
     btn1.place(x=100, y=230)
     btn2.place(x=30, y=230)
     btn3.place(x=170, y=230)
     if config.CAMERA_MODULE:
-        btn_FPV.place(x=150, y=60)  # Define a Button and put it in position
+        btn_video.place(x=320, y=140)  # Define a Button and put it in position
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
     btn_up.place(x=400, y=195)
     btn_down.place(x=400, y=265)
@@ -183,7 +180,7 @@ def loop():  # GUI
     btn_up.bind('<ButtonPress-1>', lambda _: send('headup'))
     btn_down.bind('<ButtonPress-1>', lambda _: send('headdown'))
     btn_home.bind('<ButtonPress-1>', lambda _: send('headhome'))
-    btn_FPV.bind('<ButtonRelease-1>', lambda _: video.call_fpv(e1.get()))
+    btn_video.bind('<ButtonRelease-1>', lambda _: video.call_fpv(e1.get()))
     btn_e2.bind('<ButtonRelease-1>', send_command)
     btn0.bind('<ButtonRelease-1>', call_stop)
     btn1.bind('<ButtonRelease-1>', call_stop)
@@ -228,7 +225,6 @@ def loop():  # GUI
     # Import last scale parameters
     try:
         ip = str(config_import('IP:'))
-        label_ip_2.config(text='Default: ' + ip)
         e1.insert(0, ip)
     except:
         logger.warning('Exception reading IP address from file: %s', traceback.format_exc())
@@ -241,16 +237,20 @@ def loop():  # GUI
         logger.warning('Exception reading LED values from file: %s', traceback.format_exc())
         pass
 
-    # Darkpaw speed_set entry
-    e3 = tk.Entry(root, show=None, width=3, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
-                  state='normal')
+    # Speed_set entry
+    var = 0
+    e3 = tk.Spinbox(root, width=3, from_=1.0, to=10.0, command=set_speed)
     try:
-        e3.insert(0, int(config_import('SPEED:')))
+        e3.delete(0, "end")
+        e3.insert(0, config_import('SPEED:'))
     except:
+        logger.error('Speed parameter read exception: %s', traceback.format_exc())
         pass
     label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
-    btn_e3 = tk.Button(root, width=3, text='SET', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_e3.bind('<ButtonPress-1>', set_speed)
+
+    # Flash light entry
+    e4 = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
+    label_e4 = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
 
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -273,6 +273,7 @@ def loop():  # GUI
     btn_balance_back_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_back_left'))
     btn_balance_back_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_back_right'))
 
+    stat_update('-', '-', '-', '-', '-', '-')
     # Read custom gui from config
     for x in config.guiTuple:
         eval(x)
@@ -541,9 +542,9 @@ def button_update(status_data):
     This function is called to update the GUI according to data received from robot.
     :param status_data: String data received from robot
     """
-    global root, e1, e2, label_ip_1, label_ip_2, COLOR_BTN, COLOR_TEXT, btn_connect, \
+    global root, e1, e2, e3, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
-        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_FPV, \
+        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
         btn_ultra, btn_find_line, btn_sport, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode, sport_mode_on
     try:
         if 'FindColor' == status_data:
@@ -632,7 +633,7 @@ def focus(event):
         unbind_keys()
 
 
-def stat_update(cpu_temp, cpu_use, ram_use, voltage, current):
+def stat_update(cpu_temp, cpu_use, ram_use, voltage, current, ambient):
     """
     This function updates the GUI label from statistical data received from robot.
     :param cpu_temp: CPU Temperature value
@@ -646,6 +647,7 @@ def stat_update(cpu_temp, cpu_use, ram_use, voltage, current):
     label_ram_use.config(text='RAM Usage: %s' % ram_use)
     label_voltage.config(text='Voltage: %s' % voltage)
     label_current.config(text='Current: %s' % current)
+    label_ambient.config(text='Ambient: %s℃' % ambient)
 
 def set_R(event):
     send_led('wsR', var_R.get())
@@ -664,14 +666,15 @@ def send_led(index, value):
     if led_sleep == 0:
         led_sleep = value
         send(index + ' %s ' % led_sleep)
-        time.sleep(0.1)
+        time.sleep(0.2)
         led_sleep = 0
     else:
         pass
 
 
 def set_camera(event):
-    send_led('headAngle %s', var_camera.get())
+    send('headAngle ' + var_camera.get())
+    time.sleep(0.2)
 
 
 def send_command(event):
@@ -689,25 +692,30 @@ def send_command(event):
 
 
 def connect_init(ip_address):
-    label_ip_2.config(text='IP: %s' % ip_address)
     label_ip_1.config(text='Connected')
     label_ip_1.config(bg='#558B2F')
     e2.config(state='normal')
     btn_connect.config(state='normal')
     btn_connect.config(text='Disconnect')
-    time.sleep(0.2)
+    time.sleep(0.5)
     # Send initial values
     send(' wsR ' + var_R.get())
-    time.sleep(0.2)
+    time.sleep(0.5)
     send(' wsG ' + var_G.get())
-    time.sleep(0.2)
+    time.sleep(0.5)
     send(' wsB ' + var_B.get())
-    time.sleep(0.2)
+    time.sleep(0.5)
     if not e3.get() == '':
         send(' speed:' + e3.get())
 
 
-def set_speed(event):
+def set_speed():
     global e3
     send('speed:' + e3.get())
+    e1.focus_set()
+
+
+def set_light():
+    global e4
+    send('light:' + e4.get())
     e1.focus_set()
