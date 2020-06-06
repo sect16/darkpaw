@@ -32,7 +32,6 @@ switch_3 = 0
 yaw_left_status = 0
 yaw_right_status = 0
 smooth_mode = 0
-sport_mode_on = 0
 ultrasonic_mode = 0
 led_sleep = 0
 
@@ -52,7 +51,7 @@ def loop():  # GUI
     global root, e1, e2, e3, e4, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, label_ambient, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
-        btn_ultra, btn_find_line, btn_sport, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
+        btn_ultra, btn_find_line, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -83,7 +82,6 @@ def loop():  # GUI
         label_current.place(x=250, y=75)  # Define a Label and put it in position
     label_ip_1.place(x=400, y=110)  # Define a Label and put it in position
     label_ip_3.place(x=400, y=145)  # Define a Label and put it in position
-    label_ambient.place(x=250, y=15)  # Define a Label and put it in position
 
     e1 = tk.Entry(root, show=None, width=10, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
                   state='normal')
@@ -148,12 +146,8 @@ def loop():  # GUI
                          tickinterval=None, resolution=1, variable=var_camera, troughcolor='#FFFFFF',
                          command=set_camera,
                          fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
-    canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=352, highlightthickness=0)
+    canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=280, highlightthickness=0)
     canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
-    # Canvas testing
-    # canvas_ultra.place(x=30, y=145)
-    # canvas_rec = canvas_ultra.create_rectangle(0, 0, (352 - int(float(0.75) * 352 / 3)), 30, fill='#448AFF', width=0)
-    # canvas_text = canvas_ultra.create_text((90, 11), text='Ultrasonic Output: %sm' % 0.75, fill=COLOR_TEXT)
 
     if config.CAMERA_MODULE:
         btn_find_color = tk.Button(root, width=10, text='FindColor', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -213,12 +207,10 @@ def loop():  # GUI
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_sport = tk.Button(root, width=8, text='GT', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_ultra = tk.Button(root, width=10, text='Ultrasonic', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
-    btn_sport.bind('<ButtonPress-1>', call_sport_mode)
     btn_roll_left.bind('<ButtonPress-1>', lambda _: send('rollLeft'))
     btn_roll_right.bind('<ButtonPress-1>', lambda _: send('rollRight'))
 
@@ -241,12 +233,15 @@ def loop():  # GUI
     var = 0
     e3 = tk.Spinbox(root, width=3, from_=1.0, to=10.0, command=set_speed)
     try:
+        e3.place(x=70, y=110)
         e3.delete(0, "end")
         e3.insert(0, config_import('SPEED:'))
     except:
+        ", "
         logger.error('Speed parameter read exception: %s', traceback.format_exc())
         pass
     label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    label_e3.place(x=30, y=110)
 
     # Flash light entry
     e4 = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
@@ -478,14 +473,6 @@ def call_steady(event):
         send('func_end')
 
 
-def call_sport_mode(event):
-    global sport_mode_on
-    if sport_mode_on:
-        send('sport_mode_off')
-    else:
-        send('sport_mode_on')
-
-
 def call_ultra(event):
     global ultrasonic_mode
     if ultrasonic_mode == 0:
@@ -545,7 +532,7 @@ def button_update(status_data):
     global root, e1, e2, e3, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
-        btn_ultra, btn_find_line, btn_sport, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode, sport_mode_on
+        btn_ultra, btn_find_line, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode
     try:
         if 'FindColor' == status_data:
             func_mode = 1
@@ -571,18 +558,6 @@ def button_update(status_data):
             ultrasonic_mode = 0
             try:
                 btn_ultra.config(bg=COLOR_BTN)
-            except NameError:
-                pass
-        elif 'sport_mode_on' == status_data:
-            sport_mode_on = 1
-            try:
-                btn_sport.config(bg=COLOR_BTN_RED)
-            except NameError:
-                pass
-        elif 'sport_mode_off' == status_data:
-            sport_mode_on = 0
-            try:
-                btn_sport.config(bg=COLOR_BTN)
             except NameError:
                 pass
         elif 'Switch_3_on' == status_data:
@@ -683,7 +658,7 @@ def send_command(event):
     :param event: Not used
     """
     if e2.get() != '' and connect_event.is_set():
-        send(e2.get())
+        send('espeak:' + e2.get())
         e1.focus_set()
         e2.delete(0, 'end')
     else:
