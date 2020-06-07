@@ -276,7 +276,7 @@ def listener_thread(event):
             if audio_pid is None:
                 logger.info('Audio streaming server starting...')
                 audio_pid = subprocess.Popen([
-                    'cvlc alsa://hw:2,0 :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
+                    'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
                         config.AUDIO_PORT) + '}"'],
                     shell=True, preexec_fn=os.setsid)
             else:
