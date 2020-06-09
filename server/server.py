@@ -19,7 +19,6 @@ import psutil
 import camera as cam
 import config
 import led
-import motor
 import move
 import power_module as pm
 import speak_dict
@@ -193,9 +192,8 @@ def disconnect():
     speak(speak_dict.disconnect)
     kill_event.set()
     led.colorWipe([0, 0, 0])
-    switch.switch(1, 0)
-    switch.switch(2, 0)
-    switch.switch(3, 0)
+    switch.set_all_switch_off()
+    switch.destroy()
     time.sleep(0.5)
     tcp_server.close()
     tcp_server_socket.close()
@@ -206,7 +204,6 @@ def disconnect():
                          'move_thread'):
         time.sleep(1)
     logger.info('All threads terminated.')
-    motor.destroy()
     # move.servo_release()
 
 
@@ -354,24 +351,24 @@ def listener_thread(event):
         elif 'TS' in data:
             turn_command = 'stand'
         elif 'headup' == data:
-            move.ctrl_pitch_roll(-100, 0)
+            move.robot_pitch_roll(-100, 0)
         elif 'headdown' == data:
-            move.ctrl_pitch_roll(100, 0)
+            move.robot_pitch_roll(100, 0)
         elif 'headhome' == data:
-            move.ctrl_pitch_roll(0, 0)
-            move.ctrl_yaw(config.torso_w, 0)
+            move.robot_pitch_roll(0, 0)
+            move.robot_yaw(config.torso_w, 0)
         elif 'low' == data:
             move.robot_height(0)
         elif 'high' == data:
             move.robot_height(100)
         elif 'headleft' == data:
-            move.ctrl_yaw(config.torso_w, 100)
+            move.robot_yaw(config.torso_w, 100)
         elif 'headright' == data:
-            move.ctrl_yaw(config.torso_w, -100)
+            move.robot_yaw(config.torso_w, -100)
         elif 'rollLeft' == data:
-            move.ctrl_pitch_roll(0, 100)
+            move.robot_pitch_roll(0, 100)
         elif 'rollRight' == data:
-            move.ctrl_pitch_roll(0, -100)
+            move.robot_pitch_roll(0, -100)
         elif 'btn_balance_front' == data:
             move.robot_balance('front')
         elif 'btn_balance_back' == data:
@@ -404,9 +401,8 @@ def listener_thread(event):
             logger.debug('Received flash light intensity %s%', value)
             try:
                 value = int(data.split(':', 2)[1])
-                motor.motor_left(1, 0, value)
+                switch.channel_B(value)
             except:
-                logger.error('Error setting light intensity: %s', value)
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'espeak:' in data:
@@ -529,7 +525,7 @@ def move_thread(event):
                     if not balance == 'front_right':
                         move.robot_balance('right')
                         balance = 'front_right'
-                        move.ctrl_pitch_roll(100, -100)
+                        move.robot_pitch_roll(100, -100)
                     elif ground == 1:
                         move.leg_up(2)
                         ground = 0
@@ -541,7 +537,7 @@ def move_thread(event):
                     if not balance == 'back_right':
                         # move.robot_balance('right')
                         balance = 'back_right'
-                        move.ctrl_pitch_roll(-100, -100)
+                        move.robot_pitch_roll(-100, -100)
                     elif ground == 1:
                         move.leg_up(1)
                         ground = 0
@@ -553,7 +549,7 @@ def move_thread(event):
                     if not balance == 'front_left':
                         # move.robot_balance('left')
                         balance = 'front_left'
-                        move.ctrl_pitch_roll(100, 100)
+                        move.robot_pitch_roll(100, 100)
                     elif ground == 1:
                         move.leg_up(4)
                         ground = 0
@@ -565,7 +561,7 @@ def move_thread(event):
                     if not balance == 'back_left':
                         # move.robot_balance('left')
                         balance = 'back_left'
-                        move.ctrl_pitch_roll(-100, 100)
+                        move.robot_pitch_roll(-100, 100)
                     elif ground == 1:
                         move.leg_up(3)
                         ground = 0
@@ -582,7 +578,7 @@ def move_thread(event):
                     if not balance == 'front_left':
                         move.robot_balance('left')
                         balance = 'front_left'
-                        move.ctrl_pitch_roll(100, 100)
+                        move.robot_pitch_roll(100, 100)
                     elif ground == 1:
                         move.leg_up(4)
                         ground = 0
@@ -593,7 +589,7 @@ def move_thread(event):
                 elif step == 1:
                     if not balance == 'back_right':
                         balance = 'back_right'
-                        move.ctrl_pitch_roll(-100, 100)
+                        move.robot_pitch_roll(-100, 100)
                     elif ground == 1:
                         move.leg_up(3)
                         ground = 0
@@ -604,7 +600,7 @@ def move_thread(event):
                 elif step == 2:
                     if not balance == 'front_left':
                         balance = 'front_left'
-                        move.ctrl_pitch_roll(100, -100)
+                        move.robot_pitch_roll(100, -100)
                     elif ground == 1:
                         move.leg_up(2)
                         ground = 0
@@ -615,7 +611,7 @@ def move_thread(event):
                 elif step == 3:
                     if not balance == 'back_left':
                         balance = 'back_left'
-                        move.ctrl_pitch_roll(-100, -100)
+                        move.robot_pitch_roll(-100, -100)
                     elif ground == 1:
                         move.leg_up(1)
                         ground = 0
@@ -686,7 +682,6 @@ def main():
     global kill_event
     switch.switchSetup()
     switch.set_all_switch_off()
-    motor.setup()
     kill_event.clear()
     try:
         led_threading = threading.Thread(target=led.led_thread, args=[kill_event], daemon=True)

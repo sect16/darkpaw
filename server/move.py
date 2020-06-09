@@ -154,10 +154,11 @@ def robot_X(amp):
     :return: void
     """
     wiggle = config.torso_w
-    set_pwm(0, int(config.torso_m - wiggle + 2 * wiggle * amp / 100))
-    set_pwm(3, int(config.torso_m - wiggle + 2 * wiggle * amp / 100))
-    set_pwm(6, int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100))
-    set_pwm(9, int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100))
+    pos1 = int(config.torso_m - wiggle + 2 * wiggle * amp / 100)
+    pos2 = int(config.torso_m - wiggle + 2 * wiggle * amp / 100)
+    pos3 = int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100)
+    pos4 = int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100)
+    servo_multiplier(0, [pos1, pos2, pos3, pos4])
 
 
 def robot_height(height, instant=0):
@@ -173,50 +174,56 @@ def robot_height(height, instant=0):
     """
     if not config.SERVO_MODULE or not config.servo_motion == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
         return
-    config.servo_motion = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]
     pos1 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
     pos2 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
-    pos3 = int(config.lower_leg_h2 - (config.lower_leg_w * 2 / 100 * height))
-    pos4 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
+    servo = 1
     if instant:
-        set_pwm_init(1, pos1)
-        set_pwm_init(4, pos2)
-        set_pwm_init(7, pos3)
-        set_pwm_init(10, pos4)
+        set_pwm_init(servo, pos1)
+        set_pwm_init(int(servo + 3), pos2)
+        set_pwm_init(int(servo + 6), pos2)
+        set_pwm_init(int(servo + 9), pos1)
     else:
+        servo_multiplier(1, [pos1, pos2, pos2, pos1])
 
-        SPEED = config.SPEED
-        servo_pos1 = config.servo[1]
-        servo_pos2 = config.servo[4]
-        while servo_pos1 < pos1 and servo_pos2 > pos2:
-            # 1 and 10
-            pca.set_pwm(1, 0, servo_pos1)
-            pca.set_pwm(10, 0, servo_pos1)
-            servo_pos1 += SPEED
-            # 4 and 7
-            pca.set_pwm(4, 0, servo_pos2)
-            pca.set_pwm(7, 0, servo_pos2)
-            servo_pos2 -= SPEED
-        while servo_pos1 > pos1 and servo_pos2 < pos2:
-            # 1 and 10
-            pca.set_pwm(1, 0, servo_pos1)
-            pca.set_pwm(10, 0, servo_pos1)
-            servo_pos1 -= SPEED
-            # 4 and 7
-            pca.set_pwm(4, 0, servo_pos2)
-            pca.set_pwm(7, 0, servo_pos2)
-            servo_pos2 += SPEED
 
-    pca.set_pwm(1, 0, pos1)
-    pca.set_pwm(4, 0, pos2)
-    pca.set_pwm(7, 0, pos3)
-    pca.set_pwm(10, 0, pos4)
-    config.height = height
-    config.servo[1] = pos1
-    config.servo[4] = pos2
-    config.servo[7] = pos3
-    config.servo[10] = pos4
-    config.servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+def servo_multiplier(initial_servo, pos):
+    """
+    A blocking function which controls 4 servos symmetrically. Servo address is calculated by adding 3 to initial
+    servo address. Maximum of 4 servos will be controlled.
+
+    :param initial_servo: first servo number
+    :param pos: List of target positions
+    """
+    count = len(pos)
+    if count > 4:
+        logger.error('Function cannot handle more than 4 servos.')
+        return
+    SPEED = config.SPEED
+    servo = []
+    servo_pos = []
+    for i in range(count):
+        servo.append(initial_servo)
+        servo_pos.append(config.servo[servo[i]])
+        initial_servo += 3
+        pass
+    # servo = [initial_servo, initial_servo + 3, initial_servo + 6, initial_servo + 9]
+    logger.debug('Controlling servo: %s', servo)
+    # servo_pos = [config.servo[servo[0]], config.servo[servo[1]], config.servo[servo[2]], config.servo[servo[3]]]
+    logger.debug('Getting initial position for servo: %s', servo_pos)
+    for i in range(int((abs(pos[0] - config.servo[servo[0]])) / config.SPEED)):
+        for x in range(count):
+            if servo_pos[x] < pos[x]:
+                servo_pos[x] += SPEED
+            else:
+                servo_pos[x] -= SPEED
+        for x in range(count):
+            pca.set_pwm(servo[x], 0, servo_pos[x])
+    for i in range(count):
+        # TO-DO May not be needed
+        pca.set_pwm(servo[i], 0, servo_pos[i])
+        config.servo[servo[i]] = servo_pos[i]
+    logger.debug('Servo position after: %s', servo_pos)
+    logger.debug('Servo position after: %s', config.servo)
 
 
 def ctrl_range(input_value, max_genout, min_genout):
@@ -237,7 +244,7 @@ def ctrl_range(input_value, max_genout, min_genout):
     return int(output_value)
 
 
-def ctrl_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
+def robot_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
     """
     look up <- pitch -> look down.
     lean right <- roll -> lean left.
@@ -265,13 +272,10 @@ def ctrl_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
         set_pwm_init(7, pos3)
         set_pwm_init(10, pos4)
     else:
-        set_pwm(1, pos1)
-        set_pwm(4, pos2)
-        set_pwm(7, pos3)
-        set_pwm(10, pos4)
+        servo_multiplier(1, [pos1, pos2, pos3, pos4])
 
 
-def ctrl_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
+def robot_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
     """
     look left <- yaw -> look right
     default value is 0
@@ -284,6 +288,8 @@ def ctrl_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
     :param yaw: range (100, -100)
     :return: void
     """
+    yaw = ctrl_range(yaw, 100, -100)
+    logger.debug('Servo position before: %s', config.servo)
     pos1 = int(config.torso_m + wiggle * yaw / 100)
     pos2 = int(config.torso_m - wiggle * yaw / 100)
     pos3 = int(config.torso_m2 + wiggle * yaw / 100)
@@ -295,10 +301,7 @@ def ctrl_yaw(wiggle, yaw, instant=0):  # Percentage wiggle
         set_pwm_init(6, pos3)
         set_pwm_init(9, pos4)
     else:
-        set_pwm(0, pos1)
-        set_pwm(3, pos2)
-        set_pwm(6, pos3)
-        set_pwm(9, pos4)
+        servo_multiplier(0, [pos1, pos2, pos3, pos4])
 
 
 def robot_steady():
@@ -322,7 +325,7 @@ def robot_steady():
         X_fix_output = ctrl_range(X_fix_output, 100, -100)
         Y_fix_output = ctrl_range(Y_fix_output, 100, -100)
         logger.debug('Steady output = %s, %s', -X_fix_output, Y_fix_output)
-        ctrl_pitch_roll(-X_fix_output, Y_fix_output, 1)
+        robot_pitch_roll(-X_fix_output, Y_fix_output, 1)
     except:
         logger.error('MPU6050 reading error.')
     time.sleep(STEADY_DELAY)
@@ -377,7 +380,6 @@ def servo_init():
         if i == 6 or i == 9:
             set_pwm_init(i, int(config.torso_m2 + wiggle - 2 * wiggle * config.DEFAULT_X / 100))
         time.sleep(INIT_DELAY)
-
     config.servo_init = config.servo.copy()
     logger.debug('Servo init: %s', config.servo_init)
     logger.debug('Servo status: %s', config.servo)
@@ -392,7 +394,7 @@ def robot_home():
     """
     logger.info('Servos to home position...')
     robot_X(config.DEFAULT_X)
-    ctrl_pitch_roll(0, 0)
+    robot_pitch_roll(0, 0)
     robot_height(config.height)
 
 
@@ -431,17 +433,18 @@ def robot_balance(balance):
 def balance_center(direction):
     if direction == 'side':
         if config.servo[2] != config.servo_init[2]:
-            set_pwm(2, config.servo_init[2])
-            set_pwm(5, config.servo_init[5])
-            set_pwm(8, config.servo_init[8])
-            set_pwm(11, config.servo_init[11])
+            pos1 = config.servo_init[2]
+            pos2 = config.servo_init[5]
+            pos3 = config.servo_init[8]
+            pos4 = config.servo_init[11]
+            servo_multiplier(2, [pos1, pos2, pos3, pos4])
     if direction == 'y':
         if config.servo[0] != config.servo_init[0]:
-            set_pwm(0, config.servo_init[0])
-            set_pwm(3, config.servo_init[3])
-            set_pwm(6, config.servo_init[6])
-            set_pwm(9, config.servo_init[9])
-
+            pos1 = config.servo_init[0]
+            pos2 = config.servo_init[3]
+            pos3 = config.servo_init[6]
+            pos4 = config.servo_init[9]
+            servo_multiplier(0, [pos1, pos2, pos3, pos4])
 
 def balance_all():
     balance_center('side')
@@ -450,34 +453,38 @@ def balance_all():
 
 def balance_back():
     global torso_wiggle
-    set_pwm(0, config.servo_init[0] + torso_wiggle)
-    set_pwm(3, config.servo_init[3] - torso_wiggle)
-    set_pwm(6, config.servo_init[6] - torso_wiggle)
-    set_pwm(9, config.servo_init[9] + torso_wiggle)
+    pos1 = config.servo_init[0] + torso_wiggle
+    pos2 = config.servo_init[3] - torso_wiggle
+    pos3 = config.servo_init[6] - torso_wiggle
+    pos4 = config.servo_init[9] + torso_wiggle
+    servo_multiplier(0, [pos1, pos2, pos3, pos4])
 
 
 def balance_front():
     global torso_wiggle
-    set_pwm(0, config.servo_init[0] - torso_wiggle)
-    set_pwm(3, config.servo_init[3] + torso_wiggle)
-    set_pwm(6, config.servo_init[6] + torso_wiggle)
-    set_pwm(9, config.servo_init[9] - torso_wiggle)
+    pos1 = config.servo_init[0] - torso_wiggle
+    pos2 = config.servo_init[3] + torso_wiggle
+    pos3 = config.servo_init[6] + torso_wiggle
+    pos4 = config.servo_init[9] - torso_wiggle
+    servo_multiplier(0, [pos1, pos2, pos3, pos4])
 
 
 def balance_right():
     global toe_wiggle
-    set_pwm(2, config.servo_init[2] - toe_wiggle)
-    set_pwm(5, config.servo_init[5] + toe_wiggle)
-    set_pwm(8, config.servo_init[8] - toe_wiggle)
-    set_pwm(11, config.servo_init[11] + toe_wiggle)
+    pos1 = config.servo_init[2] - toe_wiggle
+    pos2 = config.servo_init[5] + toe_wiggle
+    pos3 = config.servo_init[8] - toe_wiggle
+    pos4 = config.servo_init[11] + toe_wiggle
+    servo_multiplier(2, [pos1, pos2, pos3, pos4])
 
 
 def balance_left():
     global toe_wiggle
-    set_pwm(2, config.servo_init[2] + toe_wiggle)
-    set_pwm(5, config.servo_init[5] - toe_wiggle)
-    set_pwm(8, config.servo_init[8] + toe_wiggle)
-    set_pwm(11, config.servo_init[11] - toe_wiggle)
+    pos1 = config.servo_init[2] + toe_wiggle
+    pos2 = config.servo_init[5] - toe_wiggle
+    pos3 = config.servo_init[8] + toe_wiggle
+    pos4 = config.servo_init[11] - toe_wiggle
+    servo_multiplier(2, [pos1, pos2, pos3, pos4])
 
 
 def move_direction(direction):
@@ -487,23 +494,14 @@ def move_direction(direction):
 
 
 def leg_up(id):
-    delay = 0.1
     if id == 1:
-        set_pwm(1, int(config.lower_leg_l))
-        # time.sleep(delay)
-        # set_pwm(0, int(config.servo_init[0] + (config.torso_w/2)))
+        servo_multiplier(1, [int(config.lower_leg_l)])
     if id == 2:
-        set_pwm(4, int(config.lower_leg_h2))
-        # time.sleep(delay)
-        # set_pwm(3, int(config.servo_init[3] - (config.torso_w/2)))
+        servo_multiplier(4, [int(config.lower_leg_h2)])
     if id == 3:
-        set_pwm(7, int(config.lower_leg_h))
-        # time.sleep(delay)
-        # set_pwm(6, int(config.servo_init[6] - (config.torso_w/2)))
+        servo_multiplier(7, [int(config.lower_leg_h)])
     if id == 4:
-        set_pwm(10, int(config.lower_leg_l2))
-        # time.sleep(delay)
-        # set_pwm(9, int(config.servo_init[9] + (config.torso_w/2)))
+        servo_multiplier(10, [int(config.lower_leg_l2)])
 
 
 def leg_down_forward(id):

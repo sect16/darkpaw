@@ -223,12 +223,12 @@ def find_color(self, pts, args):
         if Y < (config.RESOLUTION[1] / 2 - tor):
             error = (config.RESOLUTION[1] - Y) / 2.2
             outv_Y = move.ctrl_range(int(round((pid.GenOut(error)), 0)), 80, 0)
-            move.ctrl_pitch_roll(-outv_Y, 0)
+            move.robot_pitch_roll(-outv_Y, 0)
             Y_lock = 0
         elif Y > (config.RESOLUTION[1] / 2 + tor):
             error = (Y - config.RESOLUTION[1]) / 2.2
             outv_Y = move.ctrl_range(int(round((pid.GenOut(error)), 0)), 80, 0)
-            move.ctrl_pitch_roll(outv_Y, 0)
+            move.robot_pitch_roll(outv_Y, 0)
             Y_lock = 0
         else:
             Y_lock = 1
@@ -236,12 +236,12 @@ def find_color(self, pts, args):
         if X < (config.RESOLUTION[0] / 2 - tor):
             error_X = abs(X - config.RESOLUTION[0] / 2) / config.RESOLUTION[0] / 2 * 100
             outv_X = int(round((pid.GenOut(error_X)), 0))
-            move.ctrl_yaw(config.torso_w, outv_X)
+            move.robot_yaw(config.torso_w, outv_X)
             X_lock = 0
         elif X > (config.RESOLUTION[0] / 2 + tor):
             error_X = abs(X - config.RESOLUTION[0] / 2) / config.RESOLUTION[0] / 2 * 100
             outv_X = int(round((pid.GenOut(error_X)), 0))
-            move.ctrl_yaw(config.torso_w, -outv_X)
+            move.robot_yaw(config.torso_w, -outv_X)
             X_lock = 0
         else:
             X_lock = 1
