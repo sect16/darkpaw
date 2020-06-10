@@ -74,8 +74,8 @@ def call_fpv(ip):
         video_threading.start()
         mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
         mq.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
-        gui.btn_FPV.config(bg='#00E676')
-        gui.btn_FPV['state'] = 'normal'
+        gui.btn_video.config(bg='#00E676')
+        gui.btn_video['state'] = 'normal'
     elif common.fpv_event.is_set() and common.thread_isAlive('fps_thread') and common.thread_isAlive('open_cv_thread'):
         logger.info('Stopping video stream.')
         common.fpv_event.clear()
@@ -168,5 +168,5 @@ def open_cv_thread(mq, event):
     mq.__exit__()
     logger.info('Thread stopped')
     common.fpv_event.clear()
-    gui.btn_FPV.config(bg=config.COLOR_BTN)
-    gui.btn_FPV['state'] = 'normal'
+    gui.btn_video.config(bg=config.COLOR_BTN)
+    gui.btn_video['state'] = 'normal'

@@ -222,12 +222,12 @@ def find_color(self, pts, args):
         logger.debug('Target input frame position X: %d Y: %d', X, Y)
         if Y < (config.RESOLUTION[1] / 2 - tor):
             error = (config.RESOLUTION[1] - Y) / 2.2
-            outv_Y = move.ctrl_range(int(round((pid.GenOut(error)), 0)), 80, 0)
+            outv_Y = move.normalize(int(round((pid.GenOut(error)), 0)), 80, 0)
             move.robot_pitch_roll(-outv_Y, 0)
             Y_lock = 0
         elif Y > (config.RESOLUTION[1] / 2 + tor):
             error = (Y - config.RESOLUTION[1]) / 2.2
-            outv_Y = move.ctrl_range(int(round((pid.GenOut(error)), 0)), 80, 0)
+            outv_Y = move.normalize(int(round((pid.GenOut(error)), 0)), 80, 0)
             move.robot_pitch_roll(outv_Y, 0)
             Y_lock = 0
         else:
