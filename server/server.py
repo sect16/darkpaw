@@ -426,13 +426,7 @@ def move_thread(event):
     while not event.is_set():
         if not steadyMode:
             # Skip if servo in motion
-            if config.servo_motion != [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
-                count += 1
-                if count == 100:
-                    logger.warning('Servo motion status timeout, resetting motion status')
-                    config.servo_motion = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                pass
-            elif direction_command == 'forward' and turn_command == 'no':
+            if direction_command == 'forward' and turn_command == 'no':
                 if not height == 100:
                     move.robot_height(100)
                     height = 100
