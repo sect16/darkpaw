@@ -39,6 +39,7 @@ VIDEO_WIDTH = 640
 VIDEO_HEIGHT = 480
 POWER_MODULE = True
 CAMERA_MODULE = True
+DEBUG_MODE = True
 
 ultra_data = 0
 

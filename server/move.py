@@ -18,7 +18,7 @@ import pid
 logger = logging.getLogger(__name__)
 if config.SERVO_MODULE:
     pca = Adafruit_PCA9685.PCA9685()
-    pca.set_pwm_freq(50)
+    pca.set_pwm_freq(100)
 
 Set_Direction = 1
 
@@ -49,7 +49,7 @@ Y_pid = pid.Pid()
 Y_pid.SetKp(P)
 Y_pid.SetKd(I)
 Y_pid.SetKi(D)
-torso_wiggle = config.torso_w
+torso_wiggle = config.torso_w - ((config.DEFAULT_X - 50) * 2 / 100 * config.torso_w)
 toe_wiggle = config.upper_leg_w
 
 if config.GYRO_MODULE:
@@ -85,7 +85,7 @@ def set_pwm(servo, pos):
     if not config.SERVO_MODULE:
         logger.info('Servo module DISABLED')
         return
-    pca.set_pwm(servo, 0, pos)
+    pca.set_pwm(servo, 0, pos * 2)
     config.servo[servo] = pos
 
 
@@ -110,10 +110,10 @@ def robot_X(amp):
     :return: void
     """
     wiggle = config.torso_w
-    pos1 = int(config.torso_m - wiggle + 2 * wiggle * amp / 100)
-    pos2 = int(config.torso_m - wiggle + 2 * wiggle * amp / 100)
-    pos3 = int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100)
-    pos4 = int(config.torso_m2 + wiggle - 2 * wiggle * amp / 100)
+    pos1 = config.torso_l + (wiggle * 2 / 100 * amp)
+    pos2 = config.torso_h - (wiggle * 2 / 100 * amp)
+    pos3 = config.torso_l2 + (wiggle * 2 / 100 * amp)
+    pos4 = config.torso_h2 - (wiggle * 2 / 100 * amp)
     servo_controller(0, [pos1, pos2, pos3, pos4])
 
 
@@ -134,8 +134,8 @@ def robot_height(height):
 
 def servo_controller(initial_servo, pos, interval=3):
     """
-    A blocking function which controls 4 servos proportionally. Servo address is derived by an interval of 3 addresses
-    from initial servo address. Maximum of 4 servos can be controlled.
+    A blocking function which controls single, double or quadruple servos proportionally. Servo address is
+    derived by an interval of 3 addresses from initial servo address. Maximum of 4 servos can be controlled.
 
     :param initial_servo: first servo number
     :param pos: List of target positions [x, x, x, x]
@@ -176,7 +176,7 @@ def servo_controller(initial_servo, pos, interval=3):
                 else:
                     servo_pos[x] -= SPEED
         for x in range(count):
-            pca.set_pwm(servo[x], 0, servo_pos[x])
+            pca.set_pwm(servo[x], 0, servo_pos[x] * 2)
     for i in range(count):
         config.servo[servo[i]] = servo_pos[i]
     logger.debug('Servo position after: %s', servo_pos)
@@ -356,17 +356,17 @@ def robot_balance(balance):
         balance_center('y')
         balance_right()
     elif balance == 'front_left':
-        balance_front()
         balance_left()
+        balance_front()
     elif balance == 'front_right':
+        balance_right()
         balance_front()
-        balance_right()
     elif balance == 'back_left':
-        balance_back()
         balance_left()
-    elif balance == 'back_right':
         balance_back()
+    elif balance == 'back_right':
         balance_right()
+        balance_back()
     else:
         balance_all()
 

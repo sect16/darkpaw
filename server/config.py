@@ -36,7 +36,7 @@ CAMERA_MODULE = True
 GYRO_MODULE = True  # MPU6050
 
 # 100 = Leg spread out
-DEFAULT_X = 50
+DEFAULT_X = 55
 
 lower_leg_h = 500  # DOWN
 lower_leg_l = 150  # UP
@@ -48,8 +48,8 @@ upper_leg_h = 380  # IN
 upper_leg_l = 100  # OUT
 upper_leg_h2 = 500  # IN
 upper_leg_l2 = 220  # OUT
-torso_h = 400  # FORWARD
-torso_l = 100  # BACKWARD
+torso_h = 450  # FORWARD
+torso_l = 150  # BACKWARD
 torso_h2 = 500  # FORWARD
 torso_l2 = 200  # BACKWARD
 
@@ -63,8 +63,7 @@ torso_m2 = int((torso_h2 - torso_l2) / 2 + torso_l2)
 lower_leg_w = int((lower_leg_h - lower_leg_l) / 2)
 upper_leg_w = int((upper_leg_h - upper_leg_l) / 2)
 # Set maximum wiggle value
-# torso_w = int((torso_h - torso_l) / 2)
-torso_w = 100
+torso_w = int((torso_h - torso_l) / 2)
 
 servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

@@ -658,7 +658,10 @@ def send_command(event):
     :param event: Not used
     """
     if e2.get() != '' and connect_event.is_set():
-        send('espeak:' + e2.get())
+        if not config.DEBUG_MODE:
+            send('espeak:' + e2.get())
+        else:
+            send(e2.get())
         e1.focus_set()
         e2.delete(0, 'end')
     else:

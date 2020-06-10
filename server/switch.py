@@ -27,13 +27,9 @@ def switchSetup():
     GPIO.setup(29, GPIO.OUT)
     GPIO.setup(31, GPIO.OUT)
     GPIO.setup(33, GPIO.OUT)
-    GPIO.setup(Motor_B_EN, GPIO.OUT)
+    GPIO.setup(Motor_B_EN, GPIO.IN)
     GPIO.setup(Motor_B_Pin1, GPIO.OUT)
     GPIO.setup(Motor_B_Pin2, GPIO.OUT)
-    try:
-        pwm_B = GPIO.PWM(Motor_B_EN, frequency)
-    except:
-        pass
 
 
 def switch(port, status):
@@ -72,12 +68,9 @@ def channel_B(duty):
     if duty > 0:
         GPIO.output(Motor_B_Pin1, GPIO.HIGH)
         GPIO.output(Motor_B_Pin2, GPIO.LOW)
-        pwm_B.start(duty)
     else:
         GPIO.output(Motor_B_Pin1, GPIO.LOW)
         GPIO.output(Motor_B_Pin2, GPIO.LOW)
-        GPIO.output(Motor_B_EN, GPIO.LOW)
-        pwm_B.stop()
 
 
 def set_all_switch_off():
@@ -93,6 +86,13 @@ def destroy():
 if __name__ == '__main__':
     try:
         switchSetup()
+        GPIO.setup(Motor_B_EN, GPIO.OUT)
+        GPIO.setup(Motor_B_Pin1, GPIO.OUT)
+        GPIO.setup(Motor_B_Pin2, GPIO.OUT)
+        try:
+            pwm_B = GPIO.PWM(Motor_B_EN, frequency)
+        except:
+            pass
         pwm_B.start(0)
         while True:
             # break
