@@ -236,12 +236,12 @@ def find_color(self, pts, args):
         if X < (config.RESOLUTION[0] / 2 - tor):
             error_X = abs(X - config.RESOLUTION[0] / 2) / config.RESOLUTION[0] / 2 * 100
             outv_X = int(round((pid.GenOut(error_X)), 0))
-            move.robot_yaw(config.torso_w, outv_X)
+            move.robot_yaw(outv_X)
             X_lock = 0
         elif X > (config.RESOLUTION[0] / 2 + tor):
             error_X = abs(X - config.RESOLUTION[0] / 2) / config.RESOLUTION[0] / 2 * 100
             outv_X = int(round((pid.GenOut(error_X)), 0))
-            move.robot_yaw(config.torso_w, -outv_X)
+            move.robot_yaw(-outv_X)
             X_lock = 0
         else:
             X_lock = 1

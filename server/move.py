@@ -82,6 +82,7 @@ def set_pwm(servo, pos):
     :return: void
     """
     logger.debug("Initialize PWM on servo [%s], position [%s])", servo, pos)
+    pos = normalize(pos, config.servo_h[servo], config.servo_l[servo])
     if not config.SERVO_MODULE:
         logger.info('Servo module DISABLED')
         return
@@ -110,10 +111,10 @@ def robot_X(amp):
     :return: void
     """
     wiggle = config.torso_w
-    pos1 = config.torso_l + (wiggle * 2 / 100 * amp)
-    pos2 = config.torso_h - (wiggle * 2 / 100 * amp)
-    pos3 = config.torso_l2 + (wiggle * 2 / 100 * amp)
-    pos4 = config.torso_h2 - (wiggle * 2 / 100 * amp)
+    pos1 = int(config.torso_m - wiggle + 2 * wiggle * config.DEFAULT_X / 100)
+    pos2 = int(config.torso_m - wiggle + 2 * wiggle * config.DEFAULT_X / 100)
+    pos3 = int(config.torso_m2 + wiggle - 2 * wiggle * config.DEFAULT_X / 100)
+    pos4 = int(config.torso_m2 + wiggle - 2 * wiggle * config.DEFAULT_X / 100)
     servo_controller(0, [pos1, pos2, pos3, pos4])
 
 
@@ -153,8 +154,13 @@ def servo_controller(initial_servo, pos, interval=3):
     servo_pos = []
     steps = []
     for i in range(count):
+        # Build servo address list
         servo.append(initial_servo)
+        # Normalize input values
+        pos[i] = normalize(pos[i], config.servo_h[servo[i]], config.servo_l[servo[i]])
+        # Build current servo position list
         servo_pos.append(config.servo[servo[i]])
+        # Build step list to get max value in loop
         steps.append(int((abs(pos[i] - config.servo[servo[i]])) / config.SPEED))
         initial_servo += interval
     pass
@@ -373,19 +379,17 @@ def robot_balance(balance):
 
 def balance_center(direction):
     if direction == 'side':
-        if config.servo[2] != config.servo_init[2]:
-            pos1 = config.servo_init[2]
-            pos2 = config.servo_init[5]
-            pos3 = config.servo_init[8]
-            pos4 = config.servo_init[11]
-            servo_controller(2, [pos1, pos2, pos3, pos4])
+        pos1 = config.servo_init[2]
+        pos2 = config.servo_init[5]
+        pos3 = config.servo_init[8]
+        pos4 = config.servo_init[11]
+        servo_controller(2, [pos1, pos2, pos3, pos4])
     if direction == 'y':
-        if config.servo[0] != config.servo_init[0]:
-            pos1 = config.servo_init[0]
-            pos2 = config.servo_init[3]
-            pos3 = config.servo_init[6]
-            pos4 = config.servo_init[9]
-            servo_controller(0, [pos1, pos2, pos3, pos4])
+        pos1 = config.servo_init[0]
+        pos2 = config.servo_init[3]
+        pos3 = config.servo_init[6]
+        pos4 = config.servo_init[9]
+        servo_controller(0, [pos1, pos2, pos3, pos4])
 
 
 def balance_all():
@@ -393,21 +397,21 @@ def balance_all():
     balance_center('y')
 
 
-def balance_back():
+def balance_back(offset=0):
     global torso_wiggle
-    pos1 = config.servo_init[0] + torso_wiggle
-    pos2 = config.servo_init[3] - torso_wiggle
-    pos3 = config.servo_init[6] - torso_wiggle
-    pos4 = config.servo_init[9] + torso_wiggle
+    pos1 = config.servo_init[0] + (torso_wiggle - offset)
+    pos2 = config.servo_init[3] - (torso_wiggle - offset)
+    pos3 = config.servo_init[6] - (torso_wiggle - offset)
+    pos4 = config.servo_init[9] + (torso_wiggle - offset)
     servo_controller(0, [pos1, pos2, pos3, pos4])
 
 
-def balance_front():
+def balance_front(offset=0):
     global torso_wiggle
-    pos1 = config.servo_init[0] - torso_wiggle
-    pos2 = config.servo_init[3] + torso_wiggle
-    pos3 = config.servo_init[6] + torso_wiggle
-    pos4 = config.servo_init[9] - torso_wiggle
+    pos1 = config.servo_init[0] - (torso_wiggle - offset)
+    pos2 = config.servo_init[3] + (torso_wiggle - offset)
+    pos3 = config.servo_init[6] + (torso_wiggle - offset)
+    pos4 = config.servo_init[9] - (torso_wiggle - offset)
     servo_controller(0, [pos1, pos2, pos3, pos4])
 
 
@@ -429,63 +433,63 @@ def balance_left():
     servo_controller(2, [pos1, pos2, pos3, pos4])
 
 
-def leg_up(id):
-    if id == 1:
+def leg_up(servo):
+    if servo == 1:
         servo_controller(1, [int(config.lower_leg_l)])
-    if id == 2:
+    if servo == 2:
         servo_controller(4, [int(config.lower_leg_h2)])
-    if id == 3:
+    if servo == 3:
         servo_controller(7, [int(config.lower_leg_h)])
-    if id == 4:
+    if servo == 4:
         servo_controller(10, [int(config.lower_leg_l2)])
 
 
-def leg_down_forward(id):
-    if id == 1:
+def leg_down_forward(servo):
+    if servo == 1:
         servo_controller(0, [int(config.servo_init[0] + config.torso_w), int(config.lower_leg_h)], 1)
-    if id == 2:
+    if servo == 2:
         # DOWN IN
         servo_controller(3, [int(config.servo_init[3] - config.torso_w), int(config.lower_leg_l2)], 1)
-    if id == 3:
+    if servo == 3:
         servo_controller(6, [int(config.servo_init[6] - config.torso_w), int(config.lower_leg_l)], 1)
-    if id == 4:
+    if servo == 4:
         servo_controller(9, [int(config.servo_init[9] + config.torso_w), int(config.lower_leg_h2)], 1)
 
 
-def leg_down_backward(id):
-    if id == 1:
+def leg_down_backward(servo):
+    if servo == 1:
         servo_controller(0, [int(config.servo_init[0] - config.torso_w), int(config.lower_leg_h)], 1)
-    if id == 2:
+    if servo == 2:
         # DOWN IN
         servo_controller(3, [int(config.servo_init[3] + config.torso_w), int(config.lower_leg_l2)], 1)
-    if id == 3:
+    if servo == 3:
         servo_controller(6, [int(config.servo_init[6] + config.torso_w), int(config.lower_leg_l)], 1)
-    if id == 4:
+    if servo == 4:
         servo_controller(9, [int(config.servo_init[9] - config.torso_w), int(config.lower_leg_h2)], 1)
 
 
-def leg_down_in(id):
-    if id == 1:
-        servo_controller(1, [int(config.lower_leg_h), int(config.servo_init[2] + config.upper_leg_w)], 1)
-    if id == 2:
+def leg_down_in(servo, offset=0):
+    if servo == 1:
+        servo_controller(1, [int(config.lower_leg_h - offset), int(config.servo_init[1] + config.upper_leg_w)], 1)
+    if servo == 2:
         # DOWN IN
-        servo_controller(4, [int(config.lower_leg_l2), int(config.servo_init[5] - config.upper_leg_w)], 1)
-    if id == 3:
-        servo_controller(7, [int(config.lower_leg_l), int(config.servo_init[8] - config.upper_leg_w)], 1)
-    if id == 4:
-        servo_controller(10, [int(config.lower_leg_h2), int(config.servo_init[11] + config.upper_leg_w)], 1)
+        servo_controller(4, [int(config.lower_leg_l2 + offset), int(config.servo_init[4] - config.upper_leg_w)], 1)
+    if servo == 3:
+        servo_controller(7, [int(config.lower_leg_l2 + offset), int(config.servo_init[7] - config.upper_leg_w)], 1)
+    if servo == 4:
+        servo_controller(10, [int(config.lower_leg_h - offset), int(config.servo_init[10] + config.upper_leg_w)], 1)
 
 
-def leg_down_out(id):
-    if id == 1:
-        servo_controller(1, [int(config.lower_leg_h), int(config.servo_init[2] - config.upper_leg_w)], 1)
-    if id == 2:
+def leg_down_out(servo, offset=0):
+    if servo == 1:
+        servo_controller(1, [int(config.lower_leg_h - offset), int(config.servo_init[1] - config.upper_leg_w)], 1)
+    if servo == 2:
         # DOWN IN
-        servo_controller(4, [int(config.lower_leg_l2), int(config.servo_init[5] + config.upper_leg_w)], 1)
-    if id == 3:
-        servo_controller(7, [int(config.lower_leg_l), int(config.servo_init[8] + config.upper_leg_w)], 1)
-    if id == 4:
-        servo_controller(10, [int(config.lower_leg_h2), int(config.servo_init[11] - config.upper_leg_w)], 1)
+        servo_controller(4, [int(config.lower_leg_l2 + offset), int(config.servo_init[4] + config.upper_leg_w)], 1)
+    if servo == 3:
+        servo_controller(7, [int(config.lower_leg_l2 + offset), int(config.servo_init[7] + config.upper_leg_w)], 1)
+    if servo == 4:
+        servo_controller(10, [int(config.lower_leg_h - offset), int(config.servo_init[10] - config.upper_leg_w)], 1)
 
 
 if __name__ == '__main__':
