@@ -36,7 +36,7 @@ CAMERA_MODULE = True
 GYRO_MODULE = True  # MPU6050
 
 # 100 = Leg spread out
-DEFAULT_X = 55
+DEFAULT_X = 60
 
 lower_leg_h = 500  # DOWN
 lower_leg_l = 150  # UP
