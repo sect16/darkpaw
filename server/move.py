@@ -33,7 +33,8 @@ D = 0
 STEADY_DELAY = 0.005
 # Delay interval between servos during initialization. Prevents sudden power surge.
 INIT_DELAY = 0.2
-
+# Servo controller delay. Increase delay to lower servo speed.
+DELAY = 0.005
 """
 >>> instantiation <<<
 """
@@ -183,6 +184,7 @@ def servo_controller(initial_servo, pos, interval=3):
                     servo_pos[x] -= SPEED
         for x in range(count):
             pca.set_pwm(servo[x], 0, servo_pos[x] * 2)
+        time.sleep(DELAY)
     for i in range(count):
         config.servo[servo[i]] = servo_pos[i]
     logger.debug('Servo position after: %s', servo_pos)
@@ -247,12 +249,16 @@ def robot_yaw(wiggle, yaw):  # Percentage wiggle
     """
     yaw = normalize(yaw, 100, -100)
     logger.debug('Servo position before: %s', config.servo)
+    pos = [int(config.servo_init[0] + wiggle * yaw / 100), int(config.servo_init[3] - wiggle * yaw / 100),
+           int(config.servo_init[6] + wiggle * yaw / 100), int(config.servo_init[9] - wiggle * yaw / 100)]
+    '''
     pos1 = int(config.torso_m + wiggle * yaw / 100)
     pos2 = int(config.torso_m - wiggle * yaw / 100)
     pos3 = int(config.torso_m2 + wiggle * yaw / 100)
     pos4 = int(config.torso_m2 - wiggle * yaw / 100)
+    '''
     # robot_X(config.DEFAULT_X)
-    servo_controller(0, [pos1, pos2, pos3, pos4])
+    servo_controller(0, pos)
 
 
 def robot_steady():
@@ -444,52 +450,54 @@ def leg_up(servo):
         servo_controller(10, [int(config.lower_leg_l2)])
 
 
-def leg_down_forward(servo):
-    if servo == 1:
-        servo_controller(0, [int(config.servo_init[0] + config.torso_w), int(config.lower_leg_h)], 1)
-    if servo == 2:
-        # DOWN IN
-        servo_controller(3, [int(config.servo_init[3] - config.torso_w), int(config.lower_leg_l2)], 1)
-    if servo == 3:
-        servo_controller(6, [int(config.servo_init[6] - config.torso_w), int(config.lower_leg_l)], 1)
-    if servo == 4:
-        servo_controller(9, [int(config.servo_init[9] + config.torso_w), int(config.lower_leg_h2)], 1)
+def leg_move(leg, direction):
+    if leg == 1:
+        if direction == 'forward':
+            servo_controller(0, [int(config.servo_init[0] + config.torso_w)])
+        elif direction == 'backward':
+            servo_controller(0, [int(config.servo_init[0] - config.torso_w)])
+        elif direction == 'in':
+            servo_controller(2, [int(config.servo_init[1] + config.upper_leg_w)])
+        elif direction == 'out':
+            servo_controller(2, [int(config.servo_init[1] - config.upper_leg_w)])
+    if leg == 2:
+        if direction == 'forward':
+            servo_controller(3, [int(config.servo_init[3] - config.torso_w)])
+        elif direction == 'backward':
+            servo_controller(3, [int(config.servo_init[3] + config.torso_w)])
+        elif direction == 'in':
+            servo_controller(5, [int(config.servo_init[4] - config.upper_leg_w)])
+        elif direction == 'out':
+            servo_controller(5, [int(config.servo_init[4] + config.upper_leg_w)])
+    if leg == 3:
+        if direction == 'forward':
+            servo_controller(6, [int(config.servo_init[6] - config.torso_w)])
+        elif direction == 'backward':
+            servo_controller(6, [int(config.servo_init[6] + config.torso_w)])
+        elif direction == 'in':
+            servo_controller(8, [int(config.servo_init[7] - config.upper_leg_w)])
+        elif direction == 'out':
+            servo_controller(8, [int(config.servo_init[7] + config.upper_leg_w)])
+    if leg == 4:
+        if direction == 'forward':
+            servo_controller(9, [int(config.servo_init[9] + config.torso_w)])
+        elif direction == 'backward':
+            servo_controller(9, [int(config.servo_init[9] - config.torso_w)])
+        elif direction == 'in':
+            servo_controller(11, [int(config.servo_init[10] + config.upper_leg_w)])
+        elif direction == 'out':
+            servo_controller(11, [int(config.servo_init[10] - config.upper_leg_w)])
 
 
-def leg_down_backward(servo):
-    if servo == 1:
-        servo_controller(0, [int(config.servo_init[0] - config.torso_w), int(config.lower_leg_h)], 1)
-    if servo == 2:
-        # DOWN IN
-        servo_controller(3, [int(config.servo_init[3] + config.torso_w), int(config.lower_leg_l2)], 1)
-    if servo == 3:
-        servo_controller(6, [int(config.servo_init[6] + config.torso_w), int(config.lower_leg_l)], 1)
-    if servo == 4:
-        servo_controller(9, [int(config.servo_init[9] - config.torso_w), int(config.lower_leg_h2)], 1)
-
-
-def leg_down_in(servo, offset=0):
-    if servo == 1:
-        servo_controller(1, [int(config.lower_leg_h - offset), int(config.servo_init[1] + config.upper_leg_w)], 1)
-    if servo == 2:
-        # DOWN IN
-        servo_controller(4, [int(config.lower_leg_l2 + offset), int(config.servo_init[4] - config.upper_leg_w)], 1)
-    if servo == 3:
-        servo_controller(7, [int(config.lower_leg_l2 + offset), int(config.servo_init[7] - config.upper_leg_w)], 1)
-    if servo == 4:
-        servo_controller(10, [int(config.lower_leg_h - offset), int(config.servo_init[10] + config.upper_leg_w)], 1)
-
-
-def leg_down_out(servo, offset=0):
-    if servo == 1:
-        servo_controller(1, [int(config.lower_leg_h - offset), int(config.servo_init[1] - config.upper_leg_w)], 1)
-    if servo == 2:
-        # DOWN IN
-        servo_controller(4, [int(config.lower_leg_l2 + offset), int(config.servo_init[4] + config.upper_leg_w)], 1)
-    if servo == 3:
-        servo_controller(7, [int(config.lower_leg_l2 + offset), int(config.servo_init[7] + config.upper_leg_w)], 1)
-    if servo == 4:
-        servo_controller(10, [int(config.lower_leg_h - offset), int(config.servo_init[10] - config.upper_leg_w)], 1)
+def log_down(leg, offset=0):
+    if leg == 1:
+        servo_controller(1, [int(config.lower_leg_h - offset)])
+    if leg == 2:
+        servo_controller(4, [int(config.lower_leg_l2 + offset)])
+    if leg == 3:
+        servo_controller(7, [int(config.lower_leg_l2 + offset)])
+    if leg == 4:
+        servo_controller(10, [int(config.lower_leg_h - offset)])
 
 
 if __name__ == '__main__':

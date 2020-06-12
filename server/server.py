@@ -421,154 +421,161 @@ def move_thread(event):
     step = 0
     height = 0
     offset = 200
+    last_direction_command = ''
+    last_turn_command = ''
     while not event.is_set():
         if not steadyMode:
-            if direction_command == 'forward' and turn_command == 'no':
-                if not height == 100:
-                    move.robot_height(100)
-                    height = 100
+            if (direction_command == 'forward' or direction_command == 'backward') and turn_command == 'no':
+                # Initialize variables
+                if not last_direction_command == direction_command:
+                    if direction_command == 'forward':
+                        leg = [2, 1, 4, 3]
+                        balance = ['front_right', 'front_left']
+                    elif direction_command == 'backward':
+                        leg = [3, 4, 1, 2]
+                        balance = ['back_left', 'back_right']
+                    if not height == 100:
+                        move.robot_height(100)
+                        height = 100
+                    last_direction_command = direction_command
                 if step == 0:
                     move.robot_yaw(move.torso_wiggle, 0)
-                    move.robot_balance('front_right')
-                    move.leg_up(2)
-                    move.leg_down_forward(2)
+                    move.robot_balance(balance[0])
+                    move.leg_up(leg[0])
+                    move.leg_move(leg[0], direction_command)
+                    move.log_down(leg[0])
                     step = 1
                     continue
                 elif step == 1:
-                    move.leg_up(1)
-                    move.leg_down_forward(1)
+                    move.leg_up(leg[1])
+                    move.leg_move(leg[1], direction_command)
+                    move.log_down(leg[1])
                     step = 2
                     continue
                 elif step == 2:
                     move.robot_yaw(move.torso_wiggle, 0)
-                    move.robot_balance('front_left')
-                    move.leg_up(4)
-                    move.leg_down_forward(4)
+                    move.robot_balance(balance[1])
+                    move.leg_up(leg[2])
+                    move.leg_move(leg[2], direction_command)
+                    move.log_down(leg[2])
                     step = 3
                     continue
                 elif step == 3:
-                    move.leg_up(3)
-                    move.leg_down_forward(3)
+                    move.leg_up(leg[3])
+                    move.leg_move(leg[3], direction_command)
+                    move.log_down(leg[3])
                     step = 0
                     continue
-            elif direction_command == 'backward' and turn_command == 'no':
-                if not height == 100:
-                    move.robot_height(100)
-                    height = 100
-                if step == 0:
-                    move.robot_yaw(move.torso_wiggle, 0)
-                    move.robot_balance('back_left')
-                    move.leg_up(3)
-                    move.leg_down_backward(3)
-                    step = 1
-                    continue
-                elif step == 1:
-                    move.leg_up(4)
-                    move.leg_down_backward(4)
-                    step = 2
-                    continue
-                elif step == 2:
-                    move.robot_yaw(move.torso_wiggle, 0)
-                    move.robot_balance('back_right')
-                    move.leg_up(1)
-                    move.leg_down_backward(1)
-                    step = 3
-                    continue
-                elif step == 3:
-                    move.leg_up(2)
-                    move.leg_down_backward(2)
-                    step = 0
-                    continue
-            elif direction_command == 'c_right' and turn_command == 'no':
-                if step == 0:
+            elif (direction_command == 'c_right' or direction_command == 'c_left') and turn_command == 'no':
+                # Initialize variables
+                if not last_direction_command == direction_command:
+                    if direction_command == 'c_left':
+                        leg = [2, 4, 1, 3]
+                        inout = ['out', 'in']
+                    elif direction_command == 'c_right':
+                        leg = [4, 2, 3, 1]
+                        inout = ['out', 'in']
                     move.torso_wiggle = 50
-                    move.robot_height(70)
-                    height = 70
-                    move.robot_balance('front_right')
-                    move.leg_up(2)
-                    move.leg_down_in(2, offset)
+                    last_direction_command = direction_command
+                if step == 0:
+                    move.robot_height(60)
+                    height = 50
+                    if direction_command == 'c_right':
+                        move.robot_balance('front_right')
+                    else:
+                        move.robot_balance('front_left')
+                    move.leg_up(leg[0])
+                    move.leg_move(leg[0], inout[0])
+                    move.log_down(leg[0])
                     step = 1
                     continue
                 elif step == 1:
-                    move.leg_up(4)
-                    move.leg_down_out(4)
+                    move.leg_up(leg[1])
+                    move.leg_move(leg[1], inout[1])
+                    move.log_down(leg[1], offset)
                     step = 2
                     continue
                 elif step == 2:
                     move.balance_back()
-                    move.leg_up(1)
-                    move.leg_down_in(1, offset - 75)
+                    move.leg_up(leg[2])
+                    move.leg_move(leg[2], inout[0])
+                    move.log_down(leg[2])
                     step = 3
                     continue
                 elif step == 3:
-                    move.leg_up(3)
-                    move.leg_down_out(3)
+                    move.leg_up(leg[3])
+                    move.leg_move(leg[3], inout[1])
+                    move.log_down(leg[3], offset)
                     step = 0
                     continue
-            elif direction_command == 'c_left' and turn_command == 'no':
-                if step == 0:
+            elif direction_command == 'no' and (turn_command == 'left' or turn_command == 'right'):
+                # Initialize variables
+                if not last_turn_command == turn_command:
+                    if turn_command == 'left':
+                        leg = [1, 2, 4, 3]
+                        balance = ['back_right', 'front_left']
+                    elif turn_command == 'right':
+                        leg = [3, 4, 2, 1]
+                        balance = ['back_left', 'front_right']
                     move.torso_wiggle = 50
-                    move.robot_height(70)
-                    height = 70
-                    move.robot_balance('front_left')
-                    move.leg_up(4)
-                    move.leg_down_in(4, offset)
-                    step = 1
+                    last_turn_command = turn_command
+                    move.robot_height(100)
+                    height = 100
+                    continue
+                elif step == 0:
+                    move.robot_balance(balance[0])
+                    step += 1
                     continue
                 elif step == 1:
-                    move.leg_up(2)
-                    move.leg_down_out(2)
-                    step = 2
+                    move.leg_up(leg[0])
+                    step += 1
                     continue
                 elif step == 2:
-                    move.balance_back()
-                    move.leg_up(3)
-                    move.leg_down_in(3, offset - 75)
-                    step = 3
+                    move.leg_move(leg[0], 'backward')
+                    step += 1
                     continue
                 elif step == 3:
-                    move.leg_up(1)
-                    move.leg_down_out(1)
-                    step = 0
-                    continue
-            elif direction_command == 'no' and turn_command == 'left':
-                if not height == 100:
-                    move.robot_height(100)
-                    height = 100
-                if step == 0:
-                    move.robot_balance('back_right')
-                    move.leg_up(1)
-                    move.leg_down_backward(1)
-                    move.leg_up(2)
-                    move.leg_down_backward(2)
+                    move.log_down(leg[0])
                     step += 1
                     continue
-                elif step == 1:
-                    move.robot_balance('front_left')
-                    move.leg_up(4)
-                    move.leg_down_forward(4)
-                    move.leg_up(3)
-                    move.leg_down_forward(3)
-                    step = 0
-                    continue
-            elif direction_command == 'no' and turn_command == 'right':
-                if not height == 100:
-                    move.robot_height(100)
-                    height = 100
-                if step == 0:
-                    move.robot_balance('back_left')
-                    move.leg_up(3)
-                    move.leg_down_backward(3)
-                    move.leg_up(4)
-                    move.leg_down_backward(4)
+                elif step == 4:
+                    move.leg_up(leg[1])
                     step += 1
                     continue
-                elif step == 1:
-                    move.robot_balance('front_right')
-                    move.leg_up(2)
-                    move.leg_down_forward(2)
-                    move.leg_up(1)
-                    move.leg_down_forward(1)
+                elif step == 5:
+                    move.leg_move(leg[1], 'backward')
+                    step += 1
+                    continue
+                elif step == 6:
+                    move.log_down(leg[1])
+                    step += 1
+                    continue
+                elif step == 7:
+                    move.robot_balance(balance[1])
+                    step += 1
+                    continue
+                elif step == 8:
+                    move.leg_up(leg[2])
+                    step += 1
+                    continue
+                elif step == 9:
+                    move.leg_move(leg[2], 'forward')
+                    step += 1
+                    continue
+                elif step == 10:
+                    move.log_down(leg[2])
+                    step += 1
+                    continue
+                elif step == 11:
+                    move.leg_up(leg[3])
+                    step += 1
+                    continue
+                elif step == 12:
+                    move.leg_move(leg[3], 'forward')
+                    step += 1
+                    continue
+                elif step == 13:
+                    move.log_down(leg[3])
                     step = 0
                     continue
             elif turn_command == 'stand' or direction_command == 'stand':
@@ -580,6 +587,8 @@ def move_thread(event):
                 turn_command = 'no'
                 direction_command = 'no'
                 pass
+            last_direction_command = 'no'
+            last_turn_command = 'no'
             time.sleep(0.5)
             pass
         else:
