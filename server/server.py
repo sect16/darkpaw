@@ -38,7 +38,6 @@ if config.CAMERA_MODULE:
 kill_event = threading.Event()
 ultra_event = threading.Event()
 steadyMode = 0
-wiggle = 100
 direction_command = 'no'
 turn_command = 'no'
 
@@ -60,7 +59,7 @@ def get_cpu_temp():
 
 
 def get_gpu_temp():
-    """ Return GPU temperature as a character string"""
+    """ Returns the temperature of the SoC as measured by the on-board temperature sensor."""
     res = os.popen('/opt/vc/bin/vcgencmd measure_temp').readline()
     return res.replace("temp=", "")
 
@@ -75,12 +74,6 @@ def get_ram_info():
     """ Return RAM usage using psutil """
     ram_cent = psutil.virtual_memory()[2]
     return str(ram_cent)
-
-
-def get_swap_info():
-    """ Return swap memory  usage using psutil """
-    swap_cent = psutil.swap_memory()[3]
-    return str(swap_cent)
 
 
 def thread_isAlive(*args):
@@ -102,6 +95,11 @@ def thread_isAlive(*args):
 
 
 def ultra_send_client(event):
+    """
+    This function is intended to be run as a thread. It sends ultrasonic sensor reading to the client and
+    camera function.
+    """
+    REFRESH_RATE = 0.5
     logger.info('Thread started')
     ultra_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     ultra_socket.connect((client_address, config.ULTRA_PORT))
@@ -109,18 +107,21 @@ def ultra_send_client(event):
     while event.is_set():
         try:
             ultra_socket.send(str(round(ultra.checkdist(), 2)).encode())
-            time.sleep(0.5)
-            camera.UltraData(round(ultra.checkdist(), 2))
-            time.sleep(0.2)
+            if config.CAMERA_MODULE:
+                camera.UltraData(round(ultra.checkdist(), 2))
+            time.sleep(REFRESH_RATE)
         except:
             logger.error('Exception: %s', traceback.format_exc())
             break
-    time.sleep(0.5)
     ultra_event.clear()
     logger.info('Thread stopped')
 
 
 def info_thread(event):
+    """
+    This function is intended to be run as a thread. It sends robot stats messages to the client each second.
+    """
+    REFRESH_RATE = 1
     logger.info('Thread started')
     info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     info_socket.connect((client_address, config.INFO_PORT))
@@ -141,7 +142,7 @@ def info_thread(event):
             else:
                 message += ' -'
             info_socket.send(message.encode())
-            time.sleep(1)
+            time.sleep(REFRESH_RATE)
         except BrokenPipeError:
             pass
         except:
@@ -208,6 +209,9 @@ def disconnect():
 
 
 def listener_thread(event):
+    """
+    This in the main listener thread loop which receives all commands from the client and call the necessary functions.
+    """
     logger.info('Starting listener thread...')
     global camera, tcp_server_socket, steadyMode, direction_command, turn_command
     ws_G = 0
@@ -274,10 +278,8 @@ def listener_thread(event):
             if audio_pid is None:
                 logger.info('Audio streaming server starting...')
                 audio_pid = subprocess.Popen([
-                    'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + str(
-                        server_address) + ':' + str(
-                        config.AUDIO_PORT) + '}"'],
-                    shell=True, preexec_fn=os.setsid)
+                    'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst='
+                    + str(server_address) + ':' + str(config.AUDIO_PORT) + '}"'], shell=True, preexec_fn=os.setsid)
             else:
                 logger.info('Audio streaming server already started.')
             tcp_server_socket.send('stream_audio'.encode())
@@ -395,8 +397,7 @@ def listener_thread(event):
                 if value > 0:
                     config.SPEED = value
             except:
-                logger.error('Error setting servo speed: %s', data)
-                logger.error('Exception: %s', traceback.format_exc())
+                logger.error('Error setting servo speed: %s\n%s', data, traceback.format_exc())
                 pass
         elif 'light:' in data:
             logger.debug('Received flash light intensity %s%', data)
@@ -424,26 +425,30 @@ def move_thread(event):
     last_direction_command = 'no'
     last_turn_command = 'no'
 
-    forward_backward = ["move.robot_yaw(move.torso_wiggle, 0)", "move.robot_balance(balance[0])", "move.leg_up(leg[0])",
-                        "move.leg_move(leg[0], direction_command)", "move.log_down(leg[0])", "move.leg_up(leg[1])",
-                        "move.leg_move(leg[1], direction_command)", "move.log_down(leg[1])",
-                        "move.robot_yaw(move.torso_wiggle, 0)", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
-                        "move.leg_move(leg[2], direction_command)", "move.log_down(leg[2])", "move.leg_up(leg[3])",
-                        "move.leg_move(leg[3], direction_command)", "move.log_down(leg[3])"]
+    move_list = [
+        "move.robot_yaw(move.torso_wiggle, 0)", "move.robot_balance(balance[0])", "move.leg_up(leg[0])",
+        "move.leg_move(leg[0], direction_command)", "move.leg_down(leg[0])", "move.leg_up(leg[1])",
+        "move.leg_move(leg[1], direction_command)", "move.leg_down(leg[1])",
+        "move.robot_yaw(move.torso_wiggle, 0)", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
+        "move.leg_move(leg[2], direction_command)", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
+        "move.leg_move(leg[3], direction_command)", "move.leg_down(leg[3])"
+    ]
 
-    crab = ["move.robot_height(60)", "move.robot_balance(balance)", "move.leg_up(leg[0])",
-            "move.leg_move(leg[0], 'out')", "move.log_down(leg[0])", "move.leg_up(leg[1])",
-            "move.leg_move(leg[1], 'in')", "move.log_down(leg[1], 200)", "move.balance_back()",
-            "move.leg_up(leg[2])", "move.leg_move(leg[2], 'out')", "move.log_down(leg[2])", "move.leg_up(leg[3])",
-            "move.leg_move(leg[3], 'in')", "move.log_down(leg[3], 200)"
-            ]
+    crab_list = [
+        "move.robot_height(60)", "move.robot_balance(balance)", "move.leg_up(leg[0])",
+        "move.leg_move(leg[0], 'out')", "move.leg_down(leg[0])", "move.leg_up(leg[1])",
+        "move.leg_move(leg[1], 'in')", "move.leg_down(leg[1], 200)", "move.robot_balance('back')",
+        "move.leg_up(leg[2])", "move.leg_move(leg[2], 'out')", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
+        "move.leg_move(leg[3], 'in')", "move.leg_down(leg[3], 200)"
+    ]
 
-    turn = ["move.robot_balance(balance[0])", "move.leg_up(leg[0])", "move.leg_move(leg[0], 'backward')",
-            "move.log_down(leg[0])", "move.leg_up(leg[1])", "move.leg_move(leg[1], 'backward')",
-            "move.log_down(leg[1])", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
-            "move.leg_move(leg[2], 'forward')", "move.log_down(leg[2])", "move.leg_up(leg[3])",
-            "move.leg_move(leg[3], 'forward')", "move.log_down(leg[3])"
-            ]
+    turn_list = [
+        "move.robot_balance(balance[0])", "move.leg_up(leg[0])", "move.leg_move(leg[0], 'backward')",
+        "move.leg_down(leg[0])", "move.leg_up(leg[1])", "move.leg_move(leg[1], 'backward')",
+        "move.leg_down(leg[1])", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
+        "move.leg_move(leg[2], 'forward')", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
+        "move.leg_move(leg[3], 'forward')", "move.leg_down(leg[3])"
+    ]
 
     while not event.is_set():
         if not steadyMode:
@@ -458,9 +463,9 @@ def move_thread(event):
                         balance = ['back_left', 'back_right']
                     move.robot_height(100)
                     last_direction_command = direction_command
-                exec(forward_backward[step])
+                exec(move_list[step])
                 step += 1
-                if step == len(forward_backward):
+                if step == len(move_list):
                     step = 0
                 continue
             elif (direction_command == 'c_right' or direction_command == 'c_left') and turn_command == 'no':
@@ -474,9 +479,9 @@ def move_thread(event):
                         balance = 'front_right'
                     move.torso_wiggle = 50
                     last_direction_command = direction_command
-                exec(crab[step])
+                exec(crab_list[step])
                 step += 1
-                if step == len(crab):
+                if step == len(crab_list):
                     step = 0
                 continue
             elif direction_command == 'no' and (turn_command == 'left' or turn_command == 'right'):
@@ -492,17 +497,15 @@ def move_thread(event):
                     last_turn_command = turn_command
                     move.robot_height(100)
                     continue
-                exec(turn[step])
+                exec(turn_list[step])
                 step += 1
-                if step == len(turn):
+                if step == len(turn_list):
                     step = 0
                 continue
             elif turn_command == 'stand' or direction_command == 'stand':
                 move.robot_height(50)
                 move.robot_balance('center')
                 move.torso_wiggle = config.torso_w - ((config.DEFAULT_X - 50) * 2 / 100 * config.torso_w)
-                turn_command = 'no'
-                direction_command = 'no'
                 pass
             last_direction_command = 'no'
             last_turn_command = 'no'
@@ -531,7 +534,6 @@ def main():
     connect()
     speak(speak_dict.connect)
     threading.Thread(target=move.servo_init, args=[], daemon=True).start()
-
     try:
         led.mode_set(0)
         led.colorWipe([255, 255, 255])
