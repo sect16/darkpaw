@@ -352,118 +352,28 @@ def robot_home():
     robot_height(config.height)
 
 
-def robot_balance(balance):
+def robot_balance(balance, offset=0):
     global toe_wiggle, torso_wiggle
     logger.debug('Servo status: %s', config.servo)
-    wiggle = 0
-    if balance == 'front' or balance == 'back':
-        if balance == 'front':
-            wiggle = torso_wiggle
-        elif balance == 'back':
-            wiggle = int(torso_wiggle * -1)
-        pos = [
-            config.servo_init[0] - wiggle,
-            config.servo_init[3] + wiggle,
-            config.servo_init[6] + wiggle,
-            config.servo_init[9] - wiggle,
-            config.servo_init[2],
-            config.servo_init[5],
-            config.servo_init[8],
-            config.servo_init[11]
-        ]
-        servo_controller([0, 2], pos)
-    elif balance == 'left' or balance == 'right':
-        if balance == 'left':
-            wiggle = toe_wiggle
-        elif balance == 'right':
-            wiggle = int(toe_wiggle * -1)
-        pos = [
-            config.servo_init[0],
-            config.servo_init[3],
-            config.servo_init[6],
-            config.servo_init[9],
-            config.servo_init[2] + wiggle,
-            config.servo_init[5] - wiggle,
-            config.servo_init[8] + wiggle,
-            config.servo_init[11] - wiggle
-        ]
-        servo_controller([0, 2], pos)
-    elif balance == 'front_left':
-        pos = [config.servo_init[0] - torso_wiggle,
-               config.servo_init[3] + torso_wiggle,
-               config.servo_init[6] + torso_wiggle,
-               config.servo_init[9] - torso_wiggle,
-               config.servo_init[2] + toe_wiggle,
-               config.servo_init[5] - toe_wiggle,
-               config.servo_init[8] + toe_wiggle,
-               config.servo_init[11] - toe_wiggle]
-        servo_controller([0, 2], pos)
-    elif balance == 'front_right':
-        pos = [config.servo_init[0] - torso_wiggle,
-               config.servo_init[3] + torso_wiggle,
-               config.servo_init[6] + torso_wiggle,
-               config.servo_init[9] - torso_wiggle,
-               config.servo_init[2] - toe_wiggle,
-               config.servo_init[5] + toe_wiggle,
-               config.servo_init[8] - toe_wiggle,
-               config.servo_init[11] + toe_wiggle]
-        servo_controller([0, 2], pos)
-        pass
-    elif balance == 'back_left':
-        pos = [
-            config.servo_init[0] + torso_wiggle,
-            config.servo_init[3] - torso_wiggle,
-            config.servo_init[6] - torso_wiggle,
-            config.servo_init[9] + torso_wiggle,
-            config.servo_init[2] + toe_wiggle,
-            config.servo_init[5] - toe_wiggle,
-            config.servo_init[8] + toe_wiggle,
-            config.servo_init[11] - toe_wiggle]
-        servo_controller([0, 2], pos)
-    elif balance == 'back_right':
-        pos = [
-            config.servo_init[0] + torso_wiggle,
-            config.servo_init[3] - torso_wiggle,
-            config.servo_init[6] - torso_wiggle,
-            config.servo_init[9] + torso_wiggle,
-            config.servo_init[2] - toe_wiggle,
-            config.servo_init[5] + toe_wiggle,
-            config.servo_init[8] - toe_wiggle,
-            config.servo_init[11] + toe_wiggle]
-        servo_controller([0, 2], pos)
-    else:
-        balance_all()
-
-
-def balance_all():
-    pos = [
-        config.servo_init[0],
-        config.servo_init[3],
-        config.servo_init[6],
-        config.servo_init[9],
-        config.servo_init[2],
-        config.servo_init[5],
-        config.servo_init[8],
-        config.servo_init[11]]
+    wiggle_toe = 0
+    wiggle_torso = 0
+    if 'left' in balance:
+        wiggle_toe = int(toe_wiggle - offset)
+    elif 'right' in balance:
+        wiggle_toe = int((toe_wiggle - offset) * -1)
+    if 'front' in balance:
+        wiggle_torso = int(torso_wiggle - offset)
+    elif 'back' in balance:
+        wiggle_torso = int((torso_wiggle - offset) * -1)
+    pos = [config.servo_init[0] - wiggle_torso,
+           config.servo_init[3] + wiggle_torso,
+           config.servo_init[6] + wiggle_torso,
+           config.servo_init[9] - wiggle_torso,
+           config.servo_init[2] + wiggle_toe,
+           config.servo_init[5] - wiggle_toe,
+           config.servo_init[8] + wiggle_toe,
+           config.servo_init[11] - wiggle_toe]
     servo_controller([0, 2], pos)
-
-
-def balance_back(offset=0):
-    global torso_wiggle
-    pos1 = config.servo_init[0] + (torso_wiggle - offset)
-    pos2 = config.servo_init[3] - (torso_wiggle - offset)
-    pos3 = config.servo_init[6] - (torso_wiggle - offset)
-    pos4 = config.servo_init[9] + (torso_wiggle - offset)
-    servo_controller(0, [pos1, pos2, pos3, pos4])
-
-
-def balance_front(offset=0):
-    global torso_wiggle
-    pos1 = config.servo_init[0] - (torso_wiggle - offset)
-    pos2 = config.servo_init[3] + (torso_wiggle - offset)
-    pos3 = config.servo_init[6] + (torso_wiggle - offset)
-    pos4 = config.servo_init[9] - (torso_wiggle - offset)
-    servo_controller(0, [pos1, pos2, pos3, pos4])
 
 
 def leg_up(servo):
@@ -516,7 +426,7 @@ def leg_move(leg, direction):
             servo_controller(11, [int(config.servo_init[10] - config.upper_leg_w)])
 
 
-def log_down(leg, offset=0):
+def leg_down(leg, offset=0):
     if leg == 1:
         servo_controller(1, [int(config.lower_leg_h - offset)])
     if leg == 2:
