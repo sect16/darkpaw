@@ -260,20 +260,22 @@ def listener_thread(event):
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'Ultrasonic' == data:
-            tcp_server_socket.send(('Ultrasonic').encode())
-            ultra_event.set()
-            ultra_threading = threading.Thread(target=ultra_send_client, args=([ultra_event]), daemon=True)
-            ultra_threading.setName('ultra_thread')
-            ultra_threading.start()
+            if config.ULTRA_MODULE:
+                tcp_server_socket.send('Ultrasonic'.encode())
+                ultra_event.set()
+                ultra_threading = threading.Thread(target=ultra_send_client, args=([ultra_event]), daemon=True)
+                ultra_threading.setName('ultra_thread')
+                ultra_threading.start()
         elif 'Ultrasonic_end' == data:
             ultra_event.clear()
-            tcp_server_socket.send(('Ultrasonic_end').encode())
+            tcp_server_socket.send('Ultrasonic_end'.encode())
         elif 'stream_audio' == data:
             global server_address
             if audio_pid is None:
                 logger.info('Audio streaming server starting...')
                 audio_pid = subprocess.Popen([
-                    'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + server_address + ':' + str(
+                    'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst=' + str(
+                        server_address) + ':' + str(
                         config.AUDIO_PORT) + '}"'],
                     shell=True, preexec_fn=os.setsid)
             else:
@@ -393,11 +395,11 @@ def listener_thread(event):
                 if value > 0:
                     config.SPEED = value
             except:
-                logger.error('Error setting servo speed: %s', value)
+                logger.error('Error setting servo speed: %s', data)
                 logger.error('Exception: %s', traceback.format_exc())
                 pass
         elif 'light:' in data:
-            logger.debug('Received flash light intensity %s%', value)
+            logger.debug('Received flash light intensity %s%', data)
             try:
                 value = int(data.split(':', 2)[1])
                 switch.channel_B(value)
@@ -524,6 +526,7 @@ def main():
         led_threading.start()
         led.color_set('blue')
     except:
+        logger.error('Exception LED: %s', traceback.format_exc())
         pass
     connect()
     speak(speak_dict.connect)
