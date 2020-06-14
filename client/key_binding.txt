@@ -24,17 +24,17 @@ KeyRelease-s, call_stop
 KeyRelease-a, call_turn_stop
 KeyRelease-d, call_turn_stop
 
-KeyPress-h, headhome
-KeyPress-i, headup
-KeyPress-k, headdown
+KeyPress-h, move_head_home
+KeyPress-i, move_head_up
+KeyPress-k, move_head_down
 KeyPress-x, call_find_color
 KeyPress-c, call_watchdog
 
 KeyPress-b, stream_audio
-KeyPress-j, headleft
-KeyPress-l, headright
-KeyPress-u, low
-KeyPress-o, high
+KeyPress-j, move_head_left
+KeyPress-l, move_head_right
+KeyPress-u, move_low
+KeyPress-o, move_high
 
 KeyPress-z, call_steady
 KeyPress-v, call_smooth

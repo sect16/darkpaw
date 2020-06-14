@@ -68,7 +68,7 @@ upper_leg_w = int((upper_leg_h - upper_leg_l) / 2)
 torso_w = int((torso_h - torso_l) / 2)
 
 servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-servo_init = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+servo_init = []
 servo_h = [450, 500, 380, 450, 450, 500, 500, 450, 500, 500, 500, 380]
 servo_l = [150, 150, 100, 150, 100, 220, 200, 100, 220, 200, 150, 100]
 SPEED = 1

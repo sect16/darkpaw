@@ -37,6 +37,7 @@ if config.CAMERA_MODULE:
     camera = cam.Camera()
 kill_event = threading.Event()
 ultra_event = threading.Event()
+servo_init_thread = None
 steadyMode = 0
 direction_command = 'no'
 turn_command = 'no'
@@ -213,7 +214,7 @@ def listener_thread(event):
     This in the main listener thread loop which receives all commands from the client and call the necessary functions.
     """
     logger.info('Starting listener thread...')
-    global camera, tcp_server_socket, steadyMode, direction_command, turn_command
+    global camera, tcp_server_socket, steadyMode, direction_command, turn_command, servo_init_thread
     ws_G = 0
     ws_R = 0
     ws_B = 0
@@ -342,54 +343,59 @@ def listener_thread(event):
             direction_command = 'forward'
         elif 'backward' == data:
             direction_command = 'backward'
-        elif 'DS' in data:
-            direction_command = 'stand'
+        elif 'direction_stop' in data:
+            direction_command = 'stop'
         elif 'left' == data:
             turn_command = 'left'
         elif 'right' == data:
             turn_command = 'right'
-        elif 'leftside' == data:
+        elif 'move_left_side' == data:
             direction_command = 'c_left'
-        elif 'rightside' == data:
+        elif 'move_right_side' == data:
             direction_command = 'c_right'
-        elif 'TS' in data:
-            turn_command = 'stand'
-        elif 'headup' == data:
-            move.robot_pitch_roll(-100, 0)
-        elif 'headdown' == data:
-            move.robot_pitch_roll(100, 0)
-        elif 'headhome' == data:
-            move.robot_home()
-        elif 'low' == data:
-            move.robot_height(0)
-        elif 'high' == data:
-            move.robot_height(100)
-        elif 'headleft' == data:
-            move.robot_yaw(config.torso_w, 100)
-        elif 'headright' == data:
-            move.robot_yaw(config.torso_w, -100)
-        elif 'rollLeft' == data:
-            move.robot_pitch_roll(0, 100)
-        elif 'rollRight' == data:
-            move.robot_pitch_roll(0, -100)
-        elif 'btn_balance_front' == data:
-            move.robot_balance('front')
-        elif 'btn_balance_back' == data:
-            move.robot_balance('back')
-        elif 'btn_balance_left' == data:
-            move.robot_balance('left')
-        elif 'btn_balance_right' == data:
-            move.robot_balance('right')
-        elif 'btn_balance_front_left' == data:
-            move.robot_balance('front_left')
-        elif 'btn_balance_front_right' == data:
-            move.robot_balance('front_right')
-        elif 'btn_balance_center' == data:
-            move.robot_balance('center')
-        elif 'btn_balance_back_left' == data:
-            move.robot_balance('back_left')
-        elif 'btn_balance_back_right' == data:
-            move.robot_balance('back_right')
+        elif 'turn_stop' in data:
+            turn_command = 'stop'
+        elif 'balance_' in data or 'move_' in data:
+            # Ignore balance commands when robot servos not initialized and idle.
+            if not len(config.servo_init) == 12 or not direction_command == 'no' or not turn_command == 'no':
+                logger.warning('Ignoring command, robot servos not idle!')
+                continue
+            elif 'move_head_up' == data:
+                move.robot_pitch_roll(-100, 0)
+            elif 'move_head_down' == data:
+                move.robot_pitch_roll(100, 0)
+            elif 'move_head_home' == data:
+                move.robot_home()
+            elif 'move_low' == data:
+                move.robot_height(0)
+            elif 'move_high' == data:
+                move.robot_height(100)
+            elif 'move_head_left' == data:
+                move.robot_yaw(100)
+            elif 'move_head_right' == data:
+                move.robot_yaw(-100)
+            elif 'move_roll_left' == data:
+                move.robot_pitch_roll(0, 100)
+            elif 'move_roll_right' == data:
+                move.robot_pitch_roll(0, -100)
+            elif 'balance_front' == data:
+                move.robot_balance('front')
+            elif 'balance_back' == data:
+                move.robot_balance('back')
+            elif 'balance_left' == data:
+                move.robot_balance('left')
+            elif 'balance_right' == data:
+                move.robot_balance('right')
+            elif 'balance_front_left' == data:
+                move.robot_balance('front_left')
+            elif 'balance_front_right' == data:
+                move.robot_balance('front_right')
+            elif 'balance_center' == data:
+                move.robot_balance('center')
+            elif 'balance_back_left' == data:
+                move.robot_balance('back_left')
+            elif 'balance_back_right' == data:
+                move.robot_balance('back_right')
         elif 'speed:' in data:
             logger.debug('Received set servo speed')
             try:
@@ -420,26 +426,36 @@ def listener_thread(event):
 # Diagonal method to maintain robot balance
 def move_thread(event):
     logger.info('Thread started')
-    global direction_command, turn_command
+    global direction_command, turn_command, servo_init_thread
     step = 0
     last_direction_command = 'no'
     last_turn_command = 'no'
 
     move_list = [
-        "move.robot_yaw(move.torso_wiggle, 0)", "move.robot_balance(balance[0])", "move.leg_up(leg[0])",
+        "move.robot_yaw(0)", "move.robot_balance(balance[0])", "move.leg_up(leg[0])",
         "move.leg_move(leg[0], direction_command)", "move.leg_down(leg[0])", "move.leg_up(leg[1])",
         "move.leg_move(leg[1], direction_command)", "move.leg_down(leg[1])",
-        "move.robot_yaw(move.torso_wiggle, 0)", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
+        "move.robot_yaw(0)", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
         "move.leg_move(leg[2], direction_command)", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
         "move.leg_move(leg[3], direction_command)", "move.leg_down(leg[3])"
     ]
 
     crab_list = [
-        "move.robot_height(60)", "move.robot_balance(balance)", "move.leg_up(leg[0])",
-        "move.leg_move(leg[0], 'out')", "move.leg_down(leg[0])", "move.leg_up(leg[1])",
-        "move.leg_move(leg[1], 'in')", "move.leg_down(leg[1], 200)", "move.robot_balance('back')",
-        "move.leg_up(leg[2])", "move.leg_move(leg[2], 'out')", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
-        "move.leg_move(leg[3], 'in')", "move.leg_down(leg[3], 200)"
+        "move.robot_height(60)",
+        "move.robot_balance(balance)",
+        "move.leg_up(leg[1])",
+        "move.leg_move(leg[1], 'in')",
+        "move.leg_down(leg[1], 240)",
+        "move.leg_up(leg[0])",
+        "move.leg_move(leg[0], 'out')",
+        "move.leg_down(leg[0])",
+        "move.robot_balance('back', 'torso')",
+        "move.leg_up(leg[3])",
+        "move.leg_move(leg[3], 'in')",
+        "move.leg_down(leg[3], 240)",
+        "move.leg_up(leg[2])",
+        "move.leg_move(leg[2], 'out')",
+        "move.leg_down(leg[2])"
     ]
 
     turn_list = [
@@ -452,6 +468,7 @@ def move_thread(event):
 
     while not event.is_set():
         if not steadyMode:
+            servo_init_thread.join()
             if (direction_command == 'forward' or direction_command == 'backward') and turn_command == 'no':
                 # Initialize variables
                 if not last_direction_command == direction_command:
@@ -502,10 +519,12 @@ def move_thread(event):
                 if step == len(turn_list):
                     step = 0
                 continue
-            elif turn_command == 'stand' or direction_command == 'stand':
+            elif turn_command == 'stop' or direction_command == 'stop':
                 move.robot_height(50)
                 move.robot_balance('center')
                 move.torso_wiggle = config.torso_w - ((config.DEFAULT_X - 50) * 2 / 100 * config.torso_w)
+                direction_command = 'no'
+                turn_command = 'no'
                 pass
             last_direction_command = 'no'
             last_turn_command = 'no'
@@ -519,7 +538,7 @@ def move_thread(event):
 
 def main():
     logger.info('Starting server.')
-    global kill_event
+    global kill_event, servo_init_thread
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
@@ -533,7 +552,8 @@ def main():
         pass
     connect()
     speak(speak_dict.connect)
-    threading.Thread(target=move.servo_init, args=[], daemon=True).start()
+    servo_init_thread = threading.Thread(target=move.servo_init, args=[], daemon=True)
+    servo_init_thread.start()
     try:
         led.mode_set(0)
         led.colorWipe([255, 255, 255])

@@ -20,8 +20,6 @@ if config.SERVO_MODULE:
     pca = Adafruit_PCA9685.PCA9685()
     pca.set_pwm_freq(100)
 
-Set_Direction = 1
-
 """
 Set PID
 """
@@ -158,9 +156,15 @@ def servo_controller(initial_servo, pos, interval=3):
             # Build servo address list
             servo.append(initial_servo[0])
             initial_servo[0] += interval
-        else:
+        elif i <= 7:
             servo.append(initial_servo[1])
             initial_servo[1] += interval
+        elif i <= 11:
+            servo.append(initial_servo[2])
+            initial_servo[2] += interval
+        else:
+            logger.warning('Too many values')
+            return
         pos[i] = normalize(pos[i], config.servo_h[servo[i]], config.servo_l[servo[i]])
         servo_pos.append(config.servo[servo[i]])
         steps.append(int((abs(pos[i] - config.servo[servo[i]])) / config.SPEED))
@@ -235,7 +239,7 @@ def robot_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
         servo_controller(1, [pos1, pos2, pos3, pos4])
 
 
-def robot_yaw(wiggle, yaw):  # Percentage wiggle
+def robot_yaw(yaw):  # Percentage wiggle
     """
     look left <- yaw -> look right
     default value is 0
@@ -246,10 +250,11 @@ def robot_yaw(wiggle, yaw):  # Percentage wiggle
     :param wiggle: Constant servo range
     :param yaw: range (100, -100)
     """
+    global torso_wiggle
     yaw = normalize(yaw, 100, -100)
     logger.debug('Servo position before: %s', config.servo)
-    pos = [int(config.servo_init[0] + wiggle * yaw / 100), int(config.servo_init[3] - wiggle * yaw / 100),
-           int(config.servo_init[6] + wiggle * yaw / 100), int(config.servo_init[9] - wiggle * yaw / 100)]
+    pos = [int(config.servo_init[0] + torso_wiggle * yaw / 100), int(config.servo_init[3] - torso_wiggle * yaw / 100),
+           int(config.servo_init[6] + torso_wiggle * yaw / 100), int(config.servo_init[9] - torso_wiggle * yaw / 100)]
     '''
     pos1 = int(config.torso_m + wiggle * yaw / 100)
     pos2 = int(config.torso_m - wiggle * yaw / 100)
@@ -264,8 +269,6 @@ def robot_steady():
     global STEADY_DELAY
     """
     Reads accelerometer sensor data and send output to servos to level the robot
-
-    :return: void
     """
     global X_fix_output, Y_fix_output
     try:
@@ -299,7 +302,7 @@ def servo_release():
 def servo_init():
     """
     Initialize all servos.
-    A small twitch is required to command servos after release.
+    A small twitch is included to command servos after release.
     """
     if not config.SERVO_MODULE:
         logger.info('Servo module DISABLED')
@@ -352,81 +355,130 @@ def robot_home():
     robot_height(config.height)
 
 
-def robot_balance(balance, offset=0):
+def robot_balance(balance, section=None):
+    """
+    Moves the robot center of gravity to a direction given.
+
+    :param balance: front, back, left, right - Accept combination of values
+    :param offset: Offset to reduce movement
+    :param section: torso, toe - Specifies a distinct body movement
+    """
     global toe_wiggle, torso_wiggle
     logger.debug('Servo status: %s', config.servo)
     wiggle_toe = 0
     wiggle_torso = 0
     if 'left' in balance:
-        wiggle_toe = int(toe_wiggle - offset)
+        wiggle_toe = int(toe_wiggle)
     elif 'right' in balance:
-        wiggle_toe = int((toe_wiggle - offset) * -1)
+        wiggle_toe = int(toe_wiggle * -1)
     if 'front' in balance:
-        wiggle_torso = int(torso_wiggle - offset)
+        wiggle_torso = int(torso_wiggle)
     elif 'back' in balance:
-        wiggle_torso = int((torso_wiggle - offset) * -1)
-    pos = [config.servo_init[0] - wiggle_torso,
-           config.servo_init[3] + wiggle_torso,
-           config.servo_init[6] + wiggle_torso,
-           config.servo_init[9] - wiggle_torso,
-           config.servo_init[2] + wiggle_toe,
+        wiggle_torso = int(torso_wiggle * -1)
+    torso = [config.servo_init[0] - wiggle_torso,
+             config.servo_init[3] + wiggle_torso,
+             config.servo_init[6] + wiggle_torso,
+             config.servo_init[9] - wiggle_torso]
+    toe = [config.servo_init[2] + wiggle_toe,
            config.servo_init[5] - wiggle_toe,
            config.servo_init[8] + wiggle_toe,
            config.servo_init[11] - wiggle_toe]
-    servo_controller([0, 2], pos)
+    if section == 'toe':
+        servo_controller([2], toe)
+        return
+    elif section == 'torso':
+        servo_controller([0], torso)
+        return
+    else:
+        servo_controller([0, 2], torso + toe)
 
 
-def leg_up(servo):
-    if servo == 1:
+def leg_up(leg):
+    """
+    Lift the given robot leg upwards.
+
+    Leg_I   --- forward --- Leg_III
+                   |
+               robot body
+                   |
+    Leg_II  -- backward --- Leg_IV
+
+    :param leg: value between 1 - 4
+    """
+    if leg == 1:
         servo_controller(1, [int(config.lower_leg_l)])
-    if servo == 2:
+    if leg == 2:
         servo_controller(4, [int(config.lower_leg_h2)])
-    if servo == 3:
+    if leg == 3:
         servo_controller(7, [int(config.lower_leg_h)])
-    if servo == 4:
+    if leg == 4:
         servo_controller(10, [int(config.lower_leg_l2)])
 
 
 def leg_move(leg, direction):
+    """
+    Lift the given robot leg upwards.
+
+    Leg_I   --- forward --- Leg_III
+                   |
+               robot body
+                   |
+    Leg_II  -- backward --- Leg_IV
+
+    :param leg: value between 1 - 4
+    :param direction: Accepts string values 'forward', 'backward', 'in' , 'out'
+    """
     if leg == 1:
         if direction == 'forward':
             servo_controller(0, [int(config.servo_init[0] + config.torso_w)])
         elif direction == 'backward':
             servo_controller(0, [int(config.servo_init[0] - config.torso_w)])
         elif direction == 'in':
-            servo_controller(2, [int(config.servo_init[1] + config.upper_leg_w)])
+            servo_controller(2, [int(config.servo_init[2] + config.upper_leg_w)])
         elif direction == 'out':
-            servo_controller(2, [int(config.servo_init[1] - config.upper_leg_w)])
+            servo_controller(2, [int(config.servo_init[2] - config.upper_leg_w)])
     if leg == 2:
         if direction == 'forward':
             servo_controller(3, [int(config.servo_init[3] - config.torso_w)])
         elif direction == 'backward':
             servo_controller(3, [int(config.servo_init[3] + config.torso_w)])
         elif direction == 'in':
-            servo_controller(5, [int(config.servo_init[4] - config.upper_leg_w)])
+            servo_controller(5, [int(config.servo_init[5] - config.upper_leg_w)])
         elif direction == 'out':
-            servo_controller(5, [int(config.servo_init[4] + config.upper_leg_w)])
+            servo_controller(5, [int(config.servo_init[5] + config.upper_leg_w)])
     if leg == 3:
         if direction == 'forward':
             servo_controller(6, [int(config.servo_init[6] - config.torso_w)])
         elif direction == 'backward':
             servo_controller(6, [int(config.servo_init[6] + config.torso_w)])
         elif direction == 'in':
-            servo_controller(8, [int(config.servo_init[7] - config.upper_leg_w)])
+            servo_controller(8, [int(config.servo_init[8] - config.upper_leg_w)])
         elif direction == 'out':
-            servo_controller(8, [int(config.servo_init[7] + config.upper_leg_w)])
+            servo_controller(8, [int(config.servo_init[8] + config.upper_leg_w)])
     if leg == 4:
         if direction == 'forward':
             servo_controller(9, [int(config.servo_init[9] + config.torso_w)])
         elif direction == 'backward':
             servo_controller(9, [int(config.servo_init[9] - config.torso_w)])
         elif direction == 'in':
-            servo_controller(11, [int(config.servo_init[10] + config.upper_leg_w)])
+            servo_controller(11, [int(config.servo_init[11] + config.upper_leg_w)])
         elif direction == 'out':
-            servo_controller(11, [int(config.servo_init[10] - config.upper_leg_w)])
+            servo_controller(11, [int(config.servo_init[11] - config.upper_leg_w)])
 
 
 def leg_down(leg, offset=0):
+    """
+    Bring the given robot leg down.
+
+    Leg_I   --- forward --- Leg_III
+                   |
+               robot body
+                   |
+    Leg_II  -- backward --- Leg_IV
+
+    :param leg: value between 1 - 4
+    :param offset: Reduces the extend of downwards movement
+    """
     if leg == 1:
         servo_controller(1, [int(config.lower_leg_h - offset)])
     if leg == 2:

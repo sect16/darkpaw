@@ -39,20 +39,20 @@ VIDEO_WIDTH = 640
 VIDEO_HEIGHT = 480
 POWER_MODULE = True
 CAMERA_MODULE = True
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 ultra_data = 0
 
 guiTuple = (
-    "btn_left_side.place(x=30, y=195)", "btn_right_side.place(x=170, y=195)", "btn_low.place(x=330, y=230)",
-    "btn_high.place(x=470, y=230)", "btn_left.place(x=330, y=195)", "btn_right.place(x=470, y=195)",
+    "btn_look_left_side.place(x=30, y=195)", "btn_look_right_side.place(x=170, y=195)",
+    "btn_low.place(x=330, y=195)", "btn_high.place(x=470, y=195)",
+    "btn_look_left.place(x=330, y=230)", "btn_look_right.place(x=470, y=230)",
     "btn_Switch_1.place(x=30, y=265)", "btn_Switch_2.place(x=100, y=265)", "btn_Switch_3.place(x=170, y=265)",
     "btn_steady.place(x=30, y=465)", "btn_balance_front_left.place(x=237, y=195)",
     "btn_balance_front.place(x=267, y=195)", "btn_balance_front_right.place(x=297, y=195)",
     "btn_balance_left.place(x=237, y=230)", "btn_balance_center.place(x=267, y=230)",
     "btn_balance_right.place(x=297, y=230)", "btn_balance_back_left.place(x=237, y=265)",
     "btn_balance_back.place(x=267, y=265)", "btn_balance_back_right.place(x=297, y=265)",
-    "label_e4.place(x=120, y=110)", "e4.place(x=160, y=110)",
-    "label_ambient.place(x=250, y=15)",
+    "label_e4.place(x=120, y=110)", "e4.place(x=160, y=110)", "label_ambient.place(x=250, y=15)",
     "btn_roll_left.place(x=330, y=265)", "btn_roll_right.place(x=470, y=265)"
 )

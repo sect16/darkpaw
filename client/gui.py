@@ -96,9 +96,9 @@ def loop():  # GUI
     btn1 = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn2 = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn3 = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_up = tk.Button(root, width=8, text='Up', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_down = tk.Button(root, width=8, text='Down', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_up = tk.Button(root, width=8, text='Up', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_down = tk.Button(root, width=8, text='Down', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_video = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_e2 = tk.Button(root, width=8, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_roll_left = tk.Button(root, width=8, text='Roll L', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -112,9 +112,9 @@ def loop():  # GUI
     if config.CAMERA_MODULE:
         btn_video.place(x=320, y=140)  # Define a Button and put it in position
     btn_e2.place(x=470, y=300)  # Define a Button and put it in position
-    btn_up.place(x=400, y=195)
-    btn_down.place(x=400, y=265)
-    btn_home.place(x=400, y=230)
+    btn_look_up.place(x=400, y=195)
+    btn_look_down.place(x=400, y=265)
+    btn_look_home.place(x=400, y=230)
 
     var_R = tk.StringVar()
     var_R.set(0)
@@ -171,10 +171,10 @@ def loop():  # GUI
     btn1.bind('<ButtonPress-1>', call_back)
     btn2.bind('<ButtonPress-1>', call_left)
     btn3.bind('<ButtonPress-1>', call_right)
-    btn_up.bind('<ButtonPress-1>', lambda _: send('headup'))
-    btn_down.bind('<ButtonPress-1>', lambda _: send('headdown'))
-    btn_home.bind('<ButtonPress-1>', lambda _: send('headhome'))
-    btn_video.bind('<ButtonRelease-1>', lambda _: video.call_fpv(e1.get()))
+    btn_look_up.bind('<ButtonPress-1>', lambda _: send('move_head_up'))
+    btn_look_down.bind('<ButtonPress-1>', lambda _: send('move_head_down'))
+    btn_look_home.bind('<ButtonPress-1>', lambda _: send('move_head_home'))
+    btn_video.bind('<ButtonRelease-1>', lambda _: video.call_video(e1.get()))
     btn_e2.bind('<ButtonRelease-1>', send_command)
     btn0.bind('<ButtonRelease-1>', call_stop)
     btn1.bind('<ButtonRelease-1>', call_stop)
@@ -184,26 +184,26 @@ def loop():  # GUI
     root.bind_all('<Button-1>', focus)
 
     # Darkpaw specific GUI
-    btn_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_look_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_low = tk.Button(root, width=8, text='Low', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_high = tk.Button(root, width=8, text='High', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_left_side.bind('<ButtonPress-1>', call_left_side)
-    btn_right_side.bind('<ButtonPress-1>', call_right_side)
+    btn_look_left_side.bind('<ButtonPress-1>', call_left_side)
+    btn_look_right_side.bind('<ButtonPress-1>', call_right_side)
     btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
     btn_Switch_2.bind('<ButtonPress-1>', call_switch_2)
     btn_Switch_3.bind('<ButtonPress-1>', call_switch_3)
-    btn_low.bind('<ButtonPress-1>', lambda _: send('low'))
-    btn_high.bind('<ButtonPress-1>', lambda _: send('high'))
-    btn_left.bind('<ButtonPress-1>', lambda _: send('headleft'))
-    btn_right.bind('<ButtonPress-1>', lambda _: send('headright'))
-    btn_left_side.bind('<ButtonRelease-1>', call_stop)
-    btn_right_side.bind('<ButtonRelease-1>', call_stop)
+    btn_low.bind('<ButtonPress-1>', lambda _: send('move_low'))
+    btn_high.bind('<ButtonPress-1>', lambda _: send('move_high'))
+    btn_look_left.bind('<ButtonPress-1>', lambda _: send('move_head_left'))
+    btn_look_right.bind('<ButtonPress-1>', lambda _: send('move_head_right'))
+    btn_look_left_side.bind('<ButtonRelease-1>', call_stop)
+    btn_look_right_side.bind('<ButtonRelease-1>', call_stop)
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
     btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -211,8 +211,8 @@ def loop():  # GUI
     btn_ultra = tk.Button(root, width=10, text='Ultrasonic', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
     btn_ultra.bind('<ButtonPress-1>', call_ultra)
-    btn_roll_left.bind('<ButtonPress-1>', lambda _: send('rollLeft'))
-    btn_roll_right.bind('<ButtonPress-1>', lambda _: send('rollRight'))
+    btn_roll_left.bind('<ButtonPress-1>', lambda _: send('move_roll_left'))
+    btn_roll_right.bind('<ButtonPress-1>', lambda _: send('move_roll_right'))
 
     # Import last scale parameters
     try:
@@ -258,15 +258,15 @@ def loop():  # GUI
     btn_balance_back_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_balance_back_right = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
-    btn_balance_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_left'))
-    btn_balance_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_right'))
-    btn_balance_center.bind('<ButtonPress-1>', lambda _: send('btn_balance_center'))
-    btn_balance_front.bind('<ButtonPress-1>', lambda _: send('btn_balance_front'))
-    btn_balance_back.bind('<ButtonPress-1>', lambda _: send('btn_balance_back'))
-    btn_balance_front_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_front_left'))
-    btn_balance_front_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_front_right'))
-    btn_balance_back_left.bind('<ButtonPress-1>', lambda _: send('btn_balance_back_left'))
-    btn_balance_back_right.bind('<ButtonPress-1>', lambda _: send('btn_balance_back_right'))
+    btn_balance_left.bind('<ButtonPress-1>', lambda _: send('balance_left'))
+    btn_balance_right.bind('<ButtonPress-1>', lambda _: send('balance_right'))
+    btn_balance_center.bind('<ButtonPress-1>', lambda _: send('balance_center'))
+    btn_balance_front.bind('<ButtonPress-1>', lambda _: send('balance_front'))
+    btn_balance_back.bind('<ButtonPress-1>', lambda _: send('balance_back'))
+    btn_balance_front_left.bind('<ButtonPress-1>', lambda _: send('balance_front_left'))
+    btn_balance_front_right.bind('<ButtonPress-1>', lambda _: send('balance_front_right'))
+    btn_balance_back_left.bind('<ButtonPress-1>', lambda _: send('balance_back_left'))
+    btn_balance_back_right.bind('<ButtonPress-1>', lambda _: send('balance_back_right'))
 
     stat_update('-', '-', '-', '-', '-', '-')
     # Read custom gui from config
@@ -372,7 +372,7 @@ def call_stop(event):
     move_backward_status = 0
     yaw_left_status = 0
     yaw_right_status = 0
-    send('DS')
+    send('direction_stop')
 
 
 def call_turn_stop(event):
@@ -385,7 +385,7 @@ def call_turn_stop(event):
     move_right_status = 0
     yaw_left_status = 0
     yaw_right_status = 0
-    send('TS')
+    send('turn_stop')
 
 
 def call_left(event):
@@ -413,14 +413,14 @@ def call_right(event):
 def call_left_side(event):
     global yaw_left_status
     if yaw_left_status == 0:
-        send('leftside')
+        send('move_left_side')
         yaw_left_status = 1
 
 
 def call_right_side(event):
     global yaw_right_status
     if yaw_right_status == 0:
-        send('rightside')
+        send('move_right_side')
         yaw_right_status = 1
 
 
