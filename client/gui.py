@@ -245,7 +245,7 @@ def loop():  # GUI
 
     # Flash light entry
     entry_lights = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
-    label_entry_lights = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    label_lights = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
 
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
