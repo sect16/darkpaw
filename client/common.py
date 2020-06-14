@@ -233,14 +233,18 @@ def terminate(event=None):
 
 def send(value):
     """
-    Sends command or text over the tcp client socket.
-    :param value: command or text
+    Sends command or text over the tcp client socket. Ignores robot movement commands if in function mode.
+    :param value: command
     """
     if not connect_event.is_set():
-        logger.error('Unable to send command, no connection.')
+        logger.error('Unable to send command, not connected.')
     elif connect_event.is_set():
-        logger.info('Sending data: %s', value)
-        tcp_client_socket.send(value.encode())
+        if 'espeak' not in value and gui.func_mode == 1 and ('move_' in value or 'balance_' in value):
+            logger.warning('Unable to send command when robot in function mode!')
+            return
+        else:
+            logger.info('Sending data: %s', value)
+            tcp_client_socket.send(value.encode())
     else:
         logger.warning('Unable to send command, unknown connection status.')
 
