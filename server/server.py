@@ -59,7 +59,7 @@ def get_cpu_temp():
     return str(result)
 
 
-def get_gpu_temp():
+def get_soc_temp():
     """ Returns the temperature of the SoC as measured by the on-board temperature sensor."""
     res = os.popen('/opt/vc/bin/vcgencmd measure_temp').readline()
     return res.replace("temp=", "")

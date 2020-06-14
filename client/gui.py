@@ -48,7 +48,7 @@ def loop():  # GUI
     """
     Main GUI layout
     """
-    global root, e1, e2, e3, e4, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, label_ambient, \
+    global root, entry_ip, entry_text, entry_speed, entry_lights, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, label_ambient, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
         btn_ultra, btn_find_line, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
@@ -73,7 +73,7 @@ def loop():  # GUI
     label_current = tk.Label(root, width=18, text='Current:', fg=COLOR_TEXT, bg='#212121')
     label_ambient = tk.Label(root, width=18, text='Ambient:', fg=COLOR_TEXT, bg='#212121')
     label_ip_1 = tk.Label(root, width=18, text='Disconnected', fg=COLOR_TEXT, bg='#F44336')
-    label_ip_3 = tk.Label(root, width=10, text='IP Address:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    label_ip_2 = tk.Label(root, width=10, text='IP Address:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
     label_cpu_temp.place(x=400, y=15)  # Define a Label and put it in position
     label_cpu_use.place(x=400, y=45)  # Define a Label and put it in position
     label_ram_use.place(x=400, y=75)  # Define a Label and put it in position
@@ -81,37 +81,37 @@ def loop():  # GUI
         label_voltage.place(x=250, y=45)  # Define a Label and put it in position
         label_current.place(x=250, y=75)  # Define a Label and put it in position
     label_ip_1.place(x=400, y=110)  # Define a Label and put it in position
-    label_ip_3.place(x=400, y=145)  # Define a Label and put it in position
+    label_ip_2.place(x=400, y=145)  # Define a Label and put it in position
 
-    e1 = tk.Entry(root, show=None, width=10, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
-                  state='normal')
-    e2 = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
-                  state='disabled')
-    e1.place(x=470, y=145)  # Define a Entry and put it in position
-    e2.place(x=30, y=305)  # Define a Entry and put it in position
+    entry_ip = tk.Entry(root, show=None, width=10, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+                        state='normal')
+    entry_text = tk.Entry(root, show=None, width=71, bg='#FFFFFF', fg='#000000', disabledbackground=config.COLOR_GREY,
+                          state='disabled')
+    entry_ip.place(x=470, y=145)  # Define a Entry and put it in position
+    entry_text.place(x=30, y=305)  # Define a Entry and put it in position
 
     btn_connect = tk.Button(root, width=8, height=1, text='Connect', fg=COLOR_TEXT, bg=COLOR_BTN, command=connect,
                             relief='ridge')
-    btn0 = tk.Button(root, width=8, text='Forward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn1 = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn2 = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn3 = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_forward = tk.Button(root, width=8, text='Forward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_backward = tk.Button(root, width=8, text='Backward', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_look_up = tk.Button(root, width=8, text='Up', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_look_down = tk.Button(root, width=8, text='Down', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_look_home = tk.Button(root, width=8, text='Home', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_video = tk.Button(root, width=8, text='Video', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_e2 = tk.Button(root, width=8, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_entry_text = tk.Button(root, width=8, text='Send', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_roll_left = tk.Button(root, width=8, text='Roll L', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_roll_right = tk.Button(root, width=8, text='Roll R', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
 
     btn_connect.place(x=320, y=110)  # Define a Button and put it in position
-    btn0.place(x=100, y=195)
-    btn1.place(x=100, y=230)
-    btn2.place(x=30, y=230)
-    btn3.place(x=170, y=230)
+    btn_forward.place(x=100, y=195)
+    btn_backward.place(x=100, y=230)
+    btn_left.place(x=30, y=230)
+    btn_right.place(x=170, y=230)
     if config.CAMERA_MODULE:
         btn_video.place(x=320, y=140)  # Define a Button and put it in position
-    btn_e2.place(x=470, y=300)  # Define a Button and put it in position
+    btn_entry_text.place(x=470, y=300)  # Define a Button and put it in position
     btn_look_up.place(x=400, y=195)
     btn_look_down.place(x=400, y=265)
     btn_look_home.place(x=400, y=230)
@@ -167,19 +167,19 @@ def loop():  # GUI
     btn_quit.place(x=455, y=465)
     btn_quit.bind('<ButtonPress-1>', terminate)
 
-    btn0.bind('<ButtonPress-1>', call_forward)
-    btn1.bind('<ButtonPress-1>', call_back)
-    btn2.bind('<ButtonPress-1>', call_left)
-    btn3.bind('<ButtonPress-1>', call_right)
+    btn_forward.bind('<ButtonPress-1>', call_forward)
+    btn_backward.bind('<ButtonPress-1>', call_back)
+    btn_left.bind('<ButtonPress-1>', call_left)
+    btn_right.bind('<ButtonPress-1>', call_right)
     btn_look_up.bind('<ButtonPress-1>', lambda _: send('move_head_up'))
     btn_look_down.bind('<ButtonPress-1>', lambda _: send('move_head_down'))
     btn_look_home.bind('<ButtonPress-1>', lambda _: send('move_head_home'))
-    btn_video.bind('<ButtonRelease-1>', lambda _: video.call_video(e1.get()))
-    btn_e2.bind('<ButtonRelease-1>', send_command)
-    btn0.bind('<ButtonRelease-1>', call_stop)
-    btn1.bind('<ButtonRelease-1>', call_stop)
-    btn2.bind('<ButtonRelease-1>', call_turn_stop)
-    btn3.bind('<ButtonRelease-1>', call_turn_stop)
+    btn_video.bind('<ButtonRelease-1>', lambda _: video.call_video(entry_ip.get()))
+    btn_entry_text.bind('<ButtonRelease-1>', send_command)
+    btn_forward.bind('<ButtonRelease-1>', call_stop)
+    btn_backward.bind('<ButtonRelease-1>', call_stop)
+    btn_left.bind('<ButtonRelease-1>', call_turn_stop)
+    btn_right.bind('<ButtonRelease-1>', call_turn_stop)
     root.bind_all('<KeyPress-Return>', send_command)
     root.bind_all('<Button-1>', focus)
 
@@ -217,7 +217,7 @@ def loop():  # GUI
     # Import last scale parameters
     try:
         ip = str(config_import('IP:'))
-        e1.insert(0, ip)
+        entry_ip.insert(0, ip)
     except:
         logger.warning('Exception reading IP address from file: %s', traceback.format_exc())
         pass
@@ -231,21 +231,21 @@ def loop():  # GUI
 
     # Speed_set entry
     var = 0
-    e3 = tk.Spinbox(root, width=3, from_=1.0, to=10.0, command=set_speed)
+    entry_speed = tk.Spinbox(root, width=3, from_=1.0, to=10.0, command=set_speed)
     try:
-        e3.place(x=70, y=110)
-        e3.delete(0, "end")
-        e3.insert(0, config_import('SPEED:'))
+        entry_speed.place(x=70, y=110)
+        entry_speed.delete(0, "end")
+        entry_speed.insert(0, config_import('SPEED:'))
     except:
         ", "
         logger.error('Speed parameter read exception: %s', traceback.format_exc())
         pass
-    label_e3 = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
-    label_e3.place(x=30, y=110)
+    label_entry_speed = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    label_entry_speed.place(x=30, y=110)
 
     # Flash light entry
-    e4 = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
-    label_e4 = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    entry_lights = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
+    label_entry_lights = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
 
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -529,7 +529,7 @@ def button_update(status_data):
     This function is called to update the GUI according to data received from robot.
     :param status_data: String data received from robot
     """
-    global root, e1, e2, e3, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, \
+    global root, entry_ip, entry_text, entry_speed, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
         btn_ultra, btn_find_line, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode
@@ -657,13 +657,13 @@ def send_command(event):
     This function sends TTS string to robot when connection is established.
     :param event: Not used
     """
-    if e2.get() != '' and connect_event.is_set():
+    if entry_text.get() != '' and connect_event.is_set():
         if not config.DEBUG_MODE:
-            send('espeak:' + e2.get())
+            send('espeak:' + entry_text.get())
         else:
-            send(e2.get())
-        e1.focus_set()
-        e2.delete(0, 'end')
+            send(entry_text.get())
+        entry_ip.focus_set()
+        entry_text.delete(0, 'end')
     else:
         logger.warning('Unable to send, not connected')
     bind_keys()
@@ -672,7 +672,7 @@ def send_command(event):
 def connect_init(ip_address):
     label_ip_1.config(text='Connected')
     label_ip_1.config(bg='#558B2F')
-    e2.config(state='normal')
+    entry_text.config(state='normal')
     btn_connect.config(state='normal')
     btn_connect.config(text='Disconnect')
     time.sleep(0.5)
@@ -683,17 +683,17 @@ def connect_init(ip_address):
     time.sleep(0.5)
     send(' wsB ' + var_B.get())
     time.sleep(0.5)
-    if not e3.get() == '':
-        send(' speed:' + e3.get())
+    if not entry_speed.get() == '':
+        send(' speed:' + entry_speed.get())
 
 
 def set_speed():
-    global e3
-    send('speed:' + e3.get())
-    e1.focus_set()
+    global entry_speed
+    send('speed:' + entry_speed.get())
+    entry_ip.focus_set()
 
 
 def set_light():
-    global e4
-    send('light:' + e4.get())
-    e1.focus_set()
+    global entry_lights
+    send('light:' + entry_lights.get())
+    entry_ip.focus_set()

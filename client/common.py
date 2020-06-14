@@ -147,11 +147,11 @@ def connect():  # Call this function to connect with the server
     Initialize and begin connection
     """
     global connect_event, tcp_client_socket
-    ip_address = gui.e1.get()  # Get the IP address from Entry
+    ip_address = gui.entry_ip.get()  # Get the IP address from Entry
     if not connect_event.is_set() and ip_check(ip_address):
         gui.btn_connect['state'] = 'disabled'
         gui.label_ip_1.config(bg='#FF8F00')
-        gui.e1.config(state='disabled')
+        gui.entry_ip.config(state='disabled')
         gui.label_ip_1.config(text='Connecting')
         gui.label_ip_1.config(bg='#FF8F00')
         tcp_client_socket = socket(AF_INET, SOCK_STREAM)  # Set connection value for socket
@@ -179,7 +179,7 @@ def connect():  # Call this function to connect with the server
             gui.label_ip_1.config(text='Disconnected')
             gui.label_ip_1.config(bg=config.LABEL_BG)
             gui.btn_connect.config(state='normal')
-            gui.e1.config(state='normal')
+            gui.entry_ip.config(state='normal')
     elif connect_event.is_set():
         disconnect()
 
@@ -207,8 +207,8 @@ def disconnect():
     gui.label_ip_1.config(text='Disconnected', fg=config.COLOR_TEXT, bg=config.LABEL_BG)
     gui.all_btn_normal()
     gui.unbind_keys()
-    gui.e1.config(state='normal')
-    gui.e2.config(state='disabled')
+    gui.entry_ip.config(state='normal')
+    gui.entry_text.config(state='disabled')
     gui.btn_video.config(bg=config.COLOR_BTN)
     gui.btn_video['state'] = 'normal'
     gui.btn_audio.config(bg=config.COLOR_BTN)
@@ -226,7 +226,7 @@ def terminate(event=None):
     config_export('SCALE_R:', gui.var_R.get())
     config_export('SCALE_B:', gui.var_G.get())
     config_export('SCALE_G:', gui.var_B.get())
-    config_export('SPEED:', gui.e3.get())
+    config_export('SPEED:', gui.entry_speed.get())
     time.sleep(0.5)
     gui.root.destroy()
 
