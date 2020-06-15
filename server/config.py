@@ -27,7 +27,7 @@ MAX_CONTOUR_AREA = 5000
 VIDEO_PORT = 5555
 RESOLUTION = [640, 480]
 AUDIO_PORT = 3030
-FRAME_RATE = 32
+FRAME_RATE = 30
 ULTRA_PORT = 2257
 
 # Hardware configuration
@@ -78,3 +78,40 @@ OFFSET_VOLTAGE = 0
 OFFSET_CURRENT = 0
 OFFSET_AMBIENT = 0
 AUDIO_INPUT = 'hw:2,0'
+
+"""
+auto: use automatic exposure mode
+night: select setting for night shooting
+nightpreview:
+backlight: select setting for backlit subject
+spotlight:
+sports: select setting for sports (fast shutter etc.)
+snow: select setting optimised for snowy scenery
+beach: select setting optimised for beach
+verylong: select setting for long exposures
+fixedfps: constrain fps to a fixed value
+antishake: antishake mode
+fireworks: select setting optimised for fireworks
+"""
+CAMERA_EXPOSURE = 'auto'
+
+"""
+'off'     
+'auto'     
+'sunlight'
+'cloudy'        
+'shade' 
+'tungsten'
+'fluorescent'   
+'incandescent'  
+'flash'        
+'horizon'       
+"""
+CAMERA_AWB = 'auto'
+"""     
+'average'
+'spot'  
+'backlit'
+'matrix'
+"""
+CAMERA_METERING = 'backlit'

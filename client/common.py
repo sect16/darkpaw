@@ -239,7 +239,9 @@ def send(value):
     if not connect_event.is_set():
         logger.error('Unable to send command, not connected.')
     elif connect_event.is_set():
-        if 'espeak' not in value and gui.func_mode == 1 and ('move_' in value or 'balance_' in value):
+        blocked = ['forward', 'backward', 'left', 'right', 'direction_stop', 'turn_stop']
+        if 'espeak' not in value and gui.func_mode == 1 and (
+                'move_' in value or 'balance_' in value or value in blocked):
             logger.warning('Unable to send command when robot in function mode!')
             return
         else:

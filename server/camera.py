@@ -42,7 +42,9 @@ WATCH_STANDBY = 'blue'
 WATCH_ALERT = 'red'
 frame_image = None
 # Init watchdog variables
-avg = None
+REFRESH_RATE = 0.5
+last_run = datetime.datetime.now()
+average = None
 motion_counter = 0
 last_motion_captured = datetime.datetime.now()
 image_loop_start = datetime.datetime.now()
@@ -75,7 +77,8 @@ class Camera:
         UltraData = invar
 
     def capture_thread(self, event):
-        global frame_image
+        global frame_image, last_motion_captured
+        text = ''
         logger.info('Thread started')
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,
@@ -94,13 +97,17 @@ class Camera:
                      (int(config.RESOLUTION[0] / 2) + 20, int(config.RESOLUTION[1] / 2)), (128, 255, 128), 1)
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2), int(config.RESOLUTION[1] / 2) - 20),
                      (int(config.RESOLUTION[0] / 2), int(config.RESOLUTION[1] / 2) + 20), (128, 255, 128), 1)
-            if FindColorMode:
-                find_color(self, pts, args)
-
-            elif WatchDogMode:
-                watchdog()
-
+            if datetime.datetime.now() - last_run > datetime.timedelta(seconds=REFRESH_RATE):
+                if FindColorMode:
+                    text = find_color(self, pts, args)
+                elif WatchDogMode:
+                    text = watchdog()
+                else:
+                    last_motion_captured = datetime.datetime.now()
+                    text = ''
             if config.VIDEO_OUT:
+                cv2.putText(frame_image, text, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
+                            cv2.LINE_AA)
                 if mq.closed:
                     logger.info('Initializing ZMQ client...')
                     mq = init_client()
@@ -156,53 +163,62 @@ def destroy_client(mq):
 
 
 def watchdog():
-    global avg, last_motion_captured, motion_counter, frame_image
-    timestamp = datetime.datetime.now()
-    gray = cv2.cvtColor(frame_image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (21, 21), 0)
-    if avg is None:
-        logger.info("Starting background model for watchdog...")
-        avg = gray.copy().astype("float")
-    cv2.accumulateWeighted(gray, avg, 0.5)
-    frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(avg))
+    global average, last_motion_captured, motion_counter, frame_image, image_loop_start, last_run, REFRESH_RATE
+    last_run = datetime.datetime.now()
+    # Convert frame to grayscale, and blur it
+    grayscale = cv2.cvtColor(frame_image, cv2.COLOR_BGR2GRAY)
+    grayscale = cv2.GaussianBlur(grayscale, (25, 25), 0)
+    # if the background frame is None, initialize it
+    if average is None:
+        logger.info("Saving background model for motion detection")
+        average = grayscale.copy().astype("float")
+    # Get 50% of the new frame and add it to 50% of the accumulator
+    cv2.accumulateWeighted(grayscale, average, 0.5)
+    delta = cv2.absdiff(grayscale, cv2.convertScaleAbs(average))
 
     # threshold the delta image, dilate the thresholded image to fill
     # in holes, then find contours on thresholded image
-    thresh = cv2.threshold(frameDelta, 5, 255,
-                           cv2.THRESH_BINARY)[1]
-    thresh = cv2.dilate(thresh, None, iterations=2)
-    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                            cv2.CHAIN_APPROX_SIMPLE)
-    cnts = imutils.grab_contours(cnts)
+    # threshold = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
+    threshold = cv2.threshold(delta, 25, 255, cv2.THRESH_BINARY)[1]
+    threshold = cv2.dilate(threshold, None, iterations=2)
+    contours = cv2.findContours(threshold.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = imutils.grab_contours(contours)
     # loop over the contours
-    for c in cnts:
+    for c in contours:
         # if the contour is too small, ignore it
         if cv2.contourArea(c) < config.MAX_CONTOUR_AREA:
-            logger.debug('Contour too small (%s), ignoring...', cv2.contourArea(c))
+            # logger.debug('Contour too small (%s), ignoring...', cv2.contourArea(c))
             continue
-        else:
-            speak(speak_dict.bark)
-        # compute the bounding box for the contour, draw it on the frame,
-        # and update the text
+        logger.debug('Contour detected (%s)', cv2.contourArea(c))
+        speak(speak_dict.bark)
+        # compute the bounding box for the contour, draw it on the frame, and update the text
         (x, y, w, h) = cv2.boundingRect(c)
         cv2.rectangle(frame_image, (x, y), (x + w, y + h), (128, 255, 0), 1)
         motion_counter += 1
         logger.info('Motion frame counter: %s', motion_counter)
         led.color_set(WATCH_ALERT)
-        last_motion_captured = timestamp
+        last_motion_captured = last_run
+        # Write last detected buffer, threshold and delta image to disk
         with open('buffer.jpg', mode='wb') as file:
             encoded, buffer = cv2.imencode('.jpg', frame_image)
             file.write(buffer)
-    if (timestamp - last_motion_captured).seconds >= 0.5:
-        logger.debug('No motion detected.')
-        # timer = str(timestamp - last_motion_captured).split('.', 2)[0]
-        # cv2.putText(frame_image, 'No motion detected for ' + timer, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
-        #             cv2.LINE_AA)
+        with open('delta.jpg', mode='wb') as file:
+            encoded, buffer = cv2.imencode('.jpg', delta)
+            file.write(buffer)
+        with open('threshold.jpg', mode='wb') as file:
+            encoded, buffer = cv2.imencode('.jpg', threshold)
+            file.write(buffer)
+        return 'Motion detected'
+    if (last_run - last_motion_captured).seconds >= 3:
         led.color_set(WATCH_STANDBY)
+        return 'No motion detected for ' + str(last_run - last_motion_captured).split('.', 2)[0]
+    else:
+        return 'No motion detected'
 
 
 def find_color(self, pts, args):
-    global Y_lock, X_lock
+    global Y_lock, X_lock, last_run
+    last_run = datetime.datetime.now()
     hsv = cv2.cvtColor(frame_image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, self.colorLower, self.colorUpper)
     mask = cv2.erode(mask, None, iterations=2)
@@ -210,8 +226,7 @@ def find_color(self, pts, args):
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)[-2]
     if len(cnts) > 0:
-        cv2.putText(frame_image, 'Target Detected', (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
-                    cv2.LINE_AA)
+        text = 'Target Detected'
         c = max(cnts, key=cv2.contourArea)
         ((x, y), radius) = cv2.minEnclosingCircle(c)
         X = int(x)
@@ -250,8 +265,7 @@ def find_color(self, pts, args):
         led.color_set('red')
 
     else:
-        cv2.putText(frame_image, 'Detecting target', (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
-                    cv2.LINE_AA)
+        text = 'Detecting target'
         led.color_set('yellow')
 
     for i in range(1, len(pts)):
@@ -259,6 +273,7 @@ def find_color(self, pts, args):
             continue
         thickness = int(numpy.sqrt(args["buffer"] / float(i + 1)) * 2.5)
         cv2.line(frame_image, pts[i - 1], pts[i], (0, 0, 255), thickness)
+    return text
 
 
 if __name__ == '__main__':

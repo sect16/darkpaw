@@ -15,23 +15,26 @@ class Stream:
     def __init__(self, **kwargs):
         # initialize the camera
         self.camera = PiCamera()
-
         # set camera parameters
         self.camera.resolution = config.RESOLUTION
         self.camera.framerate = config.FRAME_RATE
-
         # set optional camera parameters (refer to PiCamera docs)
         for (arg, value) in kwargs.items():
             setattr(self.camera, arg, value)
-
         # initialize the stream
         self.rawCapture = PiRGBArray(self.camera, size=config.RESOLUTION)
         time.sleep(1)
-        self.camera.exposure_mode = 'off'  # Lock gains and disable auto exposure
+        self.camera.exposure_mode = config.CAMERA_EXPOSURE  # Lock gains and disable auto exposure
+        self.camera.awb_mode = config.CAMERA_AWB
+        self.camera.meter_mode = config.CAMERA_METERING
+        # Automatic shutter
         self.camera.shutter_speed = 0
+        self.camera.exposure_compensation = 1
+        self.camera.video_denoise = True
+        self.camera.video_stabilization = False
+        self.camera.stop_preview()
         self.stream = self.camera.capture_continuous(self.rawCapture,
-                                                     format="bgr", use_video_port=True)
-
+                                                     format="bgr", use_video_port=True, resize=None, splitter_port=0)
         # initialize the frame and the variable used to indicate
         # if the thread should be stopped
         self.frame = None
