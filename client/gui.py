@@ -240,8 +240,8 @@ def loop():  # GUI
         ", "
         logger.error('Speed parameter read exception: %s', traceback.format_exc())
         pass
-    label_entry_speed = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
-    label_entry_speed.place(x=30, y=110)
+    label_speed = tk.Label(root, width=5, text='Speed:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    label_speed.place(x=30, y=110)
 
     # Flash light entry
     entry_lights = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
