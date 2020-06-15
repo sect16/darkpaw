@@ -40,10 +40,8 @@ FindColorMode = 0
 WatchDogMode = 0
 WATCH_STANDBY = 'blue'
 WATCH_ALERT = 'red'
+REDUCED_FRAME_RATE = 12
 frame_image = None
-# Init watchdog variables
-REFRESH_RATE = 0.5
-last_run = datetime.datetime.now()
 average = None
 motion_counter = 0
 last_motion_captured = datetime.datetime.now()
@@ -85,7 +83,6 @@ class Camera:
                         help="max buffer size")
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
-        frame_rate_mili = int(1000000 / config.FRAME_RATE)
         video_stream = stream.Stream().start()
         frame_image = video_stream.read()
         context = zmq.Context()
@@ -97,14 +94,16 @@ class Camera:
                      (int(config.RESOLUTION[0] / 2) + 20, int(config.RESOLUTION[1] / 2)), (128, 255, 128), 1)
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2), int(config.RESOLUTION[1] / 2) - 20),
                      (int(config.RESOLUTION[0] / 2), int(config.RESOLUTION[1] / 2) + 20), (128, 255, 128), 1)
-            if datetime.datetime.now() - last_run > datetime.timedelta(seconds=REFRESH_RATE):
-                if FindColorMode:
-                    text = find_color(self, pts, args)
-                elif WatchDogMode:
-                    text = watchdog()
-                else:
-                    last_motion_captured = datetime.datetime.now()
-                    text = ''
+            if FindColorMode:
+                frame_rate_mili = int(1000000 / REDUCED_FRAME_RATE)
+                text = find_color(self, pts, args)
+            elif WatchDogMode:
+                frame_rate_mili = int(1000000 / REDUCED_FRAME_RATE)
+                text = watchdog()
+            else:
+                frame_rate_mili = int(1000000 / config.FRAME_RATE)
+                last_motion_captured = datetime.datetime.now()
+                text = ''
             if config.VIDEO_OUT:
                 cv2.putText(frame_image, text, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
                             cv2.LINE_AA)
@@ -117,9 +116,6 @@ class Camera:
                 except:
                     logger.warning('Unable to encode frame.')
                     pass
-                # with open('buffer.jpg', mode='wb') as file:
-                #     file.write(buffer)
-                # logger.debug('Sending footage using ZMQ')
             elif not config.VIDEO_OUT and not mq.closed:
                 destroy_client(mq)
             limit_framerate(frame_rate_mili)
@@ -163,11 +159,11 @@ def destroy_client(mq):
 
 
 def watchdog():
-    global average, last_motion_captured, motion_counter, frame_image, image_loop_start, last_run, REFRESH_RATE
+    global average, last_motion_captured, motion_counter, frame_image, image_loop_start
     last_run = datetime.datetime.now()
     # Convert frame to grayscale, and blur it
     grayscale = cv2.cvtColor(frame_image, cv2.COLOR_BGR2GRAY)
-    grayscale = cv2.GaussianBlur(grayscale, (25, 25), 0)
+    grayscale = cv2.GaussianBlur(grayscale, (21, 21), 0)
     # if the background frame is None, initialize it
     if average is None:
         logger.info("Saving background model for motion detection")
@@ -175,7 +171,6 @@ def watchdog():
     # Get 50% of the new frame and add it to 50% of the accumulator
     cv2.accumulateWeighted(grayscale, average, 0.5)
     delta = cv2.absdiff(grayscale, cv2.convertScaleAbs(average))
-
     # threshold the delta image, dilate the thresholded image to fill
     # in holes, then find contours on thresholded image
     # threshold = cv2.threshold(delta, 50, 255, cv2.THRESH_BINARY)[1]
@@ -217,8 +212,7 @@ def watchdog():
 
 
 def find_color(self, pts, args):
-    global Y_lock, X_lock, last_run
-    last_run = datetime.datetime.now()
+    global Y_lock, X_lock
     hsv = cv2.cvtColor(frame_image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, self.colorLower, self.colorUpper)
     mask = cv2.erode(mask, None, iterations=2)
@@ -263,7 +257,6 @@ def find_color(self, pts, args):
         # logger.debug('Find color position output (X,Y) = (%s,%s)', outv_X, outv_Y)
         # if X_lock == 1 and Y_lock == 1:
         led.color_set('red')
-
     else:
         text = 'Detecting target'
         led.color_set('yellow')
