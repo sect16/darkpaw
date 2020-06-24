@@ -396,6 +396,8 @@ def listener_thread(event):
                 move.robot_balance('back_left')
             elif 'balance_back_right' == data:
                 move.robot_balance('back_right')
+            elif 'move_sit' == data:
+                move.robot_sit()
         elif 'speed:' in data:
             logger.debug('Received set servo speed')
             try:
