@@ -393,6 +393,17 @@ def robot_balance(balance, section=None):
         servo_controller([0, 2], torso + toe)
 
 
+def robot_sit():
+    """
+    Toe out to sit on ground
+    """
+    toe = [config.servo_init[2] - toe_wiggle,
+           config.servo_init[5] + toe_wiggle,
+           config.servo_init[8] + toe_wiggle,
+           config.servo_init[11] - toe_wiggle]
+    servo_controller([2], toe)
+
+
 def leg_up(leg):
     """
     Lift the given robot leg upwards.
