@@ -56,9 +56,6 @@ class Camera:
         self.colorUpper = (44, 255, 255)
         self.colorLower = (24, 100, 100)
 
-    def SetIP(self, invar):
-        self.IP = invar
-
     def FindColor(self, invar):
         global FindColorMode, UltraData
         UltraData = 0.45
@@ -75,8 +72,14 @@ class Camera:
         UltraData = invar
 
     def capture_thread(self, event):
+        """
+        Main video capture thread. Sends frames to CV2 for image processing when mode is set.
+        Automatically reduces frame rate to reduce CPU usage when function mode is enabled.
+
+        :param event: Signals thread to stop when event is set.
+        :return: void
+        """
         global frame_image, last_motion_captured
-        text = ''
         logger.info('Thread started')
         ap = argparse.ArgumentParser()  # OpenCV initialization
         ap.add_argument("-b", "--buffer", type=int, default=64,

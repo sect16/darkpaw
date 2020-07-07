@@ -34,6 +34,8 @@ yaw_right_status = 0
 smooth_mode = 0
 ultrasonic_mode = 0
 led_sleep = 0
+light_value = 0
+speed_value = 0
 
 COLOR_SWT_ACT = config.COLOR_SWT_ACT
 COLOR_BTN_ACT = config.COLOR_BTN_ACT
@@ -683,17 +685,34 @@ def connect_init(ip_address):
     time.sleep(0.5)
     send(' wsB ' + var_B.get())
     time.sleep(0.5)
-    if not entry_speed.get() == '':
-        send(' speed:' + entry_speed.get())
+    set_speed()
+    time.sleep(0.5)
+    set_light()
 
 
 def set_speed():
-    global entry_speed
-    send('speed:' + entry_speed.get())
+    """
+    This method reads the entry input and sends a message to the server.
+    It does not send if value was unchanged.
+    Writes new value to global variable.
+    """
+    global entry_speed, speed_value
+    set_value = entry_speed.get()
+    if not set_value == '' and speed_value != set_value:
+        send(' speed:' + set_value)
+        speed_value = set_value
     entry_ip.focus_set()
 
 
 def set_light():
-    global entry_lights
-    send('light:' + entry_lights.get())
+    """
+    This method reads the entry input and sends a message to the server.
+    It does not send if value was unchanged.
+    Writes new value to global variable.
+    """
+    global entry_lights, light_value
+    set_value = entry_lights.get()
+    if light_value != set_value:
+        send('light:' + set_value)
+        light_value = set_value
     entry_ip.focus_set()
