@@ -9,4 +9,4 @@
 name = 'Silly dog'
 connect = (str(name + ' connected'))
 disconnect = (str(name + ' disconnected'))
-bark = ('silly dog sees you! wuff wuff, wuff wuff', 'dude lay low mo hai')
+bark = ('silly dog sees you! wuff wuff, wuff wuff', 'dude lay low mo hai', "daa chat lei")
