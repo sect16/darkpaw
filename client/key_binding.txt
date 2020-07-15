@@ -37,5 +37,4 @@ KeyPress-u, move_low
 KeyPress-o, move_high
 
 KeyPress-z, call_steady
-KeyPress-v, call_smooth
 <EOF>
