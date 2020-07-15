@@ -69,16 +69,18 @@ def config_import(label):
 
 def status_client_thread(event):
     """
-    TCP client thread
+    This function loops through data received from the tcp socket and updates the client button status.
     :param event: Clear event flag to terminate thread
     """
     logger.info('Thread started')
     global tcp_client_socket
     while event.is_set():
         try:
-            status_data = (tcp_client_socket.recv(config.BUFFER_SIZE)).decode()
-            logger.info('Received status info: %s' % (status_data,))
-            gui.button_update(status_data)
+            data = (tcp_client_socket.recv(config.BUFFER_SIZE)).decode()
+            logger.info('Received status info: %s' % data)
+            data = data.split()
+            for status in data:
+                gui.button_update(status)
             time.sleep(0.5)
         except:
             logger.error('Thread exception: %s', traceback.format_exc())
@@ -88,7 +90,7 @@ def status_client_thread(event):
 
 def info_thread(event):
     """
-    Statistics server thread
+    This function loops through messages received from tcp socket and updates the robot statistic data.
     :param event: Clear event flag to terminate thread
     """
     logger.info('Thread started')
@@ -105,8 +107,9 @@ def info_thread(event):
         try:
             message = str(stat_sock.recv(config.BUFFER_SIZE).decode())
             data = message.split()
-            if data.__len__() == 6:
-                cpu_temp, cpu_use, ram_use, voltage, current, ambient = data
+            if data.__len__() >= 6:
+                cpu_temp, cpu_use, ram_use, voltage, current, ambient = data[0], data[1], data[2], data[3], data[4], \
+                                                                        data[5]
                 logger.debug('cpu_tem:%s, cpu_use:%s, ram_use:%s, voltage:%s, current:%s, ambient:%s' % (
                     cpu_temp, cpu_use, ram_use, voltage, current, ambient))
                 gui.stat_update(cpu_temp, cpu_use, ram_use, voltage, current, ambient)
@@ -231,22 +234,23 @@ def terminate(event=None):
     gui.root.destroy()
 
 
-def send(value):
+def send(message):
     """
     Sends command or text over the tcp client socket. Ignores robot movement commands if in function mode.
-    :param value: command
+    :param message: command
     """
     if not connect_event.is_set():
         logger.error('Unable to send command, not connected.')
     elif connect_event.is_set():
         blocked = ['forward', 'backward', 'left', 'right', 'direction_stop', 'turn_stop']
-        if 'espeak' not in value and gui.func_mode == 1 and (
-                'move_' in value or 'balance_' in value or value in blocked):
+        if 'espeak' not in message and gui.func_mode == 1 and (
+                'move_' in message or 'balance_' in message or message in blocked):
             logger.warning('Unable to send command when robot in function mode!')
             return
         else:
-            logger.info('Sending data: %s', value)
-            tcp_client_socket.send(value.encode())
+            logger.info('Sending data: %s', message)
+            message += ';'
+            tcp_client_socket.send(message.encode())
     else:
         logger.warning('Unable to send command, unknown connection status.')
 
@@ -277,16 +281,17 @@ def thread_isAlive(*args):
         lst = threading.enumerate()
         for x in lst:
             if x.name == thread_name:
-                logger.debug('Found %s is active.', x)
+                logger.warning('Found %s is active.', x)
                 return True
-    logger.debug('No threads found.')
+    logger.info('All threads terminated.')
     return False
 
 
 def keepalive_thread(event):
     logger.info('Thread started')
+    time.sleep(config.KEEPALIVE_INTERVAL)
     while event.is_set():
-        time.sleep(config.KEEPALIVE_INTERVAL)
         logger.debug('Sending keepalive message')
         send('|ACK|')
+        time.sleep(config.KEEPALIVE_INTERVAL)
     logger.info('Thread stopped')

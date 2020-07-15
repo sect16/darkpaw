@@ -7,6 +7,7 @@
 #
 
 name = 'Silly dog'
-connect = (str(name + ' connected'))
-disconnect = (str(name + ' disconnected'))
-bark = ('silly dog sees you! wuff wuff, wuff wuff', 'dude lay low mo hai', "daa chat lei")
+connect = (name + ' connected', name + ' associated', name + ' link up', name + ' coupled', name + ' paired')
+disconnect = (
+    name + ' disconnected', name + ' disassociated', name + ' link down', name + ' decoupled', name + ' unpaired')
+bark = ('silly dog sees you! wuff wuff, wuff wuff', 'dude lay low mo hai', 'daa chat lei')

@@ -22,6 +22,7 @@ import led
 import move
 import power_module as pm
 import speak_dict
+import steps
 import switch
 import ultra
 from speak import speak
@@ -41,6 +42,11 @@ servo_init_thread = None
 steadyMode = 0
 direction_command = 'no'
 turn_command = 'no'
+gait = 'stable'
+ws_G = 0
+ws_R = 0
+ws_B = 0
+audio_pid = None
 
 
 def ap_thread():
@@ -89,9 +95,9 @@ def thread_isAlive(*args):
         lst = threading.enumerate()
         for x in lst:
             if x.name == thread_name:
-                logger.debug('Found %s is active.', x)
+                logger.warning('%s is active.', x)
                 return True
-    logger.debug('No threads found.')
+    logger.info('All threads terminated.')
     return False
 
 
@@ -107,7 +113,7 @@ def ultra_send_client(event):
     logger.info('Connected to client address (\'%s\', %i)', client_address, config.ULTRA_PORT)
     while event.is_set():
         try:
-            ultra_socket.send(str(round(ultra.checkdist(), 2)).encode())
+            ultra_socket.send(str(' ' + round(ultra.checkdist(), 2)).encode())
             if config.CAMERA_MODULE:
                 camera.UltraData(round(ultra.checkdist(), 2))
             time.sleep(REFRESH_RATE)
@@ -131,7 +137,7 @@ def info_thread(event):
         ina219 = pm.PowerModule()
     while not event.is_set():
         try:
-            message = get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
+            message = ' ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
             if config.POWER_MODULE:
                 power = ina219.read_ina219()
                 message += ' {0:0.2f}V'.format(power[0] + config.OFFSET_VOLTAGE) + ' {0:0.2f}mA'.format(
@@ -142,6 +148,7 @@ def info_thread(event):
                 message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
             else:
                 message += ' -'
+            logger.debug('Info message content = ' + message)
             info_socket.send(message.encode())
             time.sleep(REFRESH_RATE)
         except BrokenPipeError:
@@ -205,20 +212,15 @@ def disconnect():
                          'speak_thread', 'ultra_thread',
                          'move_thread'):
         time.sleep(1)
-    logger.info('All threads terminated.')
     # move.servo_release()
 
 
 def listener_thread(event):
     """
-    This in the main listener thread loop which receives all commands from the client and call the necessary functions.
+    This in the main listener thread loop which receives all commands from the client.
     """
     logger.info('Starting listener thread...')
-    global camera, tcp_server_socket, steadyMode, direction_command, turn_command, servo_init_thread
-    ws_G = 0
-    ws_R = 0
-    ws_B = 0
-    audio_pid = None
+    global tcp_server_socket
     error_count = 0
     while not event.is_set():
         try:
@@ -226,6 +228,8 @@ def listener_thread(event):
         except socket.timeout:
             logger.warning('Listener socket timed out')
             data = ''
+        except socket.error:
+            logger.warning('Connection exception: ' + traceback.format_exc())
         if error_count >= config.LISTENER_MAX_ERROR:
             logger.error('Maximum listener error count reached, terminating thread.')
             return
@@ -240,286 +244,247 @@ def listener_thread(event):
         else:
             logger.info('Received data on tcp socket: %s', data)
             error_count = 0
-        if 'wsR' in data:
-            try:
-                set_R = data.split()
-                ws_R = int(set_R[1])
-                led.colorWipe([ws_G, ws_R, ws_B])
-            except:
-                logger.error('Exception: %s', traceback.format_exc())
-                pass
-        elif 'wsG' in data:
-            try:
-                set_G = data.split()
-                ws_G = int(set_G[1])
-                led.colorWipe([ws_G, ws_R, ws_B])
-            except:
-                logger.error('Exception: %s', traceback.format_exc())
-                pass
-        elif 'wsB' in data:
-            try:
-                set_B = data.split()
-                ws_B = int(set_B[1])
-                led.colorWipe([ws_G, ws_R, ws_B])
-            except:
-                logger.error('Exception: %s', traceback.format_exc())
-                pass
-        elif 'Ultrasonic' == data:
-            if config.ULTRA_MODULE:
-                tcp_server_socket.send('Ultrasonic'.encode())
-                ultra_event.set()
-                ultra_threading = threading.Thread(target=ultra_send_client, args=([ultra_event]), daemon=True)
-                ultra_threading.setName('ultra_thread')
-                ultra_threading.start()
-        elif 'Ultrasonic_end' == data:
-            ultra_event.clear()
-            tcp_server_socket.send('Ultrasonic_end'.encode())
-        elif 'stream_audio' == data:
-            global server_address
-            if audio_pid is None:
-                logger.info('Audio streaming server starting...')
-                audio_pid = subprocess.Popen([
-                    'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst='
-                    + str(server_address) + ':' + str(config.AUDIO_PORT) + '}"'], shell=True, preexec_fn=os.setsid)
-            else:
-                logger.info('Audio streaming server already started.')
-            tcp_server_socket.send('stream_audio'.encode())
-        elif 'stream_audio_end' == data:
-            if audio_pid is not None:
-                try:
-                    os.killpg(os.getpgid(audio_pid.pid), signal.SIGTERM)  # Send the signal to all the process groups
-                    audio_pid = None
-                except:
-                    logger.error('Unable to kill audio stream.')
-            tcp_server_socket.send('stream_audio_end'.encode())
-        elif 'start_video' == data:
-            config.VIDEO_OUT = True
-            tcp_server_socket.send('start_video'.encode())
-        elif 'stop_video' == data:
-            config.VIDEO_OUT = False
-            tcp_server_socket.send('stop_video'.encode())
-        elif 'FindColor' == data:
-            led.mode_set(1)
-            camera.FindColor(1)
-            tcp_server_socket.send('FindColor'.encode())
-        elif 'WatchDog' == data:
-            led.mode_set(1)
-            camera.WatchDog(1)
-            tcp_server_socket.send('WatchDog'.encode())
-        elif 'Switch_1_on' == data:
-            switch.switch(1, 1)
-            tcp_server_socket.send('Switch_1_on'.encode())
-        elif 'Switch_1_off' == data:
-            switch.switch(1, 0)
-            tcp_server_socket.send('Switch_1_off'.encode())
-        elif 'Switch_2_on' == data:
-            switch.switch(2, 1)
-            tcp_server_socket.send('Switch_2_on'.encode())
-        elif 'Switch_2_off' == data:
-            switch.switch(2, 0)
-            tcp_server_socket.send('Switch_2_off'.encode())
-        elif 'Switch_3_on' == data:
-            switch.switch(3, 1)
-            tcp_server_socket.send('Switch_3_on'.encode())
-        elif 'Switch_3_off' == data:
-            switch.switch(3, 0)
-            tcp_server_socket.send('Switch_3_off'.encode())
-        elif 'disconnect' == data:
-            tcp_server_socket.send('disconnect'.encode())
-            return
-        elif 'steady' == data:
-            led.mode_set(1)
-            led.color_set('blue')
-            steadyMode = 1
-            tcp_server_socket.send('steady'.encode())
-        elif 'func_end' == data:
-            led.mode_set(0)
-            camera.FindColor(0)
-            camera.WatchDog(0)
-            steadyMode = 0
-            move.robot_home()
-            tcp_server_socket.send('func_end'.encode())
-        elif 'forward' == data:
-            direction_command = 'forward'
-        elif 'backward' == data:
-            direction_command = 'backward'
-        elif 'direction_stop' in data:
-            direction_command = 'stop'
-        elif 'left' == data:
-            turn_command = 'left'
-        elif 'right' == data:
-            turn_command = 'right'
-        elif 'move_left_side' == data:
-            direction_command = 'c_left'
-        elif 'move_right_side' == data:
-            direction_command = 'c_right'
-        elif 'turn_stop' in data:
-            turn_command = 'stop'
-        elif 'balance_' in data or 'move_' in data:
-            # Ignore balance commands when robot servos not initialized and idle.
-            if not len(config.servo_init) == 12 or not direction_command == 'no' or not turn_command == 'no':
-                logger.warning('Ignoring command, robot servos not idle!')
-                continue
-            elif 'move_head_up' == data:
-                move.robot_pitch_roll(-100, 0)
-            elif 'move_head_down' == data:
-                move.robot_pitch_roll(100, 0)
-            elif 'move_head_home' == data:
-                move.robot_home()
-            elif 'move_low' == data:
-                move.robot_height(0)
-            elif 'move_high' == data:
-                move.robot_height(100)
-            elif 'move_head_left' == data:
-                move.robot_yaw(100)
-            elif 'move_head_right' == data:
-                move.robot_yaw(-100)
-            elif 'move_roll_left' == data:
-                move.robot_pitch_roll(0, 100)
-            elif 'move_roll_right' == data:
-                move.robot_pitch_roll(0, -100)
-            elif 'balance_front' == data:
-                move.robot_balance('front')
-            elif 'balance_back' == data:
-                move.robot_balance('back')
-            elif 'balance_left' == data:
-                move.robot_balance('left')
-            elif 'balance_right' == data:
-                move.robot_balance('right')
-            elif 'balance_front_left' == data:
-                move.robot_balance('front_left')
-            elif 'balance_front_right' == data:
-                move.robot_balance('front_right')
-            elif 'balance_center' == data:
-                move.robot_balance('center')
-            elif 'balance_back_left' == data:
-                move.robot_balance('back_left')
-            elif 'balance_back_right' == data:
-                move.robot_balance('back_right')
-            elif 'move_sit' == data:
-                move.robot_sit()
-        elif 'speed:' in data:
-            logger.debug('Received set servo speed')
-            try:
-                value = int(data.split(':', 2)[1])
-                if value > 0:
-                    config.SPEED = value
-            except:
-                logger.error('Error setting servo speed: %s\n%s', data, traceback.format_exc())
-                pass
-        elif 'light:' in data:
-            logger.debug('Received flash light intensity %s%', data)
-            try:
-                value = int(data.split(':', 2)[1])
-                switch.channel_B(value)
-                move.pca.set_pwm(15, 0, int(4096 / 100 * (value - 2)))
-            except:
-                logger.error('Exception: %s', traceback.format_exc())
-                pass
-        elif 'espeak:' in data:
-            logger.info('Speaking command received')
-            value = str(data.split(':', 2)[1])
-            speak(value)
+            for message in data.split(';'):
+                if message.__len__() != 0:
+                    message_processor(message)
+
+
+def message_processor(data):
+    """
+    This functions interprets the received client message and calls the relevant functions.
+    :param data: client message
+    :return: void
+    """
+    global camera, steadyMode, direction_command, turn_command, servo_init_thread, gait, ws_G, ws_R, ws_B, audio_pid, kill_event
+    if 'wsR' in data:
+        try:
+            set_R = data.split()
+            ws_R = int(set_R[1])
+            led.colorWipe([ws_G, ws_R, ws_B])
+        except:
+            logger.error('Exception: %s', traceback.format_exc())
             pass
+    elif 'wsG' in data:
+        try:
+            set_G = data.split()
+            ws_G = int(set_G[1])
+            led.colorWipe([ws_G, ws_R, ws_B])
+        except:
+            logger.error('Exception: %s', traceback.format_exc())
+            pass
+    elif 'wsB' in data:
+        try:
+            set_B = data.split()
+            ws_B = int(set_B[1])
+            led.colorWipe([ws_G, ws_R, ws_B])
+        except:
+            logger.error('Exception: %s', traceback.format_exc())
+            pass
+    elif 'Ultrasonic' == data:
+        if config.ULTRA_MODULE:
+            tcp_server_socket.send(' Ultrasonic'.encode())
+            ultra_event.set()
+            ultra_threading = threading.Thread(target=ultra_send_client, args=([ultra_event]), daemon=True)
+            ultra_threading.setName('ultra_thread')
+            ultra_threading.start()
+    elif 'Ultrasonic_end' == data:
+        ultra_event.clear()
+        tcp_server_socket.send(' Ultrasonic_end'.encode())
+    elif 'stream_audio' == data:
+        global server_address
+        if audio_pid is None:
+            logger.info('Audio streaming server starting...')
+            audio_pid = subprocess.Popen([
+                'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst='
+                + str(server_address) + ':' + str(config.AUDIO_PORT) + '}"'], shell=True, preexec_fn=os.setsid)
         else:
-            logger.warning('Unknown message received!')
+            logger.info('Audio streaming server already started.')
+        tcp_server_socket.send(' stream_audio'.encode())
+    elif 'stream_audio_end' == data:
+        if audio_pid is not None:
+            try:
+                os.killpg(os.getpgid(audio_pid.pid), signal.SIGTERM)  # Send the signal to all the process groups
+                audio_pid = None
+            except:
+                logger.error('Unable to kill audio stream.')
+        tcp_server_socket.send(' stream_audio_end'.encode())
+    elif 'start_video' == data:
+        config.VIDEO_OUT = True
+        tcp_server_socket.send(' start_video'.encode())
+    elif 'stop_video' == data:
+        config.VIDEO_OUT = False
+        tcp_server_socket.send(' stop_video'.encode())
+    elif 'FindColor' == data:
+        led.mode_set(1)
+        camera.FindColor(1)
+        tcp_server_socket.send(' FindColor'.encode())
+    elif 'WatchDog' == data:
+        led.mode_set(1)
+        camera.WatchDog(1)
+        tcp_server_socket.send(' WatchDog'.encode())
+    elif 'Switch_1_on' == data:
+        switch.switch(1, 1)
+        tcp_server_socket.send(' Switch_1_on'.encode())
+    elif 'Switch_1_off' == data:
+        switch.switch(1, 0)
+        tcp_server_socket.send(' Switch_1_off'.encode())
+    elif 'Switch_2_on' == data:
+        switch.switch(2, 1)
+        tcp_server_socket.send(' Switch_2_on'.encode())
+    elif 'Switch_2_off' == data:
+        switch.switch(2, 0)
+        tcp_server_socket.send(' Switch_2_off'.encode())
+    elif 'Switch_3_on' == data:
+        switch.switch(3, 1)
+        tcp_server_socket.send(' Switch_3_on'.encode())
+    elif 'Switch_3_off' == data:
+        switch.switch(3, 0)
+        tcp_server_socket.send(' Switch_3_off'.encode())
+    elif 'disconnect' == data:
+        tcp_server_socket.send(' disconnect'.encode())
+        kill_event.set()
+    elif 'steady' == data:
+        led.mode_set(1)
+        led.color_set('blue')
+        steadyMode = 1
+        tcp_server_socket.send(' steady'.encode())
+    elif 'func_end' == data:
+        led.mode_set(0)
+        camera.FindColor(0)
+        camera.WatchDog(0)
+        steadyMode = 0
+        move.robot_home()
+        tcp_server_socket.send(' func_end'.encode())
+    elif 'forward' == data:
+        direction_command = 'forward'
+    elif 'backward' == data:
+        direction_command = 'backward'
+    elif 'direction_stop' in data:
+        direction_command = 'stop'
+    elif 'left' == data:
+        turn_command = 'left'
+    elif 'right' == data:
+        turn_command = 'right'
+    elif 'move_left_side' == data:
+        direction_command = 'c_left'
+    elif 'move_right_side' == data:
+        direction_command = 'c_right'
+    elif 'turn_stop' in data:
+        turn_command = 'stop'
+    elif 'balance_' in data or 'move_' in data:
+        # Ignore balance commands when robot servos not initialized and idle.
+        if not len(config.servo_init) == 12 or not direction_command == 'no' or not turn_command == 'no':
+            logger.warning('Ignoring command, robot servos not idle!')
+            return
+        elif 'move_head_up' == data:
+            move.robot_pitch_roll(-100, 0)
+        elif 'move_head_down' == data:
+            move.robot_pitch_roll(100, 0)
+        elif 'move_head_home' == data:
+            move.robot_home()
+        elif 'move_low' == data:
+            move.robot_height(0)
+        elif 'move_high' == data:
+            move.robot_height(100)
+        elif 'move_head_left' == data:
+            move.robot_yaw(100)
+        elif 'move_head_right' == data:
+            move.robot_yaw(-100)
+        elif 'move_roll_left' == data:
+            move.robot_pitch_roll(0, 100)
+        elif 'move_roll_right' == data:
+            move.robot_pitch_roll(0, -100)
+        elif 'balance_front' == data:
+            move.robot_balance('front')
+        elif 'balance_back' == data:
+            move.robot_balance('back')
+        elif 'balance_left' == data:
+            move.robot_balance('left')
+        elif 'balance_right' == data:
+            move.robot_balance('right')
+        elif 'balance_front_left' == data:
+            move.robot_balance('front_left')
+        elif 'balance_front_right' == data:
+            move.robot_balance('front_right')
+        elif 'balance_center' == data:
+            move.robot_balance('center')
+        elif 'balance_back_left' == data:
+            move.robot_balance('back_left')
+        elif 'balance_back_right' == data:
+            move.robot_balance('back_right')
+    elif 'speed:' in data:
+        logger.debug('Received set servo speed')
+        try:
+            value = int(data.split(':', 2)[1])
+            if value > 0:
+                config.SPEED = value
+        except:
+            logger.error('Error setting servo speed: %s\n%s', data, traceback.format_exc())
+            pass
+    elif 'gait:' in data:
+        if gait == 'stable':
+            logger.info('Gait changed to trot')
+            speak(speak_dict.name + ' will run')
+            gait = 'trot'
+        else:
+            logger.info('Gait changed to stable')
+            speak(speak_dict.name + ' will walk')
+            gait = 'stable'
+        pass
+    elif 'light:' in data:
+        # logger.debug('Received flash light intensity %s', data)
+        try:
+            value = int(data.split(':', 2)[1])
+            # The PCA9685 IC is used to generate a stable PWM signal to the L298P IC in order to control
+            # flash light LED brightness.
+            move.pca.set_pwm(15, 0, int(4096 / 100 * (value - 2)))
+            switch.channel_B(value)
+        except:
+            logger.error('Exception: %s', traceback.format_exc())
+            pass
+    elif 'espeak:' in data:
+        logger.info('Speaking command received')
+        value = str(data.split(':', 2)[1])
+        speak(value)
+        pass
+    else:
+        logger.warning('Unknown message received!')
 
 
-# Diagonal method to maintain robot balance
 def move_thread(event):
+    """
+    This thread manages which servos to move at each step.
+    :param event: Terminates when event is set.
+    :return: void
+    """
     logger.info('Thread started')
-    global direction_command, turn_command, servo_init_thread
+    global servo_init_thread, direction_command, turn_command
+    last_direction_command = 'stop'
+    last_turn_command = 'stop'
     step = 0
-    last_direction_command = 'no'
-    last_turn_command = 'no'
-
-    move_list = [
-        "move.robot_yaw(0)", "move.robot_balance(balance[0])", "move.leg_up(leg[0])",
-        "move.leg_move(leg[0], direction_command)", "move.leg_down(leg[0])", "move.leg_up(leg[1])",
-        "move.leg_move(leg[1], direction_command)", "move.leg_down(leg[1])",
-        "move.robot_yaw(0)", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
-        "move.leg_move(leg[2], direction_command)", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
-        "move.leg_move(leg[3], direction_command)", "move.leg_down(leg[3])"
-    ]
-
-    crab_list = [
-        "move.robot_height(60)",
-        "move.robot_balance(balance)",
-        "move.leg_up(leg[1])",
-        "move.leg_move(leg[1], 'in')",
-        "move.leg_down(leg[1], 240)",
-        "move.leg_up(leg[0])",
-        "move.leg_move(leg[0], 'out')",
-        "move.leg_down(leg[0])",
-        "move.robot_balance('back', 'torso')",
-        "move.leg_up(leg[3])",
-        "move.leg_move(leg[3], 'in')",
-        "move.leg_down(leg[3], 240)",
-        "move.leg_up(leg[2])",
-        "move.leg_move(leg[2], 'out')",
-        "move.leg_down(leg[2])"
-    ]
-
-    turn_list = [
-        "move.robot_balance(balance[0])", "move.leg_up(leg[0])", "move.leg_move(leg[0], 'backward')",
-        "move.leg_down(leg[0])", "move.leg_up(leg[1])", "move.leg_move(leg[1], 'backward')",
-        "move.leg_down(leg[1])", "move.robot_balance(balance[1])", "move.leg_up(leg[2])",
-        "move.leg_move(leg[2], 'forward')", "move.leg_down(leg[2])", "move.leg_up(leg[3])",
-        "move.leg_move(leg[3], 'forward')", "move.leg_down(leg[3])"
-    ]
-
     while not event.is_set():
         if not steadyMode:
             servo_init_thread.join()
             if (direction_command == 'forward' or direction_command == 'backward') and turn_command == 'no':
-                # Initialize variables
-                if not last_direction_command == direction_command:
-                    if direction_command == 'forward':
-                        leg = [2, 1, 4, 3]
-                        balance = ['front_right', 'front_left']
-                    elif direction_command == 'backward':
-                        leg = [3, 4, 1, 2]
-                        balance = ['back_left', 'back_right']
-                    move.robot_height(100)
-                    last_direction_command = direction_command
-                exec(move_list[step])
-                step += 1
-                if step == len(move_list):
-                    step = 0
+                if gait == 'stable':
+                    last_direction_command, last_turn_command, step = forward(last_direction_command, last_turn_command,
+                                                                              step)
+                elif gait == 'trot':
+                    pass
                 continue
             elif (direction_command == 'c_right' or direction_command == 'c_left') and turn_command == 'no':
-                # Initialize variables
-                if not last_direction_command == direction_command:
-                    if direction_command == 'c_left':
-                        leg = [2, 4, 1, 3]
-                        balance = 'front_left'
-                    elif direction_command == 'c_right':
-                        leg = [4, 2, 3, 1]
-                        balance = 'front_right'
-                    move.torso_wiggle = 50
-                    last_direction_command = direction_command
-                exec(crab_list[step])
-                step += 1
-                if step == len(crab_list):
-                    step = 0
+                if gait == 'stable':
+                    last_direction_command, last_turn_command, step = crab(last_direction_command, last_turn_command,
+                                                                           step)
+                elif gait == 'trot':
+                    pass
                 continue
             elif direction_command == 'no' and (turn_command == 'left' or turn_command == 'right'):
-                # Initialize variables
-                if not last_turn_command == turn_command:
-                    if turn_command == 'left':
-                        leg = [1, 2, 4, 3]
-                        balance = ['back_right', 'front_left']
-                    elif turn_command == 'right':
-                        leg = [3, 4, 2, 1]
-                        balance = ['back_left', 'front_right']
-                    move.torso_wiggle = 50
-                    last_turn_command = turn_command
-                    move.robot_height(100)
-                    continue
-                exec(turn_list[step])
-                step += 1
-                if step == len(turn_list):
-                    step = 0
+                if gait == 'stable':
+                    last_direction_command, last_turn_command, step = turn(last_direction_command, last_turn_command,
+                                                                           step)
+                elif gait == 'trot':
+                    pass
                 continue
             elif turn_command == 'stop' or direction_command == 'stop':
                 move.robot_height(50)
@@ -527,15 +492,75 @@ def move_thread(event):
                 move.torso_wiggle = config.torso_w - ((config.DEFAULT_X - 50) * 2 / 100 * config.torso_w)
                 direction_command = 'no'
                 turn_command = 'no'
+                last_direction_command = 'no'
+                last_turn_command = 'no'
                 pass
-            last_direction_command = 'no'
-            last_turn_command = 'no'
+
             time.sleep(0.5)
             step = 0
             pass
         else:
             move.robot_steady()
     logger.info('Thread stopped')
+
+
+def forward(last_direction_command, last_turn_command, step):
+    global direction_command, turn_command
+    # Initialize variables
+    if direction_command == 'forward':
+        leg = [2, 1, 4, 3]
+        balance = ['front_right', 'front_left']
+    elif direction_command == 'backward':
+        leg = [3, 4, 1, 2]
+        balance = ['back_left', 'back_right']
+    if not last_direction_command == direction_command:
+        move.robot_height(100)
+        last_direction_command = direction_command
+    exec(steps.move_list[step])
+    step += 1
+    if step == len(steps.move_list):
+        step = 0
+    return last_direction_command, last_turn_command, step
+
+
+def crab(last_direction_command, last_turn_command, step):
+    global direction_command, turn_command
+    # Initialize variables
+    if direction_command == 'c_left':
+        leg = [2, 4, 1, 3]
+        balance = 'front_left'
+    elif direction_command == 'c_right':
+        leg = [4, 2, 3, 1]
+        balance = 'front_right'
+    if not last_direction_command == direction_command:
+        move.torso_wiggle = 50
+        last_direction_command = direction_command
+    exec(steps.crab_list[step])
+    step += 1
+    if step == len(steps.crab_list):
+        step = 0
+    return last_direction_command, last_turn_command, step
+
+
+def turn(last_direction_command, last_turn_command, step):
+    global direction_command, turn_command
+    # Initialize variables
+    if turn_command == 'left':
+        leg = [1, 2, 4, 3]
+        balance = ['back_right', 'front_left']
+    elif turn_command == 'right':
+        leg = [3, 4, 2, 1]
+        balance = ['back_left', 'front_right']
+    if not last_turn_command == turn_command:
+        move.torso_wiggle = 50
+        last_turn_command = turn_command
+        move.robot_height(100)
+    else:
+        exec(steps.turn_list[step])
+        step += 1
+        if step == len(steps.turn_list):
+            step = 0
+    return last_direction_command, last_turn_command, step
 
 
 def main():

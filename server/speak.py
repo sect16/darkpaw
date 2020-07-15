@@ -26,7 +26,7 @@ def speak_thread(input_text):
                 speak_command(input_text[random.randint(0, len(input_text) - 1)])
                 pass
             else:
-                logger.error('Unknow input_text type: %s', input_text)
+                logger.error('Unknown input_text type: %s', input_text)
             config.allow_speak = True
             config.last_text[0] = int(time.time())
             config.last_text[1] = input_text

@@ -31,7 +31,6 @@ switch_2 = 0
 switch_3 = 0
 yaw_left_status = 0
 yaw_right_status = 0
-smooth_mode = 0
 ultrasonic_mode = 0
 led_sleep = 0
 light_value = 0
@@ -52,7 +51,7 @@ def loop():  # GUI
     """
     global root, entry_ip, entry_text, entry_speed, entry_lights, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, label_ambient, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
-        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
+        btn_watchdog, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
         btn_ultra, btn_find_line, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
@@ -208,7 +207,6 @@ def loop():  # GUI
     btn_look_right_side.bind('<ButtonRelease-1>', call_stop)
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
-    btn_smooth = tk.Button(root, width=10, text='Smooth', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_ultra = tk.Button(root, width=10, text='Ultrasonic', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_find_line.bind('<ButtonPress-1>', call_find_line)
@@ -248,6 +246,8 @@ def loop():  # GUI
     # Flash light entry
     entry_lights = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
     label_lights = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
+    btn_gait = tk.Button(root, width=10, text='Gait', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_gait.bind('<ButtonPress-1>', lambda _: send('gait:'))
 
     # Darkpaw balance controls
     btn_balance_left = tk.Button(root, width=3, text='', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -440,13 +440,6 @@ def call_watchdog(event):
         send('func_end')
 
 
-def call_smooth(event):
-    if smooth_mode == 0:
-        send('Smooth_on')
-    else:
-        send('Smooth_off')
-
-
 def call_switch_1(event):
     if switch_1 == 0:
         send('Switch_1_on')
@@ -515,11 +508,10 @@ def all_btn_normal():
     """
     Returns all function buttons to normal state
     """
-    global func_mode, smooth_mode, btn_steady
+    global func_mode, btn_steady
     btn_find_color.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     btn_watchdog.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     func_mode = 0
-    smooth_mode = 0
     try:
         btn_steady.config(bg=COLOR_BTN, fg=COLOR_TEXT)
     except NameError:
@@ -531,10 +523,8 @@ def button_update(status_data):
     This function is called to update the GUI according to data received from robot.
     :param status_data: String data received from robot
     """
-    global root, entry_ip, entry_text, entry_speed, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, \
-        label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
-        btn_watchdog, btn_smooth, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
-        btn_ultra, btn_find_line, func_mode, switch_1, switch_2, switch_3, smooth_mode, ultrasonic_mode
+    global btn_find_color, btn_watchdog, btn_steady, btn_ultra, btn_Switch_1, btn_Switch_2, btn_Switch_3, \
+        btn_audio, btn_quit, btn_video, btn_find_line, func_mode, ultrasonic_mode, switch_1, switch_2, switch_3
     try:
         if 'FindColor' == status_data:
             func_mode = 1
@@ -562,38 +552,38 @@ def button_update(status_data):
                 btn_ultra.config(bg=COLOR_BTN)
             except NameError:
                 pass
-        elif 'Switch_3_on' == status_data:
-            btn_Switch_3.config(bg=COLOR_SWT_ACT)
-            switch_3 = 1
-        elif 'Switch_2_on' == status_data:
-            switch_2 = 1
-            btn_Switch_2.config(bg=COLOR_SWT_ACT)
         elif 'Switch_1_on' == status_data:
             switch_1 = 1
             btn_Switch_1.config(bg=COLOR_SWT_ACT)
-        elif 'Switch_3_off' == status_data:
-            switch_3 = 0
-            btn_Switch_3.config(bg=COLOR_BTN)
-        elif 'Switch_2_off' == status_data:
-            switch_2 = 0
-            btn_Switch_2.config(bg=COLOR_BTN)
+        elif 'Switch_2_on' == status_data:
+            switch_2 = 1
+            btn_Switch_2.config(bg=COLOR_SWT_ACT)
+        elif 'Switch_3_on' == status_data:
+            btn_Switch_3.config(bg=COLOR_SWT_ACT)
+            switch_3 = 1
         elif 'Switch_1_off' == status_data:
             switch_1 = 0
             btn_Switch_1.config(bg=COLOR_BTN)
-        elif 'Smooth_on' == status_data:
-            smooth_mode = 1
-            btn_smooth.config(bg=COLOR_SWT_ACT)
-        elif 'Smooth_off' == status_data:
-            smooth_mode = 0
-            btn_smooth.config(bg=COLOR_BTN)
+        elif 'Switch_2_off' == status_data:
+            switch_2 = 0
+            btn_Switch_2.config(bg=COLOR_BTN)
+        elif 'Switch_3_off' == status_data:
+            switch_3 = 0
+            btn_Switch_3.config(bg=COLOR_BTN)
         elif 'func_end' == status_data:
             all_btn_normal()
         elif 'stream_audio' == status_data:
             btn_audio.config(bg=COLOR_SWT_ACT)
         elif 'stream_audio_end' == status_data:
             btn_audio.config(bg=COLOR_BTN)
+        elif 'start_video' == status_data:
+            pass
         elif 'stop_video' == status_data:
             pass
+        elif 'disconnect' == status_data:
+            pass
+        else:
+            logger.warning('Unknown button status update: %s' % status_data)
     except:
         logger.error('Button status update exception: %s', traceback.format_exc())
 
@@ -625,6 +615,7 @@ def stat_update(cpu_temp, cpu_use, ram_use, voltage, current, ambient):
     label_voltage.config(text='Voltage: %s' % voltage)
     label_current.config(text='Current: %s' % current)
     label_ambient.config(text='Ambient: %s℃' % ambient)
+
 
 def set_R(event):
     send_led('wsR', var_R.get())
@@ -685,12 +676,12 @@ def connect_init(ip_address):
     time.sleep(0.5)
     send(' wsB ' + var_B.get())
     time.sleep(0.5)
-    set_speed()
+    set_speed(True)
     time.sleep(0.5)
-    set_light()
+    set_light(True)
 
 
-def set_speed():
+def set_speed(force=False):
     """
     This method reads the entry input and sends a message to the server.
     It does not send if value was unchanged.
@@ -698,13 +689,13 @@ def set_speed():
     """
     global entry_speed, speed_value
     set_value = entry_speed.get()
-    if not set_value == '' and speed_value != set_value:
+    if force or (not set_value == '' and speed_value != set_value):
         send(' speed:' + set_value)
         speed_value = set_value
     entry_ip.focus_set()
 
 
-def set_light():
+def set_light(force=False):
     """
     This method reads the entry input and sends a message to the server.
     It does not send if value was unchanged.
@@ -712,7 +703,7 @@ def set_light():
     """
     global entry_lights, light_value
     set_value = entry_lights.get()
-    if light_value != set_value:
+    if force or light_value != set_value:
         send('light:' + set_value)
         light_value = set_value
     entry_ip.focus_set()

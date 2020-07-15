@@ -31,7 +31,7 @@ def ultra_server_thread(event):
     gui.canvas_ultra.create_rectangle(0, 0, 280, 30, fill='#FFFFFF', width=0)
     while event.is_set():
         try:
-            config.ultra_data = str(ultra_sock.recv(config.BUFFER_SIZE).decode())
+            config.ultra_data = str(ultra_sock.recv(config.BUFFER_SIZE).decode()).split()[0]
             if config.ultra_data != '':
                 config.ultra_data = float(config.ultra_data)
                 if float(config.ultra_data) < 3:
