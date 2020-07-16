@@ -56,11 +56,6 @@ def loop():  # GUI
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
-        read_config()
-    except:
-        logger.error('Error reading configuration file: %s', traceback.format_exc())
-        terminate()
-    try:
         logo = tk.PhotoImage(file='logo.png')  # Define the picture of logo (Only supports '.png' and '.gif')
         l_logo = tk.Label(root, image=logo, bg=COLOR_BG)  # Set a label to show the logo picture
         l_logo.place(x=60, y=7)  # Place the Label in a right position
@@ -279,68 +274,52 @@ def loop():  # GUI
     root.mainloop()  # Run the mainloop()
 
 
-def read_config():
-    # Read key binding configuration file
-    global keyDict
-    initial = 0
-    ptr = 1
-    with open("key_binding.txt", "r") as f:
-        for line in f:
-            if line.find('<Start key binding definition>') == 0:
-                initial = ptr
-            elif line.find('<EOF>') == 0:
-                break
-            if initial > 0 & line.find('<KeyPress-') == 0:
-                thisList = line.replace(" ", "").replace("\n", "").split(',', 2)
-                if len(thisList) == 2:
-                    keyDict[thisList[0]] = thisList[1]
-            ptr += 1
-
-
 def bind_keys():
     """
-    Function to assign keyboard key bindings
+    Function to read config into global variable keydict and assign keyboard key bindings. Does not read key
+    binding configuration if variable is already initialized.
     """
-    global root, keyDict
+    global root, keydict
+    # Read key binding configuration file
+    initial = 0
+    ptr = 1
+    if len(keyDict) == 0:
+        logger.info('Key bindings not initialized. Reading key binding configuration file.')
+        try:
+            with open("key_binding.txt", "r") as f:
+                for line in f:
+                    if line.find('<Start key binding definition>') == 0:
+                        initial = ptr
+                    elif line.find('<EOF>') == 0:
+                        break
+                    if initial > 0 & line.find('<KeyPress-') == 0:
+                        thisList = line.replace(" ", "").replace("\n", "").split(',', 2)
+                        if len(thisList) == 2:
+                            keyDict[thisList[0]] = thisList[1]
+                    ptr += 1
+        except:
+            logger.error('Error reading configuration file: %s', traceback.format_exc())
+            terminate()
     for x, y in keyDict.items():
         logger.debug('Got record: ' + x + ',' + y)
         if y.find('call') == -1:
             eval('root.bind(\'<' + x + '>\', lambda _: send(\'' + y + '\'))')
         else:
             eval('root.bind(\'<' + x + '>\', ' + y + ')')
-    logger.debug('Bind KeyPress')
 
 
 def unbind_keys():
     """
-    Function to remove keyboard key bindings
+    Function to remove keyboard key bindings. It reads current key bindings in global variable and unbinds all keys.
+    keydict variable must be initialized before calling this function.
     """
-    global root
-    root.unbind('<KeyPress-w>')
-    root.unbind('<KeyPress-s>')
-    root.unbind('<KeyPress-a>')
-    root.unbind('<KeyPress-d>')
-    root.unbind('<KeyRelease-w>')
-    root.unbind('<KeyRelease-s>')
-    root.unbind('<KeyRelease-a>')
-    root.unbind('<KeyRelease-d>')
-    root.unbind('<KeyPress-i>')
-    root.unbind('<KeyPress-k>')
-    root.unbind('<KeyPress-h>')
-    root.unbind('<KeyPress-z>')
-    root.unbind('<KeyPress-x>')
-    root.unbind('<KeyPress-c>')
-    root.unbind('<KeyPress-v>')
-    root.unbind('<KeyPress-b>')
-    root.unbind('<KeyPress-q>')
-    root.unbind('<KeyPress-e>')
-    root.unbind('<KeyRelease-q>')
-    root.unbind('<KeyRelease-e>')
-    root.unbind('<KeyPress-j>')
-    root.unbind('<KeyPress-l>')
-    root.unbind('<KeyPress-u>')
-    root.unbind('<KeyPress-o>')
-    logger.debug('Unbind KeyPress')
+    global root, keyDict
+    if len(keyDict) != 0:
+        for x in keyDict.items():
+            root.unbind('<' + x[0] + '>')
+        logger.debug('Unbind keyboard binding')
+    else:
+        logger.error('Key binding dict not yet initialized')
 
 
 def call_forward(event):

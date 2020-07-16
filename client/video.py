@@ -42,8 +42,8 @@ def fps_thread(event):
     else:
         logger.error('Expected FPS == -1, previous thread not stopped.')
         return
-    logger.info('Thread stopped')
     fps = -1
+    logger.info('Thread stopped')
 
 
 def call_video(ip):
@@ -66,8 +66,6 @@ def call_video(ip):
         mq.set_hwm(1)
         mq.setsockopt(zmq.LINGER, 0)
         mq.setsockopt(zmq.CONFLATE, 1)
-        mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
-        mq.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
         # Define a thread for FPV and OpenCV
         video_threading = threading.Thread(target=open_cv_thread, args=([mq, common.fpv_event]), daemon=True)
         video_threading.setName('open_cv_thread')
@@ -79,6 +77,14 @@ def call_video(ip):
     elif common.fpv_event.is_set() and common.thread_isAlive('fps_thread') and common.thread_isAlive('open_cv_thread'):
         logger.info('Stopping video stream.')
         common.fpv_event.clear()
+        time.sleep(1)
+        while common.thread_isAlive('fps_thread', 'open_cv_thread'):
+            logger.warning('Waiting for FPV threads to terminated.')
+            time.sleep(1)
+        else:
+            logger.info('FPV threads terminated successfully')
+        gui.btn_video.config(bg=config.COLOR_BTN)
+        gui.btn_video['state'] = 'normal'
     else:
         logger.warning('Cannot start video at the moment.')
         logger.debug('Connected: %s, video_enabled: %s, fps_thread: %s, cv_thread: %s.', common.connect_event.is_set(),
@@ -166,7 +172,5 @@ def open_cv_thread(mq, event):
     logger.info('Destroying all CV2 windows')
     cv2.destroyAllWindows()
     mq.__exit__()
-    logger.info('Thread stopped')
     common.fpv_event.clear()
-    gui.btn_video.config(bg=config.COLOR_BTN)
-    gui.btn_video['state'] = 'normal'
+    logger.info('Thread stopped')
