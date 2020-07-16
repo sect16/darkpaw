@@ -95,9 +95,9 @@ def thread_isAlive(*args):
         lst = threading.enumerate()
         for x in lst:
             if x.name == thread_name:
-                logger.warning('%s is active.', x)
+                logger.info('%s is active.', x)
                 return True
-    logger.info('All threads terminated.')
+    logger.info('No thread found.')
     return False
 
 
@@ -374,7 +374,8 @@ def message_processor(data):
     elif 'balance_' in data or 'move_' in data:
         # Ignore balance commands when robot servos not initialized and idle.
         if not len(config.servo_init) == 12 or not direction_command == 'no' or not turn_command == 'no':
-            logger.warning('Ignoring command, robot servos not idle!')
+            logger.warning('Ignoring command, robot not idle! direction_command: %s turn_command: %s',
+                           direction_command, turn_command)
             return
         elif 'move_head_up' == data:
             move.robot_pitch_roll(-100, 0)

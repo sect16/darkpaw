@@ -281,9 +281,9 @@ def thread_isAlive(*args):
         lst = threading.enumerate()
         for x in lst:
             if x.name == thread_name:
-                logger.warning('Found %s is active.', x)
+                logger.info('Found %s is active.', x)
                 return True
-    logger.info('All threads terminated.')
+    logger.info('No thread found.')
     return False
 
 
