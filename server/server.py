@@ -413,6 +413,30 @@ def message_processor(data):
             move.robot_balance('back_left')
         elif 'balance_back_right' == data:
             move.robot_balance('back_right')
+        elif 'move_head_pitch' in data:
+            logger.debug('Received set head pitch')
+            try:
+                value = int(data.split(':', 2)[1])
+                move.robot_pitch_roll(int(value * -1), 0)
+            except:
+                logger.error('Error setting head pitch: %s\n%s', data, traceback.format_exc())
+                pass
+        elif 'move_head_yaw' in data:
+            logger.debug('Received set head pitch')
+            try:
+                value = int(data.split(':', 2)[1])
+                move.robot_yaw(int(value))
+            except:
+                logger.error('Error setting head yaw: %s\n%s', data, traceback.format_exc())
+                pass
+        elif 'move_height' in data:
+            logger.debug('Received set height')
+            try:
+                value = int(data.split(':', 2)[1])
+                move.robot_height(int(value))
+            except:
+                logger.error('Error setting head yaw: %s\n%s', data, traceback.format_exc())
+                pass
     elif 'speed:' in data:
         logger.debug('Received set servo speed')
         try:

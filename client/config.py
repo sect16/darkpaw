@@ -43,10 +43,12 @@ DEBUG_MODE = False
 
 ultra_data = 0
 
+
 guiTuple = (
-    "btn_look_left_side.place(x=30, y=195)", "btn_look_right_side.place(x=170, y=195)",
-    "btn_low.place(x=330, y=195)", "btn_high.place(x=470, y=195)",
-    "btn_look_left.place(x=330, y=230)", "btn_look_right.place(x=470, y=230)",
+    "btn_left_side.place(x=30, y=195)", "btn_right_side.place(x=170, y=195)",
+    #    "btn_low.place(x=330, y=195)", "btn_high.place(x=470, y=195)",
+    #    "btn_look_left.place(x=330, y=230)", "btn_look_right.place(x=470, y=230)",
+    #    "btn_look_up.place(x=400, y=195)", "btn_look_down.place(x=400, y=265)",
     "btn_Switch_1.place(x=30, y=265)", "btn_Switch_2.place(x=100, y=265)", "btn_Switch_3.place(x=170, y=265)",
     "btn_steady.place(x=30, y=465)", "btn_balance_front_left.place(x=237, y=195)",
     "btn_balance_front.place(x=267, y=195)", "btn_balance_front_right.place(x=297, y=195)",
@@ -54,6 +56,10 @@ guiTuple = (
     "btn_balance_right.place(x=297, y=230)", "btn_balance_back_left.place(x=237, y=265)",
     "btn_balance_back.place(x=267, y=265)", "btn_balance_back_right.place(x=297, y=265)",
     "label_lights.place(x=120, y=110)", "entry_lights.place(x=160, y=110)", "label_ambient.place(x=250, y=15)",
-    "btn_roll_left.place(x=330, y=265)", "btn_roll_right.place(x=470, y=265)",
-    "btn_gait.place(x=285, y=465)"
+    "btn_roll_left.place(x=30, y=160)", "btn_roll_right.place(x=170, y=160)",
+    "btn_gait.place(x=285, y=465)",
+    "scale_height.place(x=440, y=170)",
+    "scale_yaw.place(x=450, y=250)",
+    "scale_pitch.place(x=480, y=170)",
+    "btn_look_home.place(x=350, y=230)"
 )
