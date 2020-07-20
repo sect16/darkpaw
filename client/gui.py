@@ -35,6 +35,9 @@ ultrasonic_mode = 0
 led_sleep = 0
 light_value = 0
 speed_value = 0
+var_pitch = 0
+var_yaw = 0
+var_height = 0
 
 COLOR_SWT_ACT = config.COLOR_SWT_ACT
 COLOR_BTN_ACT = config.COLOR_BTN_ACT
@@ -52,7 +55,7 @@ def loop():  # GUI
     global root, entry_ip, entry_text, entry_speed, entry_lights, label_ip_1, COLOR_BTN, COLOR_TEXT, btn_connect, label_ambient, \
         label_cpu_temp, label_cpu_use, label_ram_use, COLOR_TEXT, var_R, var_B, var_G, btn_steady, btn_find_color, \
         btn_watchdog, btn_audio, btn_quit, btn_Switch_1, btn_Switch_2, btn_Switch_3, btn_video, \
-        btn_ultra, btn_find_line, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_camera
+        btn_ultra, btn_find_line, canvas_ultra, var_R, var_G, var_B, label_voltage, label_current, var_pitch, var_yaw, var_height
     root.geometry('565x510')  # Main window size
     root.config(bg=COLOR_BG)  # Set the background color of root window
     try:
@@ -108,14 +111,12 @@ def loop():  # GUI
     if config.CAMERA_MODULE:
         btn_video.place(x=320, y=140)  # Define a Button and put it in position
     btn_entry_text.place(x=470, y=300)  # Define a Button and put it in position
-    btn_look_up.place(x=400, y=195)
-    btn_look_down.place(x=400, y=265)
-    btn_look_home.place(x=400, y=230)
 
     var_R = tk.StringVar()
     var_R.set(0)
     scale_R = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
-                       tickinterval=None, resolution=1, variable=var_R, troughcolor='#F44336', command=set_R,
+                       tickinterval=None, resolution=1, variable=var_R, troughcolor='#F44336',
+                       command=lambda _: send_led('wsR', var_R.get()),
                        fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
     scale_R.place(x=30, y=330)  # Define a Scale and put it in position
 
@@ -123,7 +124,8 @@ def loop():  # GUI
     var_G.set(0)
 
     scale_G = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
-                       tickinterval=None, resolution=1, variable=var_G, troughcolor='#00E676', command=set_G,
+                       tickinterval=None, resolution=1, variable=var_G, troughcolor='#00E676',
+                       command=lambda _: send_led('wsG', var_G.get()),
                        fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
     scale_G.place(x=30, y=370)  # Define a Scale and put it in position
 
@@ -131,17 +133,33 @@ def loop():  # GUI
     var_B.set(0)
 
     scale_B = tk.Scale(root, label=None, from_=0, to=255, orient=tk.HORIZONTAL, length=505, showvalue=1,
-                       tickinterval=None, resolution=1, variable=var_B, troughcolor='#448AFF', command=set_B,
+                       tickinterval=None, resolution=1, variable=var_B, troughcolor='#448AFF',
+                       command=lambda _: send_led('wsB', var_B.get()),
                        fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
     scale_B.place(x=30, y=410)  # Define a Scale and put it in position
 
     # Camera scale
-    var_camera = tk.StringVar()
-    var_camera.set(0)
-    scale_cam = tk.Scale(root, label=None, from_=100, to=-100, orient=tk.VERTICAL, length=80, showvalue=1,
-                         tickinterval=None, resolution=1, variable=var_camera, troughcolor='#FFFFFF',
-                         command=set_camera,
+    var_pitch = tk.StringVar()
+    var_pitch.set(0)
+    scale_pitch = tk.Scale(root, label=None, from_=100, to=-100, orient=tk.VERTICAL, length=80, showvalue=1,
+                           tickinterval=None, resolution=1, variable=var_pitch, troughcolor='#FFFFFF',
+                           command=lambda _: send('move_head_pitch' + ':' + str(var_pitch.get())),
+                           fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
+
+    var_yaw = tk.StringVar()
+    var_yaw.set(0)
+    scale_yaw = tk.Scale(root, label=None, from_=100, to=-100, orient=tk.HORIZONTAL, length=80, showvalue=1,
+                         tickinterval=None, resolution=1, variable=var_yaw, troughcolor='#FFFFFF',
+                         command=lambda _: send('move_head_yaw' + ':' + str(var_yaw.get())),
                          fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
+
+    var_height = tk.StringVar()
+    var_height.set(50)
+    scale_height = tk.Scale(root, label=None, from_=100, to=0, orient=tk.VERTICAL, length=80, showvalue=1,
+                            tickinterval=None, resolution=1, variable=var_height, troughcolor='#FFFFFF',
+                            command=lambda _: send('move_height' + ':' + str(var_height.get())),
+                            fg=COLOR_TEXT, bg=COLOR_BG, highlightthickness=0, width=15)
+
     canvas_ultra = tk.Canvas(root, bg='#FFFFFF', height=23, width=280, highlightthickness=0)
     canvas_ultra.create_text((90, 11), text='Ultrasonic OFF', fill='#000000')
 
@@ -180,8 +198,8 @@ def loop():  # GUI
     root.bind_all('<Button-1>', focus)
 
     # Darkpaw specific GUI
-    btn_look_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_look_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_left_side = tk.Button(root, width=8, text='<--', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
+    btn_right_side = tk.Button(root, width=8, text='-->', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_look_left = tk.Button(root, width=8, text='Left', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_look_right = tk.Button(root, width=8, text='Right', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_low = tk.Button(root, width=8, text='Low', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -189,8 +207,8 @@ def loop():  # GUI
     btn_Switch_1 = tk.Button(root, width=8, text='Port 1', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_Switch_2 = tk.Button(root, width=8, text='Port 2', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_Switch_3 = tk.Button(root, width=8, text='Port 3', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
-    btn_look_left_side.bind('<ButtonPress-1>', call_left_side)
-    btn_look_right_side.bind('<ButtonPress-1>', call_right_side)
+    btn_left_side.bind('<ButtonPress-1>', call_left_side)
+    btn_right_side.bind('<ButtonPress-1>', call_right_side)
     btn_Switch_1.bind('<ButtonPress-1>', call_switch_1)
     btn_Switch_2.bind('<ButtonPress-1>', call_switch_2)
     btn_Switch_3.bind('<ButtonPress-1>', call_switch_3)
@@ -198,8 +216,8 @@ def loop():  # GUI
     btn_high.bind('<ButtonPress-1>', lambda _: send('move_high'))
     btn_look_left.bind('<ButtonPress-1>', lambda _: send('move_head_left'))
     btn_look_right.bind('<ButtonPress-1>', lambda _: send('move_head_right'))
-    btn_look_left_side.bind('<ButtonRelease-1>', call_stop)
-    btn_look_right_side.bind('<ButtonRelease-1>', call_stop)
+    btn_left_side.bind('<ButtonRelease-1>', call_stop)
+    btn_right_side.bind('<ButtonRelease-1>', call_stop)
     btn_steady = tk.Button(root, width=10, text='Steady', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_steady.bind('<ButtonPress-1>', call_steady)
     btn_find_line = tk.Button(root, width=10, text='FindLine', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
@@ -292,7 +310,7 @@ def bind_keys():
                         initial = ptr
                     elif line.find('<EOF>') == 0:
                         break
-                    if initial > 0 & line.find('<KeyPress-') == 0:
+                    if initial > 0:
                         thisList = line.replace(" ", "").replace("\n", "").split(',', 2)
                         if len(thisList) == 2:
                             keyDict[thisList[0]] = thisList[1]
@@ -596,18 +614,6 @@ def stat_update(cpu_temp, cpu_use, ram_use, voltage, current, ambient):
     label_ambient.config(text='Ambient: %s℃' % ambient)
 
 
-def set_R(event):
-    send_led('wsR', var_R.get())
-
-
-def set_G(event):
-    send_led('wsG', var_G.get())
-
-
-def set_B(event):
-    send_led('wsB', var_B.get())
-
-
 def send_led(index, value):
     global led_sleep
     if led_sleep == 0:
@@ -617,11 +623,6 @@ def send_led(index, value):
         led_sleep = 0
     else:
         pass
-
-
-def set_camera(event):
-    send('headAngle ' + var_camera.get())
-    time.sleep(0.2)
 
 
 def send_command(event):

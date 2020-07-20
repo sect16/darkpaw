@@ -249,6 +249,29 @@ def send(message):
             return
         else:
             logger.info('Sending data: %s', message)
+            if message == 'move_head_up':
+                gui.var_pitch.set(100)
+                pass
+            elif message == 'move_head_down':
+                gui.var_pitch.set(-100)
+                pass
+            elif message == 'move_low':
+                gui.var_height.set(0)
+                pass
+            elif message == 'move_high':
+                gui.var_height.set(100)
+                pass
+            elif message == 'move_head_left':
+                gui.var_yaw.set(100)
+                pass
+            elif message == 'move_head_right':
+                gui.var_yaw.set(-100)
+                pass
+            elif message == 'move_head_home':
+                gui.var_pitch.set(0)
+                gui.var_yaw.set(0)
+                gui.var_height.set(50)
+                pass
             message += ';'
             tcp_client_socket.send(message.encode())
     else:
