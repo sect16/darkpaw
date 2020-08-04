@@ -71,13 +71,15 @@ servo = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 servo_init = []
 servo_h = [450, 500, 380, 450, 450, 500, 500, 450, 500, 500, 500, 380]
 servo_l = [150, 150, 100, 150, 100, 220, 200, 100, 220, 200, 150, 100]
-SPEED = 1
+SPEED = 5
+led = 100
 height = 50
 
 OFFSET_VOLTAGE = 0
 OFFSET_CURRENT = 0
 OFFSET_AMBIENT = 0
 AUDIO_INPUT = 'hw:2,0'
+CONTROLLER_POLL = 0.01
 
 """
 auto: use automatic exposure mode
