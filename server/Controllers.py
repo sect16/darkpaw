@@ -166,8 +166,8 @@ class Xbox360(Gamepad):
         self.axisNames = {
             0: 'LEFT-X',
             1: 'LEFT-Y',
-            2: 'RIGHT-Y',
-            3: 'RIGHT-X',
+            2: 'RIGHT-X',
+            3: 'RIGHT-Y',
             4: 'RT',
             5: 'LT',
             6: 'HAT-X',
