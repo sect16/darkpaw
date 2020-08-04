@@ -16,6 +16,7 @@ import traceback
 
 import psutil
 
+import Gamepad
 import camera as cam
 import config
 import led
@@ -29,8 +30,6 @@ from speak import speak
 
 logger = logging.getLogger(__name__)
 # Socket connection sequence. Bind socket to port, create socket, get client address/port, get server address/port.
-tcp_server = None
-tcp_server_socket = None
 client_address = None
 server_address = None
 led = led.Led()
@@ -38,7 +37,7 @@ if config.CAMERA_MODULE:
     camera = cam.Camera()
 kill_event = threading.Event()
 ultra_event = threading.Event()
-servo_init_thread = None
+servo_init_thread = threading.Thread()
 steadyMode = 0
 direction_command = 'no'
 turn_command = 'no'
@@ -46,7 +45,19 @@ gait = 'stable'
 ws_G = 0
 ws_R = 0
 ws_B = 0
+led_status = False
 audio_pid = None
+
+last_hat_x = 0
+last_hat_y = 0
+last_left_x = 0
+last_left_y = 0
+last_right_x = 0
+last_right_y = 0
+last_lt = 0
+last_rt = 0
+last_lb = 0
+last_rb = 0
 
 
 def ap_thread():
@@ -56,9 +67,9 @@ def ap_thread():
 def get_cpu_temp():
     """ Return CPU temperature """
     result = 0
-    mypath = "/sys/class/thermal/thermal_zone0/temp"
-    with open(mypath, 'r') as mytmpfile:
-        for line in mytmpfile:
+    path = "/sys/class/thermal/thermal_zone0/temp"
+    with open(path, 'r') as tmp_file:
+        for line in tmp_file:
             result = line
     result = float(result) / 1000
     result = round(result, 1)
@@ -129,6 +140,7 @@ def info_thread(event):
     This function is intended to be run as a thread. It sends robot stats messages to the client each second.
     """
     REFRESH_RATE = 1
+    ina219 = None
     logger.info('Thread started')
     info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
     info_socket.connect((client_address, config.INFO_PORT))
@@ -138,7 +150,7 @@ def info_thread(event):
     while not event.is_set():
         try:
             message = ' ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
-            if config.POWER_MODULE:
+            if not ina219 is None:
                 power = ina219.read_ina219()
                 message += ' {0:0.2f}V'.format(power[0] + config.OFFSET_VOLTAGE) + ' {0:0.2f}mA'.format(
                     power[1] + config.OFFSET_CURRENT)
@@ -148,7 +160,7 @@ def info_thread(event):
                 message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
             else:
                 message += ' -'
-            logger.debug('Info message content = ' + message)
+            # logger.debug('Info message content = ' + message)
             info_socket.send(message.encode())
             time.sleep(REFRESH_RATE)
         except BrokenPipeError:
@@ -204,7 +216,7 @@ def disconnect():
     switch.set_all_switch_off()
     switch.destroy()
     time.sleep(0.5)
-    tcp_server.close()
+    # tcp_server.close()
     tcp_server_socket.close()
     move.robot_height(0)
     logger.info('Waiting for threads to finish.')
@@ -222,6 +234,7 @@ def listener_thread(event):
     logger.info('Starting listener thread...')
     global tcp_server_socket
     error_count = 0
+    data = ''
     while not event.is_set():
         try:
             data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
@@ -514,6 +527,7 @@ def move_thread(event):
             elif turn_command == 'stop' or direction_command == 'stop':
                 move.robot_height(50)
                 move.robot_balance('center')
+                # Reset changed torso wiggle
                 move.torso_wiggle = config.torso_w - ((config.DEFAULT_X - 50) * 2 / 100 * config.torso_w)
                 direction_command = 'no'
                 turn_command = 'no'
@@ -588,6 +602,126 @@ def turn(last_direction_command, last_turn_command, step):
     return last_direction_command, last_turn_command, step
 
 
+def on_button_a_released():
+    global led_status
+    if not led_status:
+        move.pca.set_pwm(15, 0, int(4096 / 100 * (config.led - 2)))
+        switch.channel_B(config.led)
+        led_status = True
+    else:
+        switch.channel_B(0)
+        led_status = False
+
+
+def on_axis_moved(gamepad):
+    global turn_command, direction_command, last_hat_x, last_hat_y, last_left_x, last_left_y, last_right_x, last_right_y, last_lt, last_rt, last_lb, last_rb
+    hat_x = gamepad.axis('HAT-X')
+    hat_y = gamepad.axis('HAT-Y')
+    left_x = gamepad.axis('LEFT-X')
+    left_y = gamepad.axis('LEFT-Y')
+    right_x = gamepad.axis('RIGHT-X')
+    right_y = gamepad.axis('RIGHT-Y')
+    lt = gamepad.axis('LT')
+    rt = gamepad.axis('RT')
+    lb = gamepad.isPressed('LB')
+    rb = gamepad.isPressed('RB')
+    if right_x + right_y == 0 and not (last_hat_x == hat_x and last_hat_y == hat_y):
+        last_hat_x = hat_x
+        last_hat_y = hat_y
+        if turn_command == 'no' and direction_command == 'no':
+            # logger.debug('Axis HAT-X, HAT-Y moved to %s, %s', hat_x, hat_y)
+            if hat_x < -0.9:
+                logger.debug('Robot move left received')
+                turn_command = 'left'
+            elif hat_x > 0.9:
+                logger.debug('Robot move right received')
+                turn_command = 'right'
+            elif hat_y < -0.9:
+                logger.debug('Robot move forward received')
+                direction_command = 'forward'
+            elif hat_y > 0.9:
+                logger.debug('Robot move backward received')
+                direction_command = 'backward'
+            elif lb:
+                direction_command = 'c_left'
+                pass
+            elif rb:
+                direction_command = 'c_right'
+                pass
+    if hat_x + hat_y == 0 and not (last_right_x == right_x and last_right_y == right_y):
+        last_right_x = right_x
+        last_right_y = right_y
+        logger.debug('Axis RIGHT-X, RIGHT-Y moved to %s, %s', right_x, right_y)
+        move.robot_yaw(int(-right_x * 100))
+        move.robot_pitch_roll(int(-right_y * 100), 0)
+        pass
+    if (abs(hat_x) < 0.9 and abs(hat_y) < 0.9) and not (lb or rb):
+        if (not turn_command == 'stop' and not turn_command == 'no') or (
+                not direction_command == 'stop' and not direction_command == 'no'):
+            logger.debug('Controller stop triggered')
+            turn_command = 'stop'
+            direction_command = 'stop'
+    if not (last_lt == lt and last_rt == rt):
+        last_lt = lt
+        last_rt = rt
+        logger.debug('Axis LT, RT moved to %s, %s', lt, rt)
+        height = 50 + -int((lt + 1) * 25) + int((rt + 1) * 25)
+        move.robot_height(height)
+    if hat_x + hat_y == 0 and not (last_left_x == left_x and last_left_y == left_y):
+        last_left_x = left_x
+        last_left_y = left_y
+        logger.debug('Axis LEFT-X, LEFT-Y moved to %s, %s', left_x, left_y)
+        if left_x == 0 and left_y == 0:
+            move.robot_balance('center')
+        elif left_x < -0.8 and left_y < -0.8:
+            move.robot_balance('left_front')
+        elif left_x > 0.8 and left_y > 0.8:
+            move.robot_balance('right_back')
+        elif left_x < -0.8 and left_y > 0.8:
+            move.robot_balance('left_back')
+        elif left_x > 0.8 and left_y < -0.8:
+            move.robot_balance('right_front')
+        elif left_x == -1:
+            move.robot_balance('left')
+        elif left_x == 1:
+            move.robot_balance('right')
+        elif left_y == 1:
+            move.robot_balance('back')
+        elif left_y == -1:
+            move.robot_balance('front')
+        pass
+
+
+def gamepad_thread(event):
+    logger.info('Thread started')
+    gamepad = None
+    while not event.is_set():
+        # Wait for a connection
+        if not Gamepad.available():
+            logger.info('Waiting for Xbox360 to be connected...')
+            while not Gamepad.available():
+                time.sleep(1.0)
+                if event.is_set():
+                    return
+        gamepadType = Gamepad.Xbox360
+        gamepad = gamepadType()
+        logger.info('Xbox360 connected')
+        # Start the background updating
+        gamepad.startBackgroundUpdates()
+        # Register the callback functions
+        gamepad.addButtonReleasedHandler('A', on_button_a_released)
+        try:
+            while not event.is_set() and gamepad.isConnected():
+                on_axis_moved(gamepad)
+                time.sleep(config.CONTROLLER_POLL)
+        except:
+            logger.error('Exception Xbox360: ', traceback.format_exc())
+    if gamepad is not None:
+        # Ensure the background thread is always terminated when we are done
+        gamepad.disconnect()
+    logger.info('Thread stopped')
+
+
 def main():
     logger.info('Starting server.')
     global kill_event, servo_init_thread
@@ -602,16 +736,22 @@ def main():
     except:
         logger.error('Exception LED: %s', traceback.format_exc())
         pass
-    connect()
     speak(speak_dict.connect)
     servo_init_thread = threading.Thread(target=move.servo_init, args=[], daemon=True)
     servo_init_thread.start()
+    moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
+    moving_threading.setName('move_thread')
+    moving_threading.start()
+    gamepad_threading = threading.Thread(target=gamepad_thread, args=[kill_event], daemon=True)
+    gamepad_threading.setName('gamepad_thread')
+    gamepad_threading.start()
     try:
         led.mode_set(0)
         led.colorWipe([255, 255, 255])
     except:
         logger.error('Exception LED: %s', traceback.format_exc())
         pass
+    connect()
     try:
         if config.CAMERA_MODULE:
             global camera
@@ -621,9 +761,6 @@ def main():
         info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
         info_threading.setName('info_thread')
         info_threading.start()
-        moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
-        moving_threading.setName('move_thread')
-        moving_threading.start()
         listener_thread(kill_event)
     except:
         logger.error('Exception: %s', traceback.format_exc())

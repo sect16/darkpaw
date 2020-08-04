@@ -106,7 +106,7 @@ def robot_X(amp):
 
     Warning: Robot will loose balance if value is too high!
 
-    :param amp: range(100,0)
+    :param amp: range between 0 and 100
     :return: void
     """
     wiggle = config.torso_w
@@ -124,7 +124,7 @@ def robot_height(height):
     Mid point 50
     lowest point 0
 
-    :param height: range(100,0)
+    :param height: range between 0 and 100
     :return: void
     """
     pos1 = int(config.lower_leg_l + (config.lower_leg_w * 2 / 100 * height))
@@ -219,8 +219,8 @@ def robot_pitch_roll(pitch, roll, instant=0):  # Percentage wiggle
     default values are 0.
 
     :param instant: 1 = move instantly, 0 = animate movement
-    :param pitch: range(-100, 100)
-    :param roll: range(-100, 100)
+    :param pitch: range between 100 and -100
+    :param roll: range between 100 and -100
     """
     logger.debug('Pitch=%s Roll=%s', pitch, roll)
     pitch = normalize(pitch, 100, -100)
@@ -247,8 +247,7 @@ def robot_yaw(yaw):  # Percentage wiggle
     Left = 100
     Right = -100
 
-    :param wiggle: Constant servo range
-    :param yaw: range (100, -100)
+    :param yaw: range between 100 and -100
     """
     global torso_wiggle
     yaw = normalize(yaw, 100, -100)
@@ -360,7 +359,6 @@ def robot_balance(balance, section=None):
     Moves the robot center of gravity to a direction given.
 
     :param balance: front, back, left, right - Accept combination of values
-    :param offset: Offset to reduce movement
     :param section: torso, toe - Specifies a distinct body movement
     """
     global toe_wiggle, torso_wiggle
