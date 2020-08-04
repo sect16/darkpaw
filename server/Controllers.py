@@ -169,20 +169,26 @@ class Xbox360(Gamepad):
             2: 'RIGHT-Y',
             3: 'RIGHT-X',
             4: 'RT',
-            5: 'LT'
+            5: 'LT',
+            6: 'HAT-X',
+            7: 'HAT-Y'
         }
         self.buttonNames = {
             0: 'A',
             1: 'B',
-            2: 'LB',
+            # 2: 'BACK',
             3: 'X',
             4: 'Y',
-            5: 'RB',
-            6: 'BACK',
-            7: 'START',
-            8: 'XBOX',
-            9: 'LA',
-            10: 'RA'
+            5: 'START',
+            6: 'LB',
+            7: 'RB',
+            # 8: 'XBOX',
+            # 9: 'LA',
+            # 10: 'RA',
+            11: 'START',
+            12: 'XBOX',
+            13: 'BUMP-L',
+            14: 'BUMP-R'
         }
         self._setupReverseMaps()
 
