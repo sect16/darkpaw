@@ -37,7 +37,6 @@ if config.CAMERA_MODULE:
     camera = cam.Camera()
 kill_event = threading.Event()
 ultra_event = threading.Event()
-servo_init_thread = threading.Thread()
 steadyMode = 0
 direction_command = 'no'
 turn_command = 'no'
@@ -180,7 +179,7 @@ def connect():
             tcp_server.bind(('', config.SERVER_PORT))
             # Start server,waiting for client
             tcp_server.listen(5)
-            logger.info('Waiting for connection...')
+            logger.info('Waiting for client connection...')
             led.color_set('cyan')
             led.mode_set(1)
             tcp_server_socket, client_address = tcp_server.accept()
@@ -268,7 +267,7 @@ def message_processor(data):
     :param data: client message
     :return: void
     """
-    global camera, steadyMode, direction_command, turn_command, servo_init_thread, gait, ws_G, ws_R, ws_B, audio_pid, kill_event
+    global camera, steadyMode, direction_command, turn_command, gait, ws_G, ws_R, ws_B, audio_pid, kill_event
     if 'wsR' in data:
         try:
             set_R = data.split()
@@ -496,13 +495,12 @@ def move_thread(event):
     :return: void
     """
     logger.info('Thread started')
-    global servo_init_thread, direction_command, turn_command
+    global direction_command, turn_command
     last_direction_command = 'stop'
     last_turn_command = 'stop'
     step = 0
     while not event.is_set():
         if not steadyMode:
-            servo_init_thread.join()
             if (direction_command == 'forward' or direction_command == 'backward') and turn_command == 'no':
                 if gait == 'stable':
                     last_direction_command, last_turn_command, step = forward(last_direction_command, last_turn_command,
@@ -555,7 +553,9 @@ def forward(last_direction_command, last_turn_command, step):
     if not last_direction_command == direction_command:
         move.robot_height(100)
         last_direction_command = direction_command
+    logger.debug('Execute step: %s', steps.move_list[step])
     exec(steps.move_list[step])
+    logger.debug('Finished step: %s', steps.move_list[step])
     step += 1
     if step == len(steps.move_list):
         step = 0
@@ -625,9 +625,11 @@ def on_axis_moved(gamepad):
     rt = gamepad.axis('RT')
     lb = gamepad.isPressed('LB')
     rb = gamepad.isPressed('RB')
-    if right_x + right_y == 0 and not (last_hat_x == hat_x and last_hat_y == hat_y):
+    if right_x + right_y == 0 and not (last_hat_x == hat_x and last_hat_y == hat_y and last_lb == lb and last_rb == rb):
         last_hat_x = hat_x
         last_hat_y = hat_y
+        last_lb = lb
+        last_rb = rb
         if turn_command == 'no' and direction_command == 'no':
             # logger.debug('Axis HAT-X, HAT-Y moved to %s, %s', hat_x, hat_y)
             if hat_x < -0.9:
@@ -692,66 +694,55 @@ def on_axis_moved(gamepad):
         pass
 
 
-def gamepad_thread(event):
+def joystick_thread(event):
     logger.info('Thread started')
-    gamepad = None
     while not event.is_set():
+        gamepad = None
         # Wait for a connection
-        if not Gamepad.available():
-            logger.info('Waiting for Xbox360 to be connected...')
+        try:
+            logger.info('Waiting for Xbox360 joystick to be connected...')
             while not Gamepad.available():
                 time.sleep(1.0)
                 if event.is_set():
+                    logger.info('Thread stopped')
                     return
-        gamepadType = Gamepad.Xbox360
-        gamepad = gamepadType()
-        logger.info('Xbox360 connected')
-        # Start the background updating
-        gamepad.startBackgroundUpdates()
-        # Register the callback functions
-        gamepad.addButtonReleasedHandler('A', on_button_a_released)
-        try:
+            gamepadType = Gamepad.Xbox360
+            gamepad = gamepadType()
+            # Start the background updating
+            gamepad.startBackgroundUpdates()
+            # Register the callback functions
+            gamepad.addButtonReleasedHandler('A', on_button_a_released)
+            logger.info('Xbox360 joystick connected')
+            config.SPEED = 5
             while not event.is_set() and gamepad.isConnected():
                 on_axis_moved(gamepad)
                 time.sleep(config.CONTROLLER_POLL)
         except:
-            logger.error('Exception Xbox360: ', traceback.format_exc())
-    if gamepad is not None:
-        # Ensure the background thread is always terminated when we are done
-        gamepad.disconnect()
+            logger.error('Exception Xbox360 joystick: ', traceback.format_exc())
+        finally:
+            # Ensure the background thread is always terminated when we are done
+            gamepad.disconnect()
     logger.info('Thread stopped')
 
 
 def main():
     logger.info('Starting server.')
-    global kill_event, servo_init_thread
+    global kill_event
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
-    try:
-        led_threading = threading.Thread(target=led.led_thread, args=[kill_event], daemon=True)
-        led_threading.setName('led_thread')
-        led_threading.start()
-        led.color_set('blue')
-    except:
-        logger.error('Exception LED: %s', traceback.format_exc())
-        pass
-    speak(speak_dict.connect)
-    servo_init_thread = threading.Thread(target=move.servo_init, args=[], daemon=True)
-    servo_init_thread.start()
+    led_threading = threading.Thread(target=led.led_thread, args=[kill_event], daemon=True)
+    led_threading.setName('led_thread')
+    led_threading.start()
+    move.servo_init()
     moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     moving_threading.setName('move_thread')
     moving_threading.start()
-    gamepad_threading = threading.Thread(target=gamepad_thread, args=[kill_event], daemon=True)
-    gamepad_threading.setName('gamepad_thread')
-    gamepad_threading.start()
-    try:
-        led.mode_set(0)
-        led.colorWipe([255, 255, 255])
-    except:
-        logger.error('Exception LED: %s', traceback.format_exc())
-        pass
+    joystick_threading = threading.Thread(target=joystick_thread, args=[kill_event], daemon=True)
+    joystick_threading.setName('joystick_thread')
+    joystick_threading.start()
     connect()
+    speak(speak_dict.connect)
     try:
         if config.CAMERA_MODULE:
             global camera
