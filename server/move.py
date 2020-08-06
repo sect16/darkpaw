@@ -132,7 +132,7 @@ def robot_height(height):
     servo_controller(1, [pos1, pos2, pos2, pos1])
 
 
-def servo_controller(initial_servo, pos, interval=3):
+def servo_controller(initial_servo, pos, interval=3, multiplier=1.0):
     """
     A blocking function which controls single, double or quadruple servos proportionally. Servo address is
     derived by an interval of 3 addresses from initial servo address. Maximum of 4 servos can be controlled.
@@ -140,12 +140,15 @@ def servo_controller(initial_servo, pos, interval=3):
     :param initial_servo: first servo number
     :param pos: List of target positions [x, x, x, x]
     :param interval: Instead of passing list of addresses, specify an address interval
+    :param multiplier: Servo speed multiplier
     """
     if not config.SERVO_MODULE:
         logger.warning('Servo module disabled')
         return
     count = len(pos)
-    SPEED = config.SPEED
+    SPEED = int(config.SPEED * multiplier)
+    if SPEED < 1:
+        SPEED = 1
     servo = []
     servo_pos = []
     steps = []
@@ -167,9 +170,8 @@ def servo_controller(initial_servo, pos, interval=3):
             return
         pos[i] = normalize(pos[i], config.servo_h[servo[i]], config.servo_l[servo[i]])
         servo_pos.append(config.servo[servo[i]])
-        steps.append(int((abs(pos[i] - config.servo[servo[i]])) / config.SPEED))
-    logger.debug('Controlling servo: %s', servo)
-    logger.debug('Getting initial position for servo: %s', servo_pos)
+        steps.append(int((abs(pos[i] - config.servo[servo[i]])) / SPEED))
+    logger.debug('Controlling servo: %s initial pos: %s', servo, servo_pos)
     for i in range(max(steps)):
         # for i in range(int((abs(pos[0] - config.servo[servo[0]])) / config.SPEED)):
         for x in range(count):
@@ -185,7 +187,6 @@ def servo_controller(initial_servo, pos, interval=3):
                     servo_pos[x] = pos[x]
                 else:
                     servo_pos[x] -= SPEED
-        for x in range(count):
             pca.set_pwm(servo[x], 0, servo_pos[x] * 2)
         time.sleep(DELAY)
     for i in range(count):
@@ -342,6 +343,7 @@ def servo_init():
     logger.debug('Servo status: %s', config.servo)
     logger.debug('Going to default height.')
     robot_height(config.height)
+    logger.info('Robot servos initialized')
 
 
 def robot_home():
@@ -385,7 +387,8 @@ def robot_balance(balance, section=None):
         servo_controller([2], toe)
         return
     elif section == 'torso':
-        servo_controller([0], torso)
+        # Reduce speed for crab movement
+        servo_controller([0], torso, 3, 0.75)
         return
     else:
         servo_controller([0, 2], torso + toe)
@@ -415,18 +418,18 @@ def leg_up(leg):
     :param leg: value between 1 - 4
     """
     if leg == 1:
-        servo_controller(1, [int(config.lower_leg_l)])
+        servo_controller(1, [int(config.lower_leg_l)], 0, 2)
     if leg == 2:
-        servo_controller(4, [int(config.lower_leg_h2)])
+        servo_controller(4, [int(config.lower_leg_h2)], 0, 2)
     if leg == 3:
-        servo_controller(7, [int(config.lower_leg_h)])
+        servo_controller(7, [int(config.lower_leg_h)], 0, 2)
     if leg == 4:
-        servo_controller(10, [int(config.lower_leg_l2)])
+        servo_controller(10, [int(config.lower_leg_l2)], 0, 2)
 
 
 def leg_move(leg, direction):
     """
-    Lift the given robot leg upwards.
+    Lift the given robot leg horizontally.
 
     Leg_I   --- forward --- Leg_III
                    |
@@ -439,40 +442,40 @@ def leg_move(leg, direction):
     """
     if leg == 1:
         if direction == 'forward':
-            servo_controller(0, [int(config.servo_init[0] + config.torso_w)])
+            servo_controller(0, [int(config.servo_init[0] + config.torso_w)], 0, 2)
         elif direction == 'backward':
-            servo_controller(0, [int(config.servo_init[0] - config.torso_w)])
+            servo_controller(0, [int(config.servo_init[0] - config.torso_w)], 0, 2)
         elif direction == 'in':
-            servo_controller(2, [int(config.servo_init[2] + config.upper_leg_w)])
+            servo_controller(2, [int(config.servo_init[2] + config.upper_leg_w)], 0, 2)
         elif direction == 'out':
-            servo_controller(2, [int(config.servo_init[2] - config.upper_leg_w)])
+            servo_controller(2, [int(config.servo_init[2] - config.upper_leg_w)], 0, 2)
     if leg == 2:
         if direction == 'forward':
-            servo_controller(3, [int(config.servo_init[3] - config.torso_w)])
+            servo_controller(3, [int(config.servo_init[3] - config.torso_w)], 0, 2)
         elif direction == 'backward':
-            servo_controller(3, [int(config.servo_init[3] + config.torso_w)])
+            servo_controller(3, [int(config.servo_init[3] + config.torso_w)], 0, 2)
         elif direction == 'in':
-            servo_controller(5, [int(config.servo_init[5] - config.upper_leg_w)])
+            servo_controller(5, [int(config.servo_init[5] - config.upper_leg_w)], 0, 2)
         elif direction == 'out':
-            servo_controller(5, [int(config.servo_init[5] + config.upper_leg_w)])
+            servo_controller(5, [int(config.servo_init[5] + config.upper_leg_w)], 0, 2)
     if leg == 3:
         if direction == 'forward':
-            servo_controller(6, [int(config.servo_init[6] - config.torso_w)])
+            servo_controller(6, [int(config.servo_init[6] - config.torso_w)], 0, 2)
         elif direction == 'backward':
-            servo_controller(6, [int(config.servo_init[6] + config.torso_w)])
+            servo_controller(6, [int(config.servo_init[6] + config.torso_w)], 0, 2)
         elif direction == 'in':
-            servo_controller(8, [int(config.servo_init[8] - config.upper_leg_w)])
+            servo_controller(8, [int(config.servo_init[8] - config.upper_leg_w)], 0, 2)
         elif direction == 'out':
-            servo_controller(8, [int(config.servo_init[8] + config.upper_leg_w)])
+            servo_controller(8, [int(config.servo_init[8] + config.upper_leg_w)], 0, 2)
     if leg == 4:
         if direction == 'forward':
-            servo_controller(9, [int(config.servo_init[9] + config.torso_w)])
+            servo_controller(9, [int(config.servo_init[9] + config.torso_w)], 0, 2)
         elif direction == 'backward':
-            servo_controller(9, [int(config.servo_init[9] - config.torso_w)])
+            servo_controller(9, [int(config.servo_init[9] - config.torso_w)], 0, 2)
         elif direction == 'in':
-            servo_controller(11, [int(config.servo_init[11] + config.upper_leg_w)])
+            servo_controller(11, [int(config.servo_init[11] + config.upper_leg_w)], 0, 2)
         elif direction == 'out':
-            servo_controller(11, [int(config.servo_init[11] - config.upper_leg_w)])
+            servo_controller(11, [int(config.servo_init[11] - config.upper_leg_w)], 0, 2)
 
 
 def leg_down(leg, offset=0):
@@ -489,13 +492,13 @@ def leg_down(leg, offset=0):
     :param offset: Reduces the extend of downwards movement
     """
     if leg == 1:
-        servo_controller(1, [int(config.lower_leg_h - offset)])
+        servo_controller(1, [int(config.lower_leg_h - offset)], 0, 2)
     if leg == 2:
-        servo_controller(4, [int(config.lower_leg_l2 + offset)])
+        servo_controller(4, [int(config.lower_leg_l2 + offset)], 0, 2)
     if leg == 3:
-        servo_controller(7, [int(config.lower_leg_l2 + offset)])
+        servo_controller(7, [int(config.lower_leg_l2 + offset)], 0, 2)
     if leg == 4:
-        servo_controller(10, [int(config.lower_leg_h - offset)])
+        servo_controller(10, [int(config.lower_leg_h - offset)], 0, 2)
 
 
 if __name__ == '__main__':

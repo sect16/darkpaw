@@ -6,6 +6,7 @@
 # Date        : 25/04/2020
 import logging
 import time
+import traceback
 
 import spidev
 
@@ -66,21 +67,22 @@ class Led:
     def mode_set(self, var):
         """
         Sets LED light effect.
-        0 = Turn off all effects.
+        Any = Turn off all effects.
         1 = Breathing effect.
         2 = Color loop effect.
         3 = Running effect.
         :param var: integer value 0 - 3.
         :return: void
         """
-        if var == 0:
-            status = 'OFF'
-        elif var == 1:
+
+        if var == 1:
             status = 'Breathing effect'
         elif var == 2:
             status = 'Color loop effect'
         elif var == 3:
             status = 'Running effect'
+        else:
+            status = 'OFF'
         logger.debug('Setting effect mode: ' + status)
         global mode
         mode = var
@@ -88,7 +90,7 @@ class Led:
     def color_set(self, var):
         """
         Sets color of the breathing LED light effect.
-        :param status: 1 for enable, 0 for disable
+        :param var: 1 for enable, 0 for disable
         :return: void
         """
         logger.debug('Setting thread color = %s', var)
@@ -156,16 +158,19 @@ class Led:
         This function runs as a thread to animate LED light effects.
         """
         while not event.is_set():
-            if mode == 1:
-                self.breathe_effect()
-            elif mode == 2:
-                self.loop_effect()
-                pass
-            elif mode == 3:
-                self.running_effect()
-                pass
-            else:
-                time.sleep(THREAD_REFRESH)
+            try:
+                if mode == 1:
+                    self.breathe_effect()
+                elif mode == 2:
+                    self.loop_effect()
+                    pass
+                elif mode == 3:
+                    self.running_effect()
+                    pass
+                else:
+                    time.sleep(THREAD_REFRESH)
+            except:
+                logger.error('Exception LED thread: %s', traceback.format_exc())
         logger.info('Thread stopped')
 
     def breathe_effect(self):
@@ -208,7 +213,10 @@ if __name__ == '__main__':
     # led.test(255)
     # LED()
     mode = 3
-    led.led_thread()
+    import threading
+
+    event = threading.Event()
+    led.led_thread(event)
     # led.loop(255)
     # led.colorWipe(Color(0, 0, 0))
     pass
