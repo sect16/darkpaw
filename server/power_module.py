@@ -1,6 +1,7 @@
 import logging
 from time import sleep
 
+import config
 from ina219 import DeviceRangeError
 from ina219 import INA219
 
@@ -19,6 +20,10 @@ class PowerModule:
         self.ina.configure(self.ina.RANGE_32V)
 
     def read_ina219(self):
+        """
+        Read and returns INA219 values.
+        :return: Voltage, current, power and shunt voltage
+        """
         # self.ina.wake()
         # self.ina.sleep()
         try:
@@ -26,7 +31,7 @@ class PowerModule:
             logger.debug('Bus Current: {0:0.2f}mA'.format(self.ina.current()))
             logger.debug('Power: {0:0.2f}mW'.format(self.ina.power()))
             logger.debug('Shunt Voltage: {0:0.2f}mV\n'.format(self.ina.shunt_voltage()))
-            return self.ina.voltage(), self.ina.current(), self.ina.power(), self.ina.shunt_voltage()
+            return self.ina.voltage() + config.OFFSET_VOLTAGE, self.ina.current() + config.OFFSET_CURRENT, self.ina.power(), self.ina.shunt_voltage()
         except DeviceRangeError as e:
             # Current out of device range with specified shunt resister
             logger.error(e)

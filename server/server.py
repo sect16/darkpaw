@@ -46,6 +46,7 @@ ws_R = 0
 ws_B = 0
 led_status = False
 audio_pid = None
+power = None
 
 last_hat_x = 0
 last_hat_y = 0
@@ -136,41 +137,63 @@ def ultra_send_client(event):
 
 def info_thread(event):
     """
-    This function is intended to be run as a thread. It sends robot stats messages to the client each second.
+    This function is intended to be run as a thread. It sends robot statistics to the client server each second. It
+    also implements a reconnect procedure in case the connection is dropped or an exception occurs.
+    :param event: Terminates when event is set.
     """
-    REFRESH_RATE = 1
-    ina219 = None
+    global power, client_address
+    SOCKET_TIMEOUT = 5
+    SOCKET_RETRY = 5
+    connected = False
     logger.info('Thread started')
-    info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
-    info_socket.connect((client_address, config.INFO_PORT))
-    logger.info('Connected to client address (\'%s\', %i)', client_address, config.INFO_PORT)
-    if config.POWER_MODULE:
-        ina219 = pm.PowerModule()
     while not event.is_set():
-        try:
-            message = ' ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
-            if not ina219 is None:
-                power = ina219.read_ina219()
-                message += ' {0:0.2f}V'.format(power[0] + config.OFFSET_VOLTAGE) + ' {0:0.2f}mA'.format(
-                    power[1] + config.OFFSET_CURRENT)
-            else:
-                message += ' - -'
-            if config.GYRO_MODULE:
-                message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
-            else:
-                message += ' -'
-            # logger.debug('Info message content = ' + message)
-            info_socket.send(message.encode())
-            time.sleep(REFRESH_RATE)
-        except BrokenPipeError:
-            pass
-        except:
-            logger.error('Exception: %s', traceback.format_exc())
-            pass
+        if not connected:
+            try:
+                info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
+                info_socket.settimeout(SOCKET_TIMEOUT)
+                info_socket.connect((client_address, config.INFO_PORT))
+                logger.info('Connected to client address (\'%s\', %i)', client_address, config.INFO_PORT)
+                connected = True
+            except:
+                logger.error('Exception: %s', traceback.format_exc())
+                logger.error('Unable to connect to client info socket')
+                connected = False
+                time.sleep(SOCKET_RETRY)
+                pass
+        elif connected:
+            time.sleep(config.INA219_POLLING)
+            try:
+                message = ' ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
+                if config.POWER_MODULE:
+                    message += ' {0:0.2f}V'.format(power[0]) + ' {0:0.2f}mA'.format(
+                        power[1])
+                else:
+                    message += ' - -'
+                if config.GYRO_MODULE:
+                    message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
+                else:
+                    message += ' -'
+                logger.debug('Info message content = ' + message)
+                info_socket.send(message.encode())
+            except BrokenPipeError:
+                pass
+            except:
+                logger.error('Exception: %s', traceback.format_exc())
+                try:
+                    info_socket.close()
+                except:
+                    logger.error('Exception: %s', traceback.format_exc())
+                    pass
+                connected = False
+                time.sleep(SOCKET_RETRY)
+                pass
     logger.info('Thread stopped')
 
 
 def connect():
+    """
+    This function starts the main robot listener and waits for the client to connect.
+    """
     global server_address, tcp_server_socket, tcp_server, client_address
     while True:
         try:
@@ -220,7 +243,7 @@ def disconnect():
     move.robot_height(0)
     logger.info('Waiting for threads to finish.')
     while thread_isAlive('led_thread', 'camera_thread', 'info_thread', 'stream_thread',
-                         'speak_thread', 'ultra_thread',
+                         'speak_thread', 'ultra_thread', 'ina219_thread',
                          'move_thread'):
         time.sleep(1)
     # move.servo_release()
@@ -229,6 +252,7 @@ def disconnect():
 def listener_thread(event):
     """
     This in the main listener thread loop which receives all commands from the client.
+    :param event: Terminates when event is set.
     """
     logger.info('Starting listener thread...')
     global tcp_server_socket
@@ -488,6 +512,53 @@ def message_processor(data):
         logger.warning('Unknown message received!')
 
 
+def ina219_thread(event):
+    """
+    This thread read INA219 power statistics each second and stores them in a global variable. It also monitors the
+    voltage for overload, low and critical voltages. It reads voltage threshold from the global configuration.
+    VOLTAGE_CHECK_SECS defines the frequency in seconds to check for low and critical battery voltages. Over voltage
+    is checked each time sensor is read. Default sensor reading is every 1 second.
+    VOLTAGE_OVERLOAD defines the maximum input voltage.
+    VOLTAGE_WARN battery low voltage threshold.
+    VOLTAGE_SHUTDOWN battery critical voltage threshold. Shutdown is initiated when triggered.
+    INA219_POLL sensor read rate.
+    :param event: Terminates when event is set.
+    :return: void
+    """
+    global power
+    logger.info('Thread started')
+    ina219 = pm.PowerModule()
+    interval = config.VOLTAGE_CHECK_SECS
+    INA219_POLL = config.INA219_POLLING
+    while not event.is_set():
+        time.sleep(INA219_POLL)
+        interval += INA219_POLL
+        try:
+            power = ina219.read_ina219()
+        except:
+            pass
+        if power[0] > config.VOLTAGE_OVERLOAD:
+            logger.critical(
+                'Maximum input voltage exceeded by {0:0.2f} volts, reduce immediately to prevent damage!'.format(
+                    float(power[0] - config.VOLTAGE_OVERLOAD)))
+            speak('Maximum input voltage exceeded by {0:0.2f} volts, reduce immediately to prevent damage!'.format(
+                float(power[0] - config.VOLTAGE_OVERLOAD)))
+            pass
+        elif interval >= config.VOLTAGE_CHECK_SECS:
+            interval = 0
+            if power[0] < config.VOLTAGE_WARN:
+                speak('Battery voltage is {0:0.2f} volts, please recharge!'.format(power[0]))
+                logger.warning('Battery voltage low (%s), please recharge!', power[0])
+            elif power[0] < config.VOLTAGE_SHUTDOWN:
+                speak('Battery voltage is {0:0.2f} volts, battery critical, shutting down now!'.format(power[0]))
+                time.sleep(3)
+                logger.critical('Battery voltage critical (%s), shutting down!', power[0])
+                command = "/usr/bin/sudo /sbin/shutdown now"
+                import subprocess
+                subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+    logger.info('Thread stopped')
+
+
 def move_thread(event):
     """
     This thread manages which servos to move at each step.
@@ -602,7 +673,11 @@ def turn(last_direction_command, last_turn_command, step):
     return last_direction_command, last_turn_command, step
 
 
-def on_button_a_released():
+def toggle_led():
+    """
+    Function toggles the front LED light on/off.
+    :return:
+    """
     global led_status
     if not led_status:
         move.pca.set_pwm(15, 0, int(4096 / 100 * (config.led - 2)))
@@ -695,6 +770,10 @@ def on_axis_moved(gamepad):
 
 
 def joystick_thread(event):
+    """
+    Start listener for joystick connection.
+    :param event: Terminates when event is set.
+    """
     logger.info('Thread started')
     while not event.is_set():
         gamepad = None
@@ -711,7 +790,7 @@ def joystick_thread(event):
             # Start the background updating
             gamepad.startBackgroundUpdates()
             # Register the callback functions
-            gamepad.addButtonReleasedHandler('A', on_button_a_released)
+            gamepad.addButtonReleasedHandler('A', toggle_led)
             logger.info('Xbox360 joystick connected')
             config.SPEED = 5
             while not event.is_set() and gamepad.isConnected():
@@ -721,7 +800,8 @@ def joystick_thread(event):
             logger.error('Exception Xbox360 joystick: ', traceback.format_exc())
         finally:
             # Ensure the background thread is always terminated when we are done
-            gamepad.disconnect()
+            if gamepad is not None:
+                gamepad.disconnect()
     logger.info('Thread stopped')
 
 
@@ -731,6 +811,10 @@ def main():
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
+    if config.POWER_MODULE:
+        ina219_threading = threading.Thread(target=ina219_thread, args=[kill_event], daemon=True)
+        ina219_threading.setName('ina219_thread')
+        ina219_threading.start()
     led_threading = threading.Thread(target=led.led_thread, args=[kill_event], daemon=True)
     led_threading.setName('led_thread')
     led_threading.start()
