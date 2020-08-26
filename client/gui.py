@@ -637,8 +637,10 @@ def send_command(event):
             send(entry_text.get())
         entry_ip.focus_set()
         entry_text.delete(0, 'end')
-    else:
+    elif not connect_event.is_set():
         logger.warning('Unable to send, not connected')
+    else:
+        pass
     bind_keys()
 
 

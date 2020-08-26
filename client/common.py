@@ -88,17 +88,16 @@ def status_client_thread(event):
     logger.info('Thread stopped')
 
 
-def info_thread(event):
+def info_thread(event, local_ip):
     """
     This function loops through messages received from tcp socket and updates the robot statistic data.
     :param event: Clear event flag to terminate thread
     """
     logger.info('Thread started')
     global cpu_temp, cpu_use, ram_use, voltage, current, connect_event
-    addr = ('', config.INFO_PORT)
     stat_sock = socket(AF_INET, SOCK_STREAM)
     stat_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    stat_sock.bind(addr)
+    stat_sock.bind((local_ip, config.INFO_PORT))
     stat_sock.listen(5)  # Start server,waiting for client
     stat_sock, addr = stat_sock.accept()
     logger.info('Info port connected')
@@ -169,7 +168,8 @@ def connect():  # Call this function to connect with the server
                                                 daemon=True)
             status_threading.setName('status_thread')
             status_threading.start()
-            info_threading = threading.Thread(target=info_thread, args=([connect_event]), daemon=True)
+            info_threading = threading.Thread(target=info_thread,
+                                              args=([connect_event, tcp_client_socket.getsockname()[0]]), daemon=True)
             info_threading.setName('stat_thread')
             info_threading.start()
             keepalive_threading = threading.Thread(target=keepalive_thread, args=([connect_event]), daemon=True)
