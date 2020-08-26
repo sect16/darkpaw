@@ -29,6 +29,11 @@ RESOLUTION = [640, 480]
 AUDIO_PORT = 3030
 FRAME_RATE = 30
 ULTRA_PORT = 2257
+VOLTAGE_WARN = 7.2  # Low battery voltage warning threshold
+VOLTAGE_SHUTDOWN = 6.8  # Critical voltage shutdown threshold
+VOLTAGE_CHECK_SECS = 60  # Interval to check for Low and Critical voltage
+VOLTAGE_OVERLOAD = 20  # Maximum allowed input voltage
+INA219_POLLING = 1  # INA219 power module refresh rate
 
 # Hardware configuration
 POWER_MODULE = True  # INA219

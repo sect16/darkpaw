@@ -94,7 +94,7 @@ def info_thread(event, local_ip):
     :param event: Clear event flag to terminate thread
     """
     logger.info('Thread started')
-    global cpu_temp, cpu_use, ram_use, voltage, current, connect_event
+    global cpu_temp, cpu_use, ram_use, voltage, current, connect_event, ambient
     stat_sock = socket(AF_INET, SOCK_STREAM)
     stat_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     stat_sock.bind((local_ip, config.INFO_PORT))
