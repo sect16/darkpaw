@@ -11,10 +11,10 @@ import RPi.GPIO as GPIO
 logger = logging.getLogger(__name__)
 Channel_A_EN = 7
 Channel_A_Pin1 = 37
-Channel_A_Pin2 = 40
+Channel_A_Pin2 = 15
 Channel_B_EN = 11
 Channel_B_Pin1 = 13
-Channel_B_Pin2 = 12
+Channel_B_Pin2 = 16
 pwm_B = 0
 frequency = 60
 
