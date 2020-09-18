@@ -238,7 +238,6 @@ def disconnect():
     switch.set_all_switch_off()
     switch.destroy()
     time.sleep(0.5)
-    # tcp_server.close()
     tcp_server_socket.close()
     move.robot_height(0)
     logger.info('Waiting for threads to finish.')
@@ -246,7 +245,6 @@ def disconnect():
                          'speak_thread', 'ultra_thread', 'ina219_thread',
                          'move_thread'):
         time.sleep(1)
-    # move.servo_release()
 
 
 def listener_thread(event):
@@ -262,7 +260,7 @@ def listener_thread(event):
         try:
             data = str(tcp_server_socket.recv(config.BUFFER_SIZE).decode())
         except socket.timeout:
-            logger.warning('Listener socket timed out')
+            logger.warning('Listener socket timed out: ' + traceback.format_exc())
             data = ''
         except socket.error:
             logger.warning('Connection exception: ' + traceback.format_exc())
@@ -680,7 +678,7 @@ def toggle_led():
     """
     global led_status
     if not led_status:
-        move.pca.set_pwm(15, 0, int(4096 / 100 * (config.led - 2)))
+        move.pca.set_pwm(15, 0, int(4096 / 100 * (config.leservo_d - 2)))
         switch.channel_B(config.led)
         led_status = True
     else:
@@ -827,6 +825,13 @@ def main():
     joystick_threading.start()
     connect()
     speak(speak_dict.connect)
+
+    try:
+        led.mode_set(0)
+        led.colorWipe([255, 255, 255])
+    except:
+        logger.error('Exception LED: %s', traceback.format_exc())
+        pass
     try:
         if config.CAMERA_MODULE:
             global camera
