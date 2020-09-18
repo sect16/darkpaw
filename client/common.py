@@ -98,7 +98,7 @@ def info_thread(event, local_ip):
     stat_sock = socket(AF_INET, SOCK_STREAM)
     stat_sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     stat_sock.bind((local_ip, config.INFO_PORT))
-    stat_sock.listen(5)  # Start server,waiting for client
+    stat_sock.listen(5)  # Start server, waiting for client
     stat_sock, addr = stat_sock.accept()
     logger.info('Info port connected')
     retries = 0

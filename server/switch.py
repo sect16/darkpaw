@@ -70,8 +70,8 @@ def switch(port, status):
 
 def channel_B(duty):
     """
-    Enable/Disable output for L298P IC channel B. In case of the Darkpaw robot, this channel is connected to the
-    flash light LED. In case duty cycle is zero, channel B output is turned OFF. Any other values enables channel
+    Enable/Disable output for L298P IC channel B. Motor A is connected to channel B while Motor B is Channel A.
+    In case duty cycle is zero, channel B output is turned OFF. Any other values enables channel
     B output.
     :param duty: duty cycle 0 - 100
     """
@@ -93,6 +93,10 @@ def set_all_switch_off():
     switch(1, 0)
     switch(2, 0)
     switch(3, 0)
+    GPIO.output(Channel_B_Pin1, GPIO.LOW)
+    GPIO.output(Channel_B_Pin2, GPIO.LOW)
+    GPIO.output(Channel_A_Pin1, GPIO.LOW)
+    GPIO.output(Channel_A_Pin2, GPIO.LOW)
 
 
 def destroy():

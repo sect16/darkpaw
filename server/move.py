@@ -33,6 +33,9 @@ STEADY_DELAY = 0.005
 INIT_DELAY = 0.2
 # Servo controller delay. Increase delay to lower servo speed.
 DELAY = 0.005
+
+MULTIPLIER = 2.5
+
 """
 >>> instantiation <<<
 """
@@ -418,13 +421,13 @@ def leg_up(leg):
     :param leg: value between 1 - 4
     """
     if leg == 1:
-        servo_controller(1, [int(config.lower_leg_l)], 0, 2)
+        servo_controller(1, [int(config.lower_leg_l)], 0, MULTIPLIER)
     if leg == 2:
-        servo_controller(4, [int(config.lower_leg_h2)], 0, 2)
+        servo_controller(4, [int(config.lower_leg_h2)], 0, MULTIPLIER)
     if leg == 3:
-        servo_controller(7, [int(config.lower_leg_h)], 0, 2)
+        servo_controller(7, [int(config.lower_leg_h)], 0, MULTIPLIER)
     if leg == 4:
-        servo_controller(10, [int(config.lower_leg_l2)], 0, 2)
+        servo_controller(10, [int(config.lower_leg_l2)], 0, MULTIPLIER)
 
 
 def leg_move(leg, direction):
@@ -442,40 +445,40 @@ def leg_move(leg, direction):
     """
     if leg == 1:
         if direction == 'forward':
-            servo_controller(0, [int(config.servo_init[0] + config.torso_w)], 0, 2)
+            servo_controller(0, [int(config.servo_init[0] + config.torso_w)], 0, MULTIPLIER)
         elif direction == 'backward':
-            servo_controller(0, [int(config.servo_init[0] - config.torso_w)], 0, 2)
+            servo_controller(0, [int(config.servo_init[0] - config.torso_w)], 0, MULTIPLIER)
         elif direction == 'in':
-            servo_controller(2, [int(config.servo_init[2] + config.upper_leg_w)], 0, 2)
+            servo_controller(2, [int(config.servo_init[2] + config.upper_leg_w)], 0, MULTIPLIER)
         elif direction == 'out':
-            servo_controller(2, [int(config.servo_init[2] - config.upper_leg_w)], 0, 2)
+            servo_controller(2, [int(config.servo_init[2] - config.upper_leg_w)], 0, MULTIPLIER)
     if leg == 2:
         if direction == 'forward':
-            servo_controller(3, [int(config.servo_init[3] - config.torso_w)], 0, 2)
+            servo_controller(3, [int(config.servo_init[3] - config.torso_w)], 0, MULTIPLIER)
         elif direction == 'backward':
-            servo_controller(3, [int(config.servo_init[3] + config.torso_w)], 0, 2)
+            servo_controller(3, [int(config.servo_init[3] + config.torso_w)], 0, MULTIPLIER)
         elif direction == 'in':
-            servo_controller(5, [int(config.servo_init[5] - config.upper_leg_w)], 0, 2)
+            servo_controller(5, [int(config.servo_init[5] - config.upper_leg_w)], 0, MULTIPLIER)
         elif direction == 'out':
-            servo_controller(5, [int(config.servo_init[5] + config.upper_leg_w)], 0, 2)
+            servo_controller(5, [int(config.servo_init[5] + config.upper_leg_w)], 0, MULTIPLIER)
     if leg == 3:
         if direction == 'forward':
-            servo_controller(6, [int(config.servo_init[6] - config.torso_w)], 0, 2)
+            servo_controller(6, [int(config.servo_init[6] - config.torso_w)], 0, MULTIPLIER)
         elif direction == 'backward':
-            servo_controller(6, [int(config.servo_init[6] + config.torso_w)], 0, 2)
+            servo_controller(6, [int(config.servo_init[6] + config.torso_w)], 0, MULTIPLIER)
         elif direction == 'in':
-            servo_controller(8, [int(config.servo_init[8] - config.upper_leg_w)], 0, 2)
+            servo_controller(8, [int(config.servo_init[8] - config.upper_leg_w)], 0, MULTIPLIER)
         elif direction == 'out':
-            servo_controller(8, [int(config.servo_init[8] + config.upper_leg_w)], 0, 2)
+            servo_controller(8, [int(config.servo_init[8] + config.upper_leg_w)], 0, MULTIPLIER)
     if leg == 4:
         if direction == 'forward':
-            servo_controller(9, [int(config.servo_init[9] + config.torso_w)], 0, 2)
+            servo_controller(9, [int(config.servo_init[9] + config.torso_w)], 0, MULTIPLIER)
         elif direction == 'backward':
-            servo_controller(9, [int(config.servo_init[9] - config.torso_w)], 0, 2)
+            servo_controller(9, [int(config.servo_init[9] - config.torso_w)], 0, MULTIPLIER)
         elif direction == 'in':
-            servo_controller(11, [int(config.servo_init[11] + config.upper_leg_w)], 0, 2)
+            servo_controller(11, [int(config.servo_init[11] + config.upper_leg_w)], 0, MULTIPLIER)
         elif direction == 'out':
-            servo_controller(11, [int(config.servo_init[11] - config.upper_leg_w)], 0, 2)
+            servo_controller(11, [int(config.servo_init[11] - config.upper_leg_w)], 0, MULTIPLIER)
 
 
 def leg_down(leg, offset=0):
@@ -492,13 +495,13 @@ def leg_down(leg, offset=0):
     :param offset: Reduces the extend of downwards movement
     """
     if leg == 1:
-        servo_controller(1, [int(config.lower_leg_h - offset)], 0, 2)
+        servo_controller(1, [int(config.lower_leg_h - offset)], 0, MULTIPLIER)
     if leg == 2:
-        servo_controller(4, [int(config.lower_leg_l2 + offset)], 0, 2)
+        servo_controller(4, [int(config.lower_leg_l2 + offset)], 0, MULTIPLIER)
     if leg == 3:
-        servo_controller(7, [int(config.lower_leg_l2 + offset)], 0, 2)
+        servo_controller(7, [int(config.lower_leg_l2 + offset)], 0, MULTIPLIER)
     if leg == 4:
-        servo_controller(10, [int(config.lower_leg_h - offset)], 0, 2)
+        servo_controller(10, [int(config.lower_leg_h - offset)], 0, MULTIPLIER)
 
 
 if __name__ == '__main__':
