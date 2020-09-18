@@ -95,8 +95,8 @@ def set_all_switch_off():
     switch(3, 0)
     GPIO.output(Channel_B_Pin1, GPIO.LOW)
     GPIO.output(Channel_B_Pin2, GPIO.LOW)
-    GPIO.output(Channel_A_Pin1, GPIO.LOW)
-    GPIO.output(Channel_A_Pin2, GPIO.LOW)
+    # GPIO.output(Channel_A_Pin1, GPIO.LOW)
+    # GPIO.output(Channel_A_Pin2, GPIO.LOW)
 
 
 def destroy():
