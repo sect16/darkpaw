@@ -177,6 +177,8 @@ def info_thread(event):
                 info_socket.send(message.encode())
             except BrokenPipeError:
                 pass
+            except TimeoutError:
+                pass
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 try:
