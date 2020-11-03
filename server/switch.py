@@ -30,6 +30,9 @@ def switchSetup():
     GPIO.setup(29, GPIO.OUT)
     GPIO.setup(31, GPIO.OUT)
     GPIO.setup(33, GPIO.OUT)
+    GPIO.setup(Channel_A_EN, GPIO.IN)
+    GPIO.setup(Channel_A_Pin1, GPIO.OUT)
+    GPIO.setup(Channel_A_Pin2, GPIO.OUT)
     GPIO.setup(Channel_B_EN, GPIO.IN)
     GPIO.setup(Channel_B_Pin1, GPIO.OUT)
     GPIO.setup(Channel_B_Pin2, GPIO.OUT)
@@ -95,8 +98,8 @@ def set_all_switch_off():
     switch(3, 0)
     GPIO.output(Channel_B_Pin1, GPIO.LOW)
     GPIO.output(Channel_B_Pin2, GPIO.LOW)
-    # GPIO.output(Channel_A_Pin1, GPIO.LOW)
-    # GPIO.output(Channel_A_Pin2, GPIO.LOW)
+    GPIO.output(Channel_A_Pin1, GPIO.LOW)
+    GPIO.output(Channel_A_Pin2, GPIO.LOW)
 
 
 def destroy():

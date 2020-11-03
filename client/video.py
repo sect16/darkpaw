@@ -6,9 +6,9 @@
 This script creates the video window, initiates the connection and inserts an overlay.
 """
 
-import base64
 import traceback
 
+import base64
 import cv2
 import logging
 import numpy
@@ -51,6 +51,7 @@ def call_video(ip):
     This function creates a ZMQ socket to receive video footage.
     :param ip: Server IP address to connect ZMQ socket.
     """
+    video_threading = threading.Thread()
     if common.connect_event.is_set() and not common.fpv_event.is_set() and not common.thread_isAlive('fps_thread',
                                                                                                      'open_cv_thread'):
         logger.info('Starting video stream.')
@@ -66,7 +67,6 @@ def call_video(ip):
         mq.set_hwm(1)
         mq.setsockopt(zmq.LINGER, 0)
         mq.setsockopt(zmq.CONFLATE, 1)
-        # Define a thread for FPV and OpenCV
         video_threading = threading.Thread(target=open_cv_thread, args=([mq, common.fpv_event]), daemon=True)
         video_threading.setName('open_cv_thread')
         video_threading.start()
@@ -78,11 +78,6 @@ def call_video(ip):
         logger.info('Stopping video stream.')
         common.fpv_event.clear()
         time.sleep(1)
-        while common.thread_isAlive('fps_thread', 'open_cv_thread'):
-            logger.warning('Waiting for FPV threads to terminated.')
-            time.sleep(1)
-        else:
-            logger.info('FPV threads terminated successfully')
         gui.btn_video.config(bg=config.COLOR_BTN)
         gui.btn_video['state'] = 'normal'
     else:
@@ -173,4 +168,6 @@ def open_cv_thread(mq, event):
     cv2.destroyAllWindows()
     mq.__exit__()
     common.fpv_event.clear()
+    gui.btn_video.config(bg=config.COLOR_BTN)
+    gui.btn_video['state'] = 'normal'
     logger.info('Thread stopped')
