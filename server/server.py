@@ -179,6 +179,8 @@ def info_thread(event):
                 pass
             except TimeoutError:
                 pass
+            except OSError:
+                pass
             except:
                 logger.error('Exception: %s', traceback.format_exc())
                 try:
