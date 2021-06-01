@@ -3,11 +3,10 @@
 # Author      : Chin Pin Hon
 # Date        : 14.01.2020
 
-import traceback
-
 import logging
 import threading
 import time
+import traceback
 from socket import *
 
 import config
@@ -91,6 +90,7 @@ def status_client_thread(event):
 def info_thread(event, local_ip):
     """
     This function loops through messages received from tcp socket and updates the robot statistic data.
+    :param local_ip:
     :param event: Clear event flag to terminate thread
     """
     logger.info('Thread started')

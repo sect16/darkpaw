@@ -1,10 +1,9 @@
 # import the necessary packages
 import logging
 import time
-from threading import Thread
-
 from picamera import PiCamera
 from picamera.array import PiRGBArray
+from threading import Thread
 
 import config
 
@@ -29,7 +28,8 @@ class Stream:
         self.camera.meter_mode = config.CAMERA_METERING
         # Automatic shutter
         self.camera.shutter_speed = 0
-        self.camera.exposure_compensation = 1
+        self.camera.exposure_compensation = config.EXPOSURE_COMPENSATION
+        self.camera.iso = config.ISO
         self.camera.video_denoise = True
         self.camera.video_stabilization = False
         self.camera.stop_preview()
