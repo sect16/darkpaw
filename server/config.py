@@ -5,14 +5,15 @@
 # Author      : Chin Pin Hon
 # Date        : 2019/11/20
 
-import time
-
 import cv2
+import time
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SIZE = 0.5
 
-SPEAK_SPEED = 150
+SPEAK_SPEED = 120
+SPEAK_PITCH = 20
+SPEAK_AMP = 100
 allow_speak = True
 VIDEO_OUT = False
 last_text = list([int(time.time()), ""])
@@ -101,6 +102,8 @@ antishake: antishake mode
 fireworks: select setting optimised for fireworks
 """
 CAMERA_EXPOSURE = 'auto'
+EXPOSURE_COMPENSATION = 25
+ISO = 800
 
 """
 'off'     
