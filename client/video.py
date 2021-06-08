@@ -126,7 +126,7 @@ def open_cv_thread(mq, event):
                         (int(config.VIDEO_WIDTH) - 160, int(config.VIDEO_HEIGHT) - 60), config.FONT, config.FONT_SIZE,
                         (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('Ambient Temp: %s' % common.ambient),
+            cv2.putText(source, ('Ambient: %s' % common.ambient),
                         (int(config.VIDEO_WIDTH) - 160, int(config.VIDEO_HEIGHT) - 30), config.FONT, config.FONT_SIZE,
                         (128, 255, 128), 1,
                         cv2.LINE_AA)
