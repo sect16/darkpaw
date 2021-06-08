@@ -6,14 +6,14 @@
 This script creates the video window, initiates the connection and inserts an overlay.
 """
 
-import traceback
-
 import base64
-import cv2
 import logging
-import numpy
 import threading
 import time
+import traceback
+
+import cv2
+import numpy
 import zmq
 
 import common
@@ -126,7 +126,7 @@ def open_cv_thread(mq, event):
                         (int(config.VIDEO_WIDTH) - 160, int(config.VIDEO_HEIGHT) - 60), config.FONT, config.FONT_SIZE,
                         (128, 255, 128), 1,
                         cv2.LINE_AA)
-            cv2.putText(source, ('RAM Usage: %s' % common.ram_use),
+            cv2.putText(source, ('Ambient Temp: %s' % common.ambient),
                         (int(config.VIDEO_WIDTH) - 160, int(config.VIDEO_HEIGHT) - 30), config.FONT, config.FONT_SIZE,
                         (128, 255, 128), 1,
                         cv2.LINE_AA)
