@@ -5,11 +5,11 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 
-import logging
-import time
 import traceback
 
 import Adafruit_PCA9685
+import logging
+import time
 
 import Kalman_filter
 import config
@@ -313,19 +313,20 @@ def servo_init():
     global torso_wiggle
     logger.info('Initializing all servos... ')
     wiggle = config.torso_w
+    threshold = 9
     for i in range(0, 12):
         if i == 1 or i == 10:
-            set_pwm(i, config.lower_leg_l - 2)
+            set_pwm(i, config.lower_leg_l - threshold)
         if i == 4 or i == 7:
-            set_pwm(i, config.lower_leg_h2 - 2)
+            set_pwm(i, config.lower_leg_h2 - threshold)
         if i == 2 or i == 11:
-            set_pwm(i, config.upper_leg_m - 2)
+            set_pwm(i, config.upper_leg_m - threshold)
         if i == 5 or i == 8:
-            set_pwm(i, config.upper_leg_m2 - 2)
+            set_pwm(i, config.upper_leg_m2 - threshold)
         if i == 0 or i == 3:
-            set_pwm(i, int(config.torso_m - wiggle + 2 * wiggle * (config.DEFAULT_X - 2) / 100))
+            set_pwm(i, int(config.torso_m - wiggle + 2 * wiggle * (config.DEFAULT_X - threshold) / 100))
         if i == 6 or i == 9:
-            set_pwm(i, int(config.torso_m2 + wiggle - 2 * wiggle * (config.DEFAULT_X - 2) / 100))
+            set_pwm(i, int(config.torso_m2 + wiggle - 2 * wiggle * (config.DEFAULT_X - threshold) / 100))
         time.sleep(INIT_DELAY)
     for i in range(0, 12):
         if i == 1 or i == 10:

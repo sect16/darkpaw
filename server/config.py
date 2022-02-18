@@ -44,7 +44,7 @@ GYRO_MODULE = True  # MPU6050
 ULTRA_MODULE = False
 
 # 100 = Leg spread out
-DEFAULT_X = 60
+DEFAULT_X = 65
 
 lower_leg_h = 500  # DOWN
 lower_leg_l = 150  # UP

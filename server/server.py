@@ -4,17 +4,17 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 
+import traceback
+
 import logging
 import os
+import psutil
 import signal
 import socket
 import subprocess
 import sys
 import threading
 import time
-import traceback
-
-import psutil
 
 import Gamepad
 import camera as cam
@@ -250,7 +250,7 @@ def disconnect():
                          'speak_thread', 'ultra_thread', 'ina219_thread',
                          'move_thread'):
         time.sleep(1)
-    # move.servo_release()
+    move.servo_release()
 
 
 def listener_thread(event):
@@ -812,6 +812,8 @@ def joystick_thread(event):
 def main():
     logger.info('Starting server.')
     global kill_event
+    connect()
+    speak(speak_dict.connect)
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
@@ -823,14 +825,15 @@ def main():
     # led_threading.setName('led_thread')
     # led_threading.start()
     move.servo_init()
+    # time.sleep(5)
     moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     moving_threading.setName('move_thread')
     moving_threading.start()
     joystick_threading = threading.Thread(target=joystick_thread, args=[kill_event], daemon=True)
     joystick_threading.setName('joystick_thread')
     joystick_threading.start()
-    connect()
-    speak(speak_dict.connect)
+    # connect()
+    # speak(speak_dict.connect)
     try:
         if config.CAMERA_MODULE:
             global camera
