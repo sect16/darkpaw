@@ -11,8 +11,8 @@ import time
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SIZE = 0.5
 
-SPEAK_SPEED = 120
-SPEAK_PITCH = 20
+SPEAK_SPEED = 150
+SPEAK_PITCH = 50
 SPEAK_AMP = 100
 allow_speak = True
 VIDEO_OUT = False
@@ -39,8 +39,8 @@ INA219_POLLING = 1  # INA219 power module refresh rate
 # Hardware configuration
 POWER_MODULE = True  # INA219
 SERVO_MODULE = True  # PCA9685
-CAMERA_MODULE = True
-GYRO_MODULE = True  # MPU6050
+CAMERA_MODULE = False
+GYRO_MODULE = False  # MPU6050
 ULTRA_MODULE = False
 
 # 100 = Leg spread out
@@ -84,7 +84,7 @@ height = 50
 OFFSET_VOLTAGE = 0
 OFFSET_CURRENT = 0
 OFFSET_AMBIENT = 0
-AUDIO_INPUT = 'hw:1,0'
+AUDIO_INPUT = 'hw:3,0'
 CONTROLLER_POLL = 0.01
 
 """
@@ -125,3 +125,7 @@ CAMERA_AWB = 'auto'
 'matrix'
 """
 CAMERA_METERING = 'backlit'
+
+# OpenTTS API
+OPENTTS_URL = "http://10.6.1.2:5500/api/tts"
+
