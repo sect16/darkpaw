@@ -5,17 +5,18 @@
 # Author      : Chin Pin Hon
 # Date        : 2019/11/20
 
-import cv2
 import time
+
+import cv2
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SIZE = 0.5
 
-SPEAK_SPEED = 120
-SPEAK_PITCH = 20
+SPEAK_SPEED = 170
+SPEAK_PITCH = 50
 SPEAK_AMP = 100
 allow_speak = True
-VIDEO_OUT = False
+VIDEO_OUT = True
 last_text = list([int(time.time()), ""])
 
 LISTENER_MAX_ERROR = 10
@@ -28,7 +29,7 @@ MAX_CONTOUR_AREA = 5000
 VIDEO_PORT = 5555
 RESOLUTION = [640, 480]
 AUDIO_PORT = 3030
-FRAME_RATE = 26
+FRAME_RATE = 30
 ULTRA_PORT = 2257
 VOLTAGE_WARN = 7.2  # Low battery voltage warning threshold
 VOLTAGE_SHUTDOWN = 6.8  # Critical voltage shutdown threshold
@@ -40,7 +41,7 @@ INA219_POLLING = 1  # INA219 power module refresh rate
 POWER_MODULE = True  # INA219
 SERVO_MODULE = True  # PCA9685
 CAMERA_MODULE = True
-GYRO_MODULE = True  # MPU6050
+GYRO_MODULE = False  # MPU6050
 ULTRA_MODULE = False
 
 # 100 = Leg spread out

@@ -7,11 +7,10 @@
 GUI layout definition
 """
 
-import tkinter as tk
-import traceback
-
 import logging
 import time
+import tkinter as tk
+import traceback
 
 import config
 import video
@@ -257,7 +256,7 @@ def loop():  # GUI
     label_speed.place(x=30, y=110)
 
     # Flash light entry
-    entry_lights = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=5)
+    entry_lights = tk.Spinbox(root, width=3, from_=0.0, to=100.0, command=set_light, increment=1)
     label_lights = tk.Label(root, width=5, text='Lights:', fg=COLOR_TEXT_LABEL, bg=COLOR_BG)
     btn_gait = tk.Button(root, width=10, text='Gait', fg=COLOR_TEXT, bg=COLOR_BTN, relief='ridge')
     btn_gait.bind('<ButtonPress-1>', lambda _: send('gait:'))

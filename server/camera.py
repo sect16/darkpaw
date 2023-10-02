@@ -9,6 +9,7 @@ import argparse
 import base64
 import datetime
 import logging
+import threading
 import time
 from collections import deque
 
@@ -22,7 +23,7 @@ import led
 import move
 import pid
 import speak_dict
-import stream
+import stream as stream_server
 from speak import speak
 
 logger = logging.getLogger(__name__)
@@ -86,11 +87,20 @@ class Camera:
                         help="max buffer size")
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
-        video_stream = stream.Stream().start()
-        frame_image = video_stream.read()
+        server = stream_server.StreamingServer(('', config.VIDEO_PORT + 1), stream_server.StreamingHandler)
+        stream_thread = threading.Thread(target=stream_server.Stream().start, args=[event, server], daemon=True)
+        stream_thread.setName('stream_thread')
+        stream_thread.start()
+        time.sleep(2)
+        stream = stream_server.FileVideoStream()
+        stream.start()
+        # stream = cv2.VideoCapture('http://localhost:' + str(config.VIDEO_PORT+1) + '/stream.mjpg')
+        # ret, frame_image = stream.read()
+        frame_image = stream.read()
         context = zmq.Context()
         mq = context.socket(zmq.PUB)
         mq.close()
+        # while not event.is_set() and stream.isOpened() and ret:
         while not event.is_set():
             # Draw crosshair lines
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2) - 20, int(config.RESOLUTION[1] / 2)),
@@ -104,8 +114,8 @@ class Camera:
                 frame_rate_mili = int(1000000 / REDUCED_FRAME_RATE)
                 text = watchdog()
             else:
-                frame_rate_mili = int(1000000 / config.FRAME_RATE)
-                last_motion_captured = datetime.datetime.now()
+                #    frame_rate_mili = int(1000000 / config.FRAME_RATE)
+                #    last_motion_captured = datetime.datetime.now()
                 text = ''
             if config.VIDEO_OUT:
                 cv2.putText(frame_image, text, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
@@ -121,10 +131,14 @@ class Camera:
                     pass
             elif not config.VIDEO_OUT and not mq.closed:
                 destroy_client(mq)
-            limit_framerate(frame_rate_mili)
-            frame_image = video_stream.read()
+            # limit_framerate(frame_rate_mili)
+            # ret, frame_image = stream.read()
+            frame_image = stream.read()
         logger.info('Stopping thread.')
-        video_stream.stop()
+        server.shutdown()
+        server.socket.close()
+        stream_server.FileVideoStream().stop()
+        logger.info('stopping server on port {}'.format(server.server_port))
 
 
 def limit_framerate(frame_rate):
@@ -187,7 +201,7 @@ def watchdog():
         if cv2.contourArea(c) < config.MAX_CONTOUR_AREA:
             # logger.debug('Contour too small (%s), ignoring...', cv2.contourArea(c))
             continue
-        logger.debug('Contour detected (%s)', cv2.contourArea(c))
+        logger.debug('Contour detected: ' + str(cv2.contourArea(c)))
         speak(speak_dict.bark)
         # compute the bounding box for the contour, draw it on the frame, and update the text
         (x, y, w, h) = cv2.boundingRect(c)
@@ -273,9 +287,7 @@ def find_color(self, pts, args):
 
 
 if __name__ == '__main__':
-    import threading
-
-    event = threading.event
+    event = threading.Event()
     event.is_set = False
     camera = Camera()
     while 1:

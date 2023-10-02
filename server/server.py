@@ -4,17 +4,17 @@
 # Author      : Chin Pin Hon
 # Date        : 29/11/2019
 
-import traceback
-
 import logging
 import os
-import psutil
 import signal
 import socket
 import subprocess
 import sys
 import threading
 import time
+import traceback
+
+import psutil
 
 import Gamepad
 import camera as cam
@@ -31,7 +31,7 @@ from speak import speak
 logger = logging.getLogger(__name__)
 # Socket connection sequence. Bind socket to port, create socket, get client address/port, get server address/port.
 client_address = None
-server_address = None
+server_address = '0.0.0.0'
 led = led.Led()
 if config.CAMERA_MODULE:
     camera = cam.Camera()
@@ -194,6 +194,19 @@ def info_thread(event):
     logger.info('Thread stopped')
 
 
+def audio_kill():
+    try:
+        pids = subprocess.check_output(["pidof", "vlc"])
+    except subprocess.CalledProcessError:
+        logger.info('No VLC processes found')
+        return 0
+    pids = pids.decode('utf-8')[0:-1].split(' ')
+    for pid in pids:
+        logger.info('Killing process ' + pid)
+        os.killpg(os.getpgid(int(pid)), signal.SIGTERM)  # Send the signal to all the process groups
+    return 1
+
+
 def connect():
     """
     This function starts the main robot listener and waits for the client to connect.
@@ -210,7 +223,8 @@ def connect():
             led.color_set('cyan')
             led.mode_set(1)
             tcp_server_socket, client_address = tcp_server.accept()
-            server_address = tcp_server_socket.getsockname()[0]
+            # server_address = tcp_server_socket.getsockname()[0]
+            logger.info('Server address: ' + server_address)
             # Timeout in seconds
             tcp_server_socket.settimeout(config.LISTENER_TIMEOUT)
             logger.info('Connected from %s', client_address)
@@ -332,21 +346,14 @@ def message_processor(data):
         tcp_server_socket.send(' Ultrasonic_end'.encode())
     elif 'stream_audio' == data:
         global server_address
-        if audio_pid is None:
-            logger.info('Audio streaming server starting...')
-            audio_pid = subprocess.Popen([
-                'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst='
-                + str(server_address) + ':' + str(config.AUDIO_PORT) + '}"'], shell=True, preexec_fn=os.setsid)
-        else:
-            logger.info('Audio streaming server already started.')
+        audio_kill()
+        logger.info('Audio streaming server starting...')
+        audio_pid = subprocess.Popen([
+            'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst='
+            + str(server_address) + ':' + str(config.AUDIO_PORT) + '}"'], shell=True, preexec_fn=os.setsid)
         tcp_server_socket.send(' stream_audio'.encode())
     elif 'stream_audio_end' == data:
-        if audio_pid is not None:
-            try:
-                os.killpg(os.getpgid(audio_pid.pid), signal.SIGTERM)  # Send the signal to all the process groups
-                audio_pid = None
-            except:
-                logger.error('Unable to kill audio stream.')
+        audio_kill()
         tcp_server_socket.send(' stream_audio_end'.encode())
     elif 'start_video' == data:
         config.VIDEO_OUT = True
@@ -558,7 +565,7 @@ def ina219_thread(event):
                 time.sleep(3)
                 logger.critical('Battery voltage critical (%s), shutting down!', power[0])
                 command = "/usr/bin/sudo /sbin/shutdown now"
-                import subprocess
+                # import subprocess
                 subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     logger.info('Thread stopped')
 
