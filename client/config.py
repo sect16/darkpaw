@@ -35,14 +35,13 @@ ULTRA_PORT = 2257  # Define port serial
 ULTRA_SENSOR = False
 VIDEO_PORT = 5555
 VIDEO_TIMEOUT = 10000
-VIDEO_WIDTH = 640
-VIDEO_HEIGHT = 480
+VIDEO_WIDTH = 1024
+VIDEO_HEIGHT = 768
 POWER_MODULE = True
 CAMERA_MODULE = True
 DEBUG_MODE = False
 
 ultra_data = 0
-
 
 guiTuple = (
     "btn_left_side.place(x=30, y=195)", "btn_right_side.place(x=170, y=195)",

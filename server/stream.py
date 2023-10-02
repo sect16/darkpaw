@@ -14,6 +14,7 @@ from threading import Condition
 from threading import Thread
 
 import cv2
+from libcamera import controls
 from picamera2 import Picamera2
 from picamera2.encoders import JpegEncoder
 from picamera2.outputs import FileOutput
@@ -25,10 +26,10 @@ logger = logging.getLogger(__name__)
 PAGE = """\
 <html>
 <head>
-<title>picamera2 MJPEG streaming demo</title>
+<title>darkpaw MJPEG streaming</title>
 </head>
 <body>
-<h1>Picamera2 MJPEG Streaming Demo</h1>
+<h1>darkpaw MJPEG Streaming</h1>
 """
 
 image_tag = "<img src=\"stream.mjpg\" width=\"" + str(config.RESOLUTION[0]) + "\" height=\"" + str(
@@ -158,8 +159,10 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 
 class Stream():
     def start(self, event, server):
-        picam2.configure(picam2.create_video_configuration(main={"size": (config.RESOLUTION[0], config.RESOLUTION[1])}))
+        picam2.configure(
+            picam2.create_video_configuration(queue=False, main={"size": (config.RESOLUTION[0], config.RESOLUTION[1])}))
         picam2.start_recording(JpegEncoder(), FileOutput(output))
+        picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         try:
             while not event.is_set():
                 server.serve_forever()
