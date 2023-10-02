@@ -12,7 +12,7 @@ import cv2
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SIZE = 0.5
 
-SPEAK_SPEED = 170
+SPEAK_SPEED = 150
 SPEAK_PITCH = 50
 SPEAK_AMP = 100
 allow_speak = True
@@ -85,7 +85,7 @@ height = 50
 OFFSET_VOLTAGE = 0
 OFFSET_CURRENT = 0
 OFFSET_AMBIENT = 0
-AUDIO_INPUT = 'hw:1,0'
+AUDIO_INPUT = 'hw:3,0'
 CONTROLLER_POLL = 0.01
 
 """
@@ -126,3 +126,7 @@ CAMERA_AWB = 'auto'
 'matrix'
 """
 CAMERA_METERING = 'backlit'
+
+# OpenTTS API
+OPENTTS_URL = "http://10.6.1.2:5500/api/tts"
+

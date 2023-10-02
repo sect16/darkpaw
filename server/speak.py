@@ -41,5 +41,27 @@ def speak_thread(input_text):
 
 def speak_command(text):
     logger.debug('Speaking "%s"', text)
-    subprocess.call(
-        ['espeak-ng', '-s', str(config.SPEAK_SPEED), '-p', str(config.SPEAK_PITCH), '-a', str(config.SPEAK_AMP), text])
+    #subprocess.call(
+    #    #['mimic', '-t', text, '-voice', 'slt'])
+    #    ['espeak-ng', '-s', str(config.SPEAK_SPEED), '-p', str(config.SPEAK_PITCH), '-a', str(config.SPEAK_AMP), text])
+    import requests
+    params = {
+        "voice": "larynx:southern_english_female-glow_tts",
+        "text": text,
+        "vocoder": "low",
+        "denoiserStrength": "0.03",
+        "cache": "false"
+    }
+    headers = {"accept": "*/*"}
+    try:
+        response = requests.get(config.OPENTTS_URL, params=params, headers=headers)
+        # Check if the response was successful (status code 200)
+        if response.status_code == 200:
+            # Use subprocess to play the audio
+            subprocess.Popen(["aplay"], stdin=subprocess.PIPE).communicate(response.content)
+        else:
+            print("Error: ", response.status_code)
+            speak_fallback(text)
+    except:
+        speak_fallback(text)
+

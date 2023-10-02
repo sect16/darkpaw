@@ -11,30 +11,36 @@ import RPi.GPIO as GPIO
 logger = logging.getLogger(__name__)
 Channel_A_EN = 7
 Channel_A_Pin1 = 37
-Channel_A_Pin2 = 15
+Channel_A_Pin2 = 40
 Channel_B_EN = 11
-Channel_B_Pin1 = 13
-Channel_B_Pin2 = 16
-pwm_B = 0
+Channel_B_Pin1 = 12
+Channel_B_Pin2 = 13
 frequency = 60
-
+port_1_pin = 29
+port_2_pin = 31
+port_3_pin = 33
 
 def switchSetup():
     """
     Initialize GPIO for switch ports 1-3 on Robot HAT.
     :return: void
     """
-    global pwm_B
     GPIO.setwarnings(False)
+    # Using board pin numbers 
     GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(29, GPIO.OUT)
-    GPIO.setup(31, GPIO.OUT)
-    GPIO.setup(33, GPIO.OUT)
-    GPIO.setup(Channel_A_EN, GPIO.IN)
+    # For switch
+    GPIO.setup(port_1_pin, GPIO.OUT)
+    GPIO.setup(port_2_pin, GPIO.OUT)
+    GPIO.setup(port_3_pin, GPIO.OUT)
+    # For L298
+    GPIO.setup(Channel_A_EN, GPIO.OUT)
     GPIO.setup(Channel_A_Pin1, GPIO.OUT)
-    GPIO.setup(Channel_A_Pin2, GPIO.OUT)
+    # Below pin is used by I2S
+    # GPIO.setup(Channel_A_Pin2, GPIO.OUT)
+    # Set as INPUT because signal will come elsewhere 
     GPIO.setup(Channel_B_EN, GPIO.IN)
-    GPIO.setup(Channel_B_Pin1, GPIO.OUT)
+    # Below pin is used by I2S
+    # GPIO.setup(Channel_B_Pin1, GPIO.OUT)
     GPIO.setup(Channel_B_Pin2, GPIO.OUT)
 
 
@@ -48,23 +54,23 @@ def switch(port, status):
     """
     if port == 1:
         if status == 1:
-            GPIO.output(29, GPIO.HIGH)
+            GPIO.output(port_1_pin, GPIO.HIGH)
         elif status == 0:
-            GPIO.output(29, GPIO.LOW)
+            GPIO.output(port_1_pin, GPIO.LOW)
         else:
             pass
     elif port == 2:
         if status == 1:
-            GPIO.output(31, GPIO.HIGH)
+            GPIO.output(port_2_pin, GPIO.HIGH)
         elif status == 0:
-            GPIO.output(31, GPIO.LOW)
+            GPIO.output(port_2_pin, GPIO.LOW)
         else:
             pass
     elif port == 3:
         if status == 1:
-            GPIO.output(33, GPIO.HIGH)
+            GPIO.output(port_3_pin, GPIO.HIGH)
         elif status == 0:
-            GPIO.output(33, GPIO.LOW)
+            GPIO.output(port_3_pin, GPIO.LOW)
         else:
             pass
     else:
@@ -96,10 +102,10 @@ def set_all_switch_off():
     switch(1, 0)
     switch(2, 0)
     switch(3, 0)
-    GPIO.output(Channel_B_Pin1, GPIO.LOW)
+    # GPIO.output(Channel_B_Pin1, GPIO.LOW)
     GPIO.output(Channel_B_Pin2, GPIO.LOW)
     GPIO.output(Channel_A_Pin1, GPIO.LOW)
-    GPIO.output(Channel_A_Pin2, GPIO.LOW)
+    # GPIO.output(Channel_A_Pin2, GPIO.LOW)
 
 
 def destroy():
@@ -111,16 +117,17 @@ def destroy():
 
 
 if __name__ == '__main__':
+    switchSetup()
+    GPIO.setup(Channel_B_EN, GPIO.OUT)
     try:
-        switchSetup()
-        GPIO.setup(Channel_B_EN, GPIO.OUT)
-        GPIO.setup(Channel_B_Pin1, GPIO.OUT)
-        GPIO.setup(Channel_B_Pin2, GPIO.OUT)
-        try:
-            pwm_B = GPIO.PWM(Channel_B_EN, frequency)
-        except:
-            pass
-        pwm_B.start(0)
+        pwm_B = GPIO.PWM(Channel_B_EN, frequency)
+        pwm_B.start(50)
+
+        # GPIO.output(Channel_B_EN, GPIO.HIGH)
+        GPIO.output(Channel_B_Pin2, GPIO.HIGH)
+        # GPIO.output(Channel_B_Pin1, GPIO.LOW)
+        #pwm_B = GPIO.PWM(Channel_B_EN, frequency)
+        #pwm_B.start(100)
         while True:
             # break
             for dc in range(0, 101, 5):

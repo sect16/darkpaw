@@ -17,7 +17,6 @@ import traceback
 import psutil
 
 import Gamepad
-import camera as cam
 import config
 import led
 import move
@@ -35,6 +34,7 @@ server_address = '0.0.0.0'
 led = led.Led()
 if config.CAMERA_MODULE:
     camera = cam.Camera()
+    import camera as cam
 kill_event = threading.Event()
 ultra_event = threading.Event()
 steadyMode = 0
@@ -223,7 +223,6 @@ def connect():
             led.color_set('cyan')
             led.mode_set(1)
             tcp_server_socket, client_address = tcp_server.accept()
-            # server_address = tcp_server_socket.getsockname()[0]
             logger.info('Server address: ' + server_address)
             # Timeout in seconds
             tcp_server_socket.settimeout(config.LISTENER_TIMEOUT)
@@ -346,7 +345,7 @@ def message_processor(data):
         tcp_server_socket.send(' Ultrasonic_end'.encode())
     elif 'stream_audio' == data:
         global server_address
-        audio_kill()
+        audio_kill()    
         logger.info('Audio streaming server starting...')
         audio_pid = subprocess.Popen([
             'cvlc alsa://' + config.AUDIO_INPUT + ' :live-caching=50 --sout "#standard{access=http,mux=ogg,dst='
@@ -565,7 +564,6 @@ def ina219_thread(event):
                 time.sleep(3)
                 logger.critical('Battery voltage critical (%s), shutting down!', power[0])
                 command = "/usr/bin/sudo /sbin/shutdown now"
-                # import subprocess
                 subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     logger.info('Thread stopped')
 
@@ -832,15 +830,15 @@ def main():
     # led_threading.setName('led_thread')
     # led_threading.start()
     move.servo_init()
-    # time.sleep(5)
+    #time.sleep(5)
     moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     moving_threading.setName('move_thread')
     moving_threading.start()
     joystick_threading = threading.Thread(target=joystick_thread, args=[kill_event], daemon=True)
     joystick_threading.setName('joystick_thread')
     joystick_threading.start()
-    # connect()
-    # speak(speak_dict.connect)
+    #connect()
+    #speak(speak_dict.connect)
     try:
         if config.CAMERA_MODULE:
             global camera
