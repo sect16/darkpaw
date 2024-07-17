@@ -77,7 +77,7 @@ def status_thread(event):
     while event.is_set():
         try:
             data = (tcp_client_socket.recv(config.BUFFER_SIZE)).decode()
-            logger.info('Received status info: %s' % data)
+            logger.debug('Received status info: %s' % data)
             data = data.split()
             # for idx, status in enumerate(data):
             for status in data:
