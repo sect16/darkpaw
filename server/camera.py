@@ -88,7 +88,7 @@ class Camera:
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
         server = stream_server.StreamingServer(('', config.VIDEO_PORT + 1), stream_server.StreamingHandler)
-        stream_thread = threading.Thread(target=stream_server.Stream().start, args=[event, server], daemon=True)
+        stream_thread = threading.Thread(target=stream_server.Stream().start, args=[server], daemon=True)
         stream_thread.setName('stream_thread')
         stream_thread.start()
         time.sleep(2)
@@ -132,9 +132,8 @@ class Camera:
             # ret, frame_image = stream.read()
             frame_image = stream.read()
         logger.info('Stopping thread.')
-        server.shutdown()
-        server.socket.close()
         stream_server.FileVideoStream().stop()
+        stream_server.Stream().stop(server)
         logger.info('stopping server on port {}'.format(server.server_port))
 
 

@@ -81,9 +81,10 @@ class FileVideoStream:
 
     def start(self):
         # start a thread to read frames from the file video stream
-        t = Thread(target=self.update, args=())
-        t.daemon = True
-        t.start()
+        frame_thread = Thread(target=self.update, args=())
+        frame_thread.setName("frame_thread")
+        frame_thread.daemon = True
+        frame_thread.start()
         return self
 
 
@@ -158,31 +159,28 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 
 
 class Stream():
-    def start(self, event, server):
+    def start(self, server):
         picam2.configure(
             picam2.create_video_configuration(queue=False, main={"size": (config.RESOLUTION[0], config.RESOLUTION[1])}))
         picam2.start_recording(JpegEncoder(), FileOutput(output))
         picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         try:
-            while not event.is_set():
-                server.serve_forever()
+            server.serve_forever()
         finally:
             picam2.stop_recording()
             logger.info('Stopping thread.')
         # start the thread to read frames from the video stream
         return self
 
-    def read(self):
-        return self.output.frame
-
+    def stop(self, server):
+        server.shutdown()
+        server.socket.close()
+        return self
 
 if __name__ == "__main__":
-    import threading
 
-    kill_event = threading.Event()
-    kill_event.clear()
     stream = Stream()
     server = StreamingServer(('', config.VIDEO_PORT + 1), StreamingHandler)
     while 1:
-        stream.start(kill_event, server)
+        stream.start(server)
         pass
