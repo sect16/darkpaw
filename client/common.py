@@ -91,6 +91,7 @@ def status_thread(event):
         except:
             logger.error('Thread exception: %s', traceback.format_exc())
             disconnect()
+        time.sleep(0.5)
     logger.info('Thread stopped')
 
 
@@ -176,11 +177,6 @@ def connect():  # Call this function to connect with the server
             status_threading.start()
 
             # Integrated info into status
-            """
-            info_threading = threading.Thread(target=info_thread, args=([connect_event), daemon=True)
-            info_threading.setName('stat_thread')
-            info_threading.start()
-            """
             keepalive_threading = threading.Thread(target=keepalive_thread, args=([connect_event]), daemon=True)
             keepalive_threading.setName('keepalive_thread')
             keepalive_threading.start()
