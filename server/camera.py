@@ -117,20 +117,17 @@ class Camera:
                 #    frame_rate_mili = int(1000000 / config.FRAME_RATE)
                 #    last_motion_captured = datetime.datetime.now()
                 text = ''
-            if config.VIDEO_OUT:
-                cv2.putText(frame_image, text, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
-                            cv2.LINE_AA)
-                if mq.closed:
-                    logger.info('Initializing ZMQ client...')
-                    mq = init_client()
-                try:
-                    encoded, buffer = cv2.imencode('.jpg', frame_image)
-                    mq.send(base64.b64encode(buffer), zmq.NOBLOCK)
-                except:
-                    logger.warning('Unable to encode frame.')
-                    pass
-            elif not config.VIDEO_OUT and not mq.closed:
-                destroy_client(mq)
+            cv2.putText(frame_image, text, (40, 60), config.FONT, config.FONT_SIZE, (255, 255, 255), 1,
+                        cv2.LINE_AA)
+            if mq.closed:
+                logger.info('Initializing ZMQ client...')
+                mq = init_client()
+            try:
+                encoded, buffer = cv2.imencode('.jpg', frame_image)
+                mq.send(base64.b64encode(buffer), zmq.NOBLOCK)
+            except:
+                logger.warning('Unable to encode frame.')
+                pass
             # limit_framerate(frame_rate_mili)
             # ret, frame_image = stream.read()
             frame_image = stream.read()

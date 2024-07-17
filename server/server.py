@@ -33,8 +33,8 @@ client_address = None
 server_address = '0.0.0.0'
 led = led.Led()
 if config.CAMERA_MODULE:
-    camera = cam.Camera()
     import camera as cam
+    camera = cam.Camera()
 kill_event = threading.Event()
 ultra_event = threading.Event()
 steadyMode = 0
