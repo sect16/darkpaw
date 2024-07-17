@@ -66,21 +66,28 @@ def config_import(label):
     logger.warning('Unable to read value label \"%s\" from configuration file.', label)
 
 
-def status_client_thread(event):
+def status_thread(event):
     """
     This function loops through data received from the tcp socket and updates the client button status.
     :param event: Clear event flag to terminate thread
     """
     logger.info('Thread started')
     global tcp_client_socket
+    global cpu_temp, cpu_use, ram_use, voltage, current, connect_event, ambient
     while event.is_set():
         try:
             data = (tcp_client_socket.recv(config.BUFFER_SIZE)).decode()
             logger.info('Received status info: %s' % data)
             data = data.split()
+            # for idx, status in enumerate(data):
             for status in data:
                 gui.button_update(status)
-            time.sleep(0.5)
+            if 'STAT' in data:
+                cpu_temp, cpu_use, ram_use, voltage, current, ambient = data[1], data[2], data[3], data[4], data[5], \
+                                                                        data[6]
+                logger.debug('cpu_temp:%s, cpu_use:%s, ram_use:%s, voltage:%s, current:%s, ambient:%s' % (
+                    cpu_temp, cpu_use, ram_use, voltage, current, ambient))
+                gui.stat_update(cpu_temp, cpu_use, ram_use, voltage, current, ambient)
         except:
             logger.error('Thread exception: %s', traceback.format_exc())
             disconnect()
@@ -164,14 +171,16 @@ def connect():  # Call this function to connect with the server
             logger.info("Connected successfully")
             config_export('IP:', ip_address)
             connect_event.set()  # Set to start threads
-            status_threading = threading.Thread(target=status_client_thread, args=([connect_event]),
-                                                daemon=True)
+            status_threading = threading.Thread(target=status_thread, args=([connect_event]), daemon=True)
             status_threading.setName('status_thread')
             status_threading.start()
-            info_threading = threading.Thread(target=info_thread,
-                                              args=([connect_event, tcp_client_socket.getsockname()[0]]), daemon=True)
+
+            # Integrated info into status
+            """
+            info_threading = threading.Thread(target=info_thread, args=([connect_event), daemon=True)
             info_threading.setName('stat_thread')
             info_threading.start()
+            """
             keepalive_threading = threading.Thread(target=keepalive_thread, args=([connect_event]), daemon=True)
             keepalive_threading.setName('keepalive_thread')
             keepalive_threading.start()

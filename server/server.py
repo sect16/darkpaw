@@ -147,6 +147,7 @@ def info_thread(event):
     connected = False
     logger.info('Thread started')
     while not event.is_set():
+        """
         if not connected:
             try:
                 info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
@@ -160,37 +161,40 @@ def info_thread(event):
                 connected = False
                 time.sleep(SOCKET_RETRY)
                 pass
-        elif connected:
-            time.sleep(config.INA219_POLLING)
+        elif connected:        
+        """
+        time.sleep(config.INA219_POLLING)
+        try:
+            message = ' STAT ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
+            # cpu_temp, cpu_use, ram_use, voltage, current, ambient
+            if config.POWER_MODULE:
+                message += ' {0:0.2f}V'.format(power[0]) + ' {0:0.2f}mA'.format(
+                    power[1])
+            else:
+                message += ' - -'
+            if config.GYRO_MODULE:
+                message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
+            else:
+                message += ' -'
+            logger.debug('Info message content = ' + message)
+            tcp_server_socket.send(message.encode())
+            # info_socket.send(message.encode())
+        except BrokenPipeError:
+            pass
+        except TimeoutError:
+            pass
+        except OSError:
+            pass
+        except:
+            logger.error('Exception: %s', traceback.format_exc())
             try:
-                message = ' ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
-                if config.POWER_MODULE:
-                    message += ' {0:0.2f}V'.format(power[0]) + ' {0:0.2f}mA'.format(
-                        power[1])
-                else:
-                    message += ' - -'
-                if config.GYRO_MODULE:
-                    message += ' {0:0.1f}'.format(move.sensor.get_temp() + config.OFFSET_AMBIENT)
-                else:
-                    message += ' -'
-                logger.debug('Info message content = ' + message)
-                info_socket.send(message.encode())
-            except BrokenPipeError:
-                pass
-            except TimeoutError:
-                pass
-            except OSError:
-                pass
+                info_socket.close()
             except:
                 logger.error('Exception: %s', traceback.format_exc())
-                try:
-                    info_socket.close()
-                except:
-                    logger.error('Exception: %s', traceback.format_exc())
-                    pass
-                connected = False
-                time.sleep(SOCKET_RETRY)
                 pass
+            connected = False
+            time.sleep(SOCKET_RETRY)
+            pass
     logger.info('Thread stopped')
 
 

@@ -578,8 +578,8 @@ def button_update(status_data):
             pass
         elif 'disconnect' == status_data:
             pass
-        else:
-            logger.warning('Unknown button status update: %s' % status_data)
+        # else:
+        #     logger.warning('Unknown button status update: %s' % status_data)
     except:
         logger.error('Button status update exception: %s', traceback.format_exc())
 
