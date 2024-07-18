@@ -142,27 +142,8 @@ def info_thread(event):
     :param event: Terminates when event is set.
     """
     global power, client_address
-    SOCKET_TIMEOUT = 5
-    SOCKET_RETRY = 5
-    connected = False
     logger.info('Thread started')
     while not event.is_set():
-        """
-        if not connected:
-            try:
-                info_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Set connection value for socket
-                info_socket.settimeout(SOCKET_TIMEOUT)
-                info_socket.connect((client_address, config.INFO_PORT))
-                logger.info('Connected to client address (\'%s\', %i)', client_address, config.INFO_PORT)
-                connected = True
-            except:
-                logger.error('Exception: %s', traceback.format_exc())
-                logger.error('Unable to connect to client info socket')
-                connected = False
-                time.sleep(SOCKET_RETRY)
-                pass
-        elif connected:        
-        """
         time.sleep(config.INA219_POLLING)
         try:
             message = ' STAT ' + get_cpu_temp() + ' ' + get_cpu_use() + ' ' + get_ram_info()
@@ -178,22 +159,8 @@ def info_thread(event):
                 message += ' -'
             logger.debug('Info message content = ' + message)
             tcp_server_socket.send(message.encode())
-            # info_socket.send(message.encode())
-        except BrokenPipeError:
-            pass
-        except TimeoutError:
-            pass
-        except OSError:
-            pass
         except:
             logger.error('Exception: %s', traceback.format_exc())
-            try:
-                info_socket.close()
-            except:
-                logger.error('Exception: %s', traceback.format_exc())
-                pass
-            connected = False
-            time.sleep(SOCKET_RETRY)
             pass
     logger.info('Thread stopped')
 
@@ -263,9 +230,9 @@ def disconnect():
     tcp_server_socket.close()
     move.robot_height(0)
     logger.info('Waiting for threads to finish.')
-    while thread_isAlive('led_thread', 'camera_thread', 'info_thread', 'stream_thread',
-                         'speak_thread', 'ultra_thread', 'ina219_thread',
-                         'move_thread'):
+    while thread_isAlive('speak_thread', 'keepalive_thread', 'ultra_thread', 'fps_thread', 'open_cv_thread',
+                         'ina219_thread', 'led_thread', 'move_thread', 'camera_thread', 'frame_thread',
+                         'stream_thread'):
         time.sleep(1)
     move.servo_release()
 
@@ -826,6 +793,14 @@ def main():
     switch.switchSetup()
     switch.set_all_switch_off()
     kill_event.clear()
+    try:
+        if config.CAMERA_MODULE:
+            global camera
+            camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event], daemon=True)
+            camera_thread.setName('camera_thread')
+            camera_thread.start()
+    except:
+        logger.error('Exception: %s', traceback.format_exc())
     if config.POWER_MODULE:
         ina219_threading = threading.Thread(target=ina219_thread, args=[kill_event], daemon=True)
         ina219_threading.setName('ina219_thread')
@@ -834,27 +809,17 @@ def main():
     # led_threading.setName('led_thread')
     # led_threading.start()
     move.servo_init()
-    #time.sleep(5)
+    # time.sleep(5)
     moving_threading = threading.Thread(target=move_thread, args=[kill_event], daemon=True)
     moving_threading.setName('move_thread')
     moving_threading.start()
     joystick_threading = threading.Thread(target=joystick_thread, args=[kill_event], daemon=True)
     joystick_threading.setName('joystick_thread')
     joystick_threading.start()
-    #connect()
-    #speak(speak_dict.connect)
-    try:
-        if config.CAMERA_MODULE:
-            global camera
-            camera_thread = threading.Thread(target=camera.capture_thread, args=[kill_event], daemon=True)
-            camera_thread.setName('camera_thread')
-            camera_thread.start()
-        info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
-        info_threading.setName('info_thread')
-        info_threading.start()
-        listener_thread(kill_event)
-    except:
-        logger.error('Exception: %s', traceback.format_exc())
+    info_threading = threading.Thread(target=info_thread, args=[kill_event], daemon=True)
+    info_threading.setName('info_thread')
+    info_threading.start()
+    listener_thread(kill_event)
     disconnect()
 
 

@@ -1,8 +1,10 @@
 #!/usr/bin/python3
-
-# Mostly copied from https://picamera.readthedocs.io/en/release-1.13/recipes2.html
-# Run this script, then point a web browser at http:<this-ip-address>:8000
-# Note: needs simplejpeg to be installed (pip3 install simplejpeg).
+# File name   : stream.py
+# Description : PiCamera2 video capture and serve HTTP requests at http:<this-ip-address>:8000. Needs simplejpeg to be installed (pip3 install simplejpeg).
+# E-mail      : sect16@gmail.com
+# Author      : Chin Pin Hon (Mostly copied from https://picamera.readthedocs.io/en/release-1.13/recipes2.html)
+# Date        : 18/07/2024
+#
 
 import io
 import logging
@@ -99,8 +101,8 @@ class StreamingOutput(io.BufferedIOBase):
             self.condition.notify_all()
 
 
-output = StreamingOutput()
-picam2 = Picamera2()
+streamingOutput = StreamingOutput()
+piCamera2 = Picamera2()
 
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
@@ -129,9 +131,9 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
                 frame_count = 0
                 # endless stream
                 while True:
-                    with output.condition:
-                        output.condition.wait()
-                        frame = output.frame
+                    with streamingOutput.condition:
+                        streamingOutput.condition.wait()
+                        frame = streamingOutput.frame
                         frame_count += 1
                         # calculate FPS every 5s
                         if (time.time() - start_time) > 5:
@@ -159,28 +161,38 @@ class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
 
 
 class Stream():
-    def start(self, server):
-        picam2.configure(
-            picam2.create_video_configuration(queue=False, main={"size": (config.RESOLUTION[0], config.RESOLUTION[1])}))
-        picam2.start_recording(JpegEncoder(), FileOutput(output))
-        picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+    def __init__(self):
+        self.streamingServer = StreamingServer(('', config.VIDEO_PORT + 1), StreamingHandler)
+
+    def start(self):
+        # start a thread to read frames from the file video stream
+        stream_thread = Thread(target=self.serveHttp, args=())
+        stream_thread.setName("stream_thread")
+        stream_thread.daemon = True
+        stream_thread.start()
+        return self
+
+    def serveHttp(self):
+        piCamera2.configure(
+            piCamera2.create_video_configuration(queue=False,
+                                                 main={"size": (config.RESOLUTION[0], config.RESOLUTION[1])}))
+        piCamera2.start_recording(JpegEncoder(), FileOutput(streamingOutput))
+        piCamera2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         try:
-            server.serve_forever()
+            self.streamingServer.serve_forever()
         finally:
-            picam2.stop_recording()
-            logger.info('Stopping thread.')
+            logger.info('Stopping piCamera2 recording.')
+            piCamera2.stop_recording()
+            self.streamingServer.socket.close()
         # start the thread to read frames from the video stream
         return self
 
-    def stop(self, server):
-        server.shutdown()
-        server.socket.close()
+    def stop(self):
+        logger.info('stopping server on port {}'.format(self.streamingServer.server_port))
+        self.streamingServer.shutdown()
         return self
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     stream = Stream()
-    server = StreamingServer(('', config.VIDEO_PORT + 1), StreamingHandler)
-    while 1:
-        stream.start(server)
-        pass
+    stream.serveHttp()

@@ -87,20 +87,18 @@ class Camera:
                         help="max buffer size")
         args = vars(ap.parse_args())
         pts = deque(maxlen=args["buffer"])
-        server = stream_server.StreamingServer(('', config.VIDEO_PORT + 1), stream_server.StreamingHandler)
-        stream_thread = threading.Thread(target=stream_server.Stream().start, args=[server], daemon=True)
-        stream_thread.setName('stream_thread')
-        stream_thread.start()
+        httpStream = stream_server.Stream()
+        httpStream.start()
         time.sleep(2)
-        stream = stream_server.FileVideoStream()
-        stream.start()
-        # stream = cv2.VideoCapture('http://localhost:' + str(config.VIDEO_PORT+1) + '/stream.mjpg')
-        # ret, frame_image = stream.read()
-        frame_image = stream.read()
+        fileVideoStream = stream_server.FileVideoStream()
+        fileVideoStream.start()
+        # fileVideoStream = cv2.VideoCapture('http://localhost:' + str(config.VIDEO_PORT+1) + '/fileVideoStream.mjpg')
+        # ret, frame_image = fileVideoStream.read()
+        frame_image = fileVideoStream.read()
         context = zmq.Context()
         mq = context.socket(zmq.PUB)
         mq.close()
-        # while not event.is_set() and stream.isOpened() and ret:
+        # while not event.is_set() and fileVideoStream.isOpened() and ret:
         while not event.is_set():
             # Draw crosshair lines
             cv2.line(frame_image, (int(config.RESOLUTION[0] / 2) - 20, int(config.RESOLUTION[1] / 2)),
@@ -129,12 +127,11 @@ class Camera:
                 logger.warning('Unable to encode frame.')
                 pass
             # limit_framerate(frame_rate_mili)
-            # ret, frame_image = stream.read()
-            frame_image = stream.read()
+            # ret, frame_image = fileVideoStream.read()
+            frame_image = fileVideoStream.read()
         logger.info('Stopping thread.')
-        stream_server.FileVideoStream().stop()
-        stream_server.Stream().stop(server)
-        logger.info('stopping server on port {}'.format(server.server_port))
+        fileVideoStream.stop()
+        httpStream.stop()
 
 
 def limit_framerate(frame_rate):
