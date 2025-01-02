@@ -12,6 +12,8 @@ import cv2
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 FONT_SIZE = 0.5
 
+# Valid options are gtts, opentts, mimic, espeak
+TTS = 'gtts'
 SPEAK_SPEED = 150
 SPEAK_PITCH = 50
 SPEAK_AMP = 100
