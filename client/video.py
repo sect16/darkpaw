@@ -51,7 +51,6 @@ def call_video(ip):
     This function creates a ZMQ socket to receive video footage.
     :param ip: Server IP address to connect ZMQ socket.
     """
-    video_threading = threading.Thread()
     if common.connect_event.is_set() and not common.fpv_event.is_set() and not common.thread_isAlive('fps_thread',
                                                                                                      'open_cv_thread'):
         logger.info('Starting video stream.')

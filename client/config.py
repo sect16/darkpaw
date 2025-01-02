@@ -26,7 +26,7 @@ MAX_CONTOUR_AREA = 5000
 FONT_SIZE = 0.5
 
 # Configuration
-KEEPALIVE_INTERVAL = 20
+KEEPALIVE_INTERVAL = 5
 INFO_PORT = 2256  # Define port serial
 MAX_INFO_RETRY = 10
 SERVER_PORT = 10223  # Define port serial
