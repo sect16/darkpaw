@@ -257,13 +257,13 @@ def listener_thread(event):
         if error_count >= config.LISTENER_MAX_ERROR:
             logger.error('Maximum listener error count reached, terminating thread.')
             return
-        if not data:
+        elif '|ACK|' in data:
+            logger.info('ACK message received')
+            continue
+        elif not data:
             error_count += 1
             logger.warning('NULL message or no KEEPALIVE message received, error count: %s/%s', error_count,
                            config.LISTENER_MAX_ERROR)
-            continue
-        elif '|ACK|' in data:
-            logger.debug('ACK message received')
             continue
         else:
             logger.info('Received data on tcp socket: %s', data)
