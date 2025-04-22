@@ -1,0 +1,9 @@
+coloredlogs==15.0.1
+humanfriendly==10.0
+numpy==2.2.5
+opencv-python==4.11.0.86
+pyreadline==2.1
+pyreadline3==3.5.4
+PyYAML==6.0.2
+pyzmq==26.4.0
+zmq==0.0.0
