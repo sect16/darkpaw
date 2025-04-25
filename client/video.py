@@ -70,7 +70,7 @@ def call_video(ip):
         video_threading.setName('open_cv_thread')
         video_threading.start()
         mq.connect('tcp://%s:%d' % (ip, config.VIDEO_PORT))
-        mq.setsockopt_string(zmq.SUBSCRIBE, numpy.unicode(''))
+        mq.setsockopt_string(zmq.SUBSCRIBE, '')
         gui.btn_video.config(bg='#00E676')
         gui.btn_video['state'] = 'normal'
     elif common.fpv_event.is_set() and common.thread_isAlive('fps_thread') and common.thread_isAlive('open_cv_thread'):
